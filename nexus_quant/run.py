@@ -107,6 +107,10 @@ def run_one(config_path: Path, out_dir: Path) -> None:
         data_fingerprint=dataset.fingerprint,
         payload={
             "run_group_id": run_group_id,
+            "venue": cfg.get("venue") or {},
+            "execution": cfg.get("execution") or {},
+            "costs": cfg.get("costs") or {},
+            "data": cfg.get("data") or {},
             "strategy": cfg["strategy"]["name"],
             "metrics": bench.get("summary") or {},
             "data_quality_ok": bool(dq["ok"]),
@@ -181,7 +185,7 @@ def improve_one(config_path: Path, out_dir: Path, trials: int = 30) -> None:
         config_sha=sha256_text(cfg_text),
         code_fingerprint=code_fp,
         data_fingerprint=dataset.fingerprint,
-        payload={**improvement, "run_group_id": run_group_id},
+        payload={**improvement, "run_group_id": run_group_id, "venue": cfg.get("venue") or {}, "execution": cfg.get("execution") or {}, "costs": cfg.get("costs") or {}, "data": cfg.get("data") or {}},
     )
     append_ledger_event(out_dir / "ledger" / "ledger.jsonl", event)
 
