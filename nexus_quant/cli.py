@@ -13,6 +13,7 @@ from .promote_cli import promote_main
 from .wisdom_cli import wisdom_main
 from .research_cli import research_main
 from .reflect_cli import reflect_main
+from .critique_cli import critique_main
 
 
 def _parse_args() -> argparse.Namespace:
@@ -69,6 +70,11 @@ def _parse_args() -> argparse.Namespace:
     rf_p.add_argument("--config", required=True, help="Path to JSON config")
     rf_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
     rf_p.add_argument("--tail-events", type=int, default=200, help="How many ledger events to scan (default: 200)")
+
+    cr_p = sub.add_parser("critique", help="Deterministic critique (pushback + next experiments)")
+    cr_p.add_argument("--config", required=True, help="Path to JSON config")
+    cr_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    cr_p.add_argument("--tail-events", type=int, default=200, help="How many ledger events to scan (default: 200)")
     return p.parse_args()
 
 
@@ -100,6 +106,8 @@ def main() -> int:
         return wisdom_main(["--artifacts", str(args.artifacts), "--tail-events", str(args.tail_events)])
     if args.cmd == "reflect":
         return reflect_main(config_path=Path(args.config), artifacts_dir=Path(args.artifacts), tail_events=int(args.tail_events))
+    if args.cmd == "critique":
+        return critique_main(config_path=Path(args.config), artifacts_dir=Path(args.artifacts), tail_events=int(args.tail_events))
 
     cfg_path = Path(args.config)
     if not cfg_path.exists():

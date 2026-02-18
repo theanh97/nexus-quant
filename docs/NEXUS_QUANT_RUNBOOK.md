@@ -112,10 +112,13 @@ Khi accept, hệ thống sinh:
 
 Orion tạo task + chạy tuần tự:
 1. `run` (baseline backtest + benchmark + ledger)
-2. `improve` (self-learning + holdout + stress + ablation artifacts)
-3. `wisdom` (curate checkpoint: ledger + memory -> wisdom artifacts)
-4. `reflect` (deterministic reflection: phân tích evidence -> update safe overrides)
-5. `handoff` (tạo file bàn giao + câu hỏi cho human)
+2. `research_ingest` (ingest research/inbox -> memory, local-first)
+3. `improve` (self-learning + holdout + stress + ablation artifacts)
+4. `wisdom` (curate checkpoint: ledger + memory -> wisdom artifacts)
+5. `reflect` (deterministic reflection: phân tích evidence -> update safe overrides)
+6. `critique` (deterministic critique: phản biện + đề xuất next experiments)
+7. `experiment` (chạy 0..N experiments dựa trên critique, vẫn giữ locked benchmark)
+8. `handoff` (tạo file bàn giao + câu hỏi cho human)
 
 Commands:
 - `python3 -m nexus_quant autopilot --config <cfg.json> --bootstrap --steps 10`
@@ -124,6 +127,10 @@ Commands:
 Reflection (deterministic, LLM-free):
 - `python3 -m nexus_quant reflect --config <cfg.json> --artifacts artifacts --tail-events 200`
 - Auto-updates safe overrides: `artifacts/state/overrides.json`
+
+Critique (deterministic, LLM-free):
+- `python3 -m nexus_quant critique --config <cfg.json> --artifacts artifacts --tail-events 200`
+- Output: `artifacts/wisdom/critiques/latest.md`
 
 Monitoring:
 - Heartbeat: `artifacts/state/orion_heartbeat.json`

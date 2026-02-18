@@ -52,7 +52,7 @@ def _code_fingerprint() -> str:
     return sha256_text("\n".join(parts))[:16]
 
 
-def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str, Any]] = None) -> None:
+def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str, Any]] = None) -> str:
     base_text = config_path.read_text(encoding="utf-8")
     cfg = json.loads(base_text)
     if cfg_override:
@@ -128,11 +128,12 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
         },
     )
     append_ledger_event(out_dir / "ledger" / "ledger.jsonl", event)
+    return run_id
 
 
 def improve_one(
     config_path: Path, out_dir: Path, trials: int = 30, *, cfg_override: Optional[Dict[str, Any]] = None
-) -> None:
+) -> str:
     base_text = config_path.read_text(encoding="utf-8")
     cfg = json.loads(base_text)
     if cfg_override:
@@ -208,6 +209,7 @@ def improve_one(
         },
     )
     append_ledger_event(out_dir / "ledger" / "ledger.jsonl", event)
+    return run_id
 
 
 def _compute_verdict(bench: Dict[str, Any], risk_cfg: Dict[str, Any], data_quality_ok: bool) -> Dict[str, Any]:
