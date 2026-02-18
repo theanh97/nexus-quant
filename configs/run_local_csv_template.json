@@ -1,0 +1,61 @@
+{
+  "run_name": "local_csv_funding_carry",
+  "seed": 1337,
+  "venue": {
+    "name": "binance_usdm",
+    "kind": "crypto_perp",
+    "fees_verified": false
+  },
+  "data": {
+    "provider": "local_csv_v1",
+    "csv_dir": "/absolute/path/to/your/csv_dir",
+    "symbols": ["BTCUSDT", "ETHUSDT"]
+  },
+  "execution": {
+    "style": "taker",
+    "slippage_bps": 3.0,
+    "spread_bps": 0.0,
+    "impact": {
+      "model": "none",
+      "coef_bps": 0.0
+    }
+  },
+  "strategy": {
+    "name": "funding_carry_perp_v1",
+    "params": {
+      "k_per_side": 1,
+      "rebalance_on_funding": true,
+      "use_basis_proxy": false,
+      "basis_weight": 0.0,
+      "risk_weighting": "inverse_vol",
+      "vol_lookback_bars": 72,
+      "target_gross_leverage": 1.0
+    }
+  },
+  "costs": {
+    "fee_rate": 0.0004,
+    "slippage_rate": 0.0003,
+    "cost_multiplier": 1.0
+  },
+  "benchmark": {
+    "version": "v1",
+    "annualization": {
+      "periods_per_year": 8760
+    },
+    "walk_forward": {
+      "enabled": true,
+      "window_bars": 720,
+      "step_bars": 240
+    }
+  },
+  "risk": {
+    "max_drawdown": 0.35,
+    "max_turnover_per_rebalance": 2.0
+  },
+  "self_learn": {
+    "enabled": true,
+    "objective": "median_calmar",
+    "min_uplift": 0.05,
+    "holdout_fraction": 0.2
+  }
+}

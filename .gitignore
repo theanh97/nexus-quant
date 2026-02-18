@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime artifacts
+artifacts/
+artifacts_test/
+data/generated/
+logs/
+
+# Local env
+.env
+.env.*
+
+# Local research (often private / large)
+research/inbox/
+research/library/

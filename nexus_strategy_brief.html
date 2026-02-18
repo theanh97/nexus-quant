@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NEXUS Strategy Brief (7-Day Breakthrough)</title>
+    <style>
+      :root {
+        --bg0: #0b1020;
+        --bg1: #0f1a33;
+        --card: rgba(255, 255, 255, 0.06);
+        --card2: rgba(255, 255, 255, 0.085);
+        --stroke: rgba(255, 255, 255, 0.12);
+        --stroke2: rgba(255, 255, 255, 0.18);
+        --text: rgba(255, 255, 255, 0.92);
+        --muted: rgba(255, 255, 255, 0.72);
+        --faint: rgba(255, 255, 255, 0.55);
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+        --accent: #42d6c6;
+        --accent2: #ffb35c;
+        --shadow: 0 18px 70px rgba(0, 0, 0, 0.45);
+        --shadow2: 0 12px 30px rgba(0, 0, 0, 0.35);
+        --radius: 18px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        color: var(--text);
+        background: radial-gradient(1100px 700px at 20% -10%, rgba(66, 214, 198, 0.18), transparent 55%),
+          radial-gradient(900px 650px at 110% 10%, rgba(255, 179, 92, 0.16), transparent 55%),
+          radial-gradient(800px 800px at 45% 120%, rgba(99, 102, 241, 0.16), transparent 55%),
+          linear-gradient(165deg, var(--bg0), var(--bg1));
+        font-family: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+        letter-spacing: 0.2px;
+      }
+
+      a {
+        color: rgba(66, 214, 198, 0.92);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 34px 18px 80px;
+      }
+
+      header {
+        display: grid;
+        gap: 14px;
+        padding: 26px 22px;
+        border: 1px solid var(--stroke);
+        border-radius: calc(var(--radius) + 6px);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        position: relative;
+        animation: rise 520ms ease-out both;
+      }
+
+      header::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        background: radial-gradient(520px 220px at 25% 0%, rgba(66, 214, 198, 0.16), transparent 60%),
+          radial-gradient(520px 240px at 80% 10%, rgba(255, 179, 92, 0.14), transparent 60%);
+        pointer-events: none;
+        filter: blur(0.2px);
+      }
+
+      .kicker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        z-index: 1;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border: 1px solid var(--stroke);
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.18);
+        font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.78);
+      }
+
+      .pill b {
+        color: rgba(255, 255, 255, 0.93);
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(30px, 5vw, 44px);
+        line-height: 1.08;
+        z-index: 1;
+        letter-spacing: 0.1px;
+      }
+
+      .sub {
+        z-index: 1;
+        color: var(--muted);
+        font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        font-size: 15px;
+        line-height: 1.6;
+        max-width: 76ch;
+      }
+
+      .grid {
+        margin-top: 18px;
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr;
+        gap: 14px;
+        align-items: start;
+      }
+
+      @media (max-width: 920px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        border: 1px solid var(--stroke);
+        border-radius: var(--radius);
+        background: rgba(255, 255, 255, 0.05);
+        box-shadow: var(--shadow2);
+        overflow: hidden;
+        animation: rise 520ms ease-out both;
+      }
+
+      .card:nth-of-type(2) {
+        animation-delay: 70ms;
+      }
+      .card:nth-of-type(3) {
+        animation-delay: 120ms;
+      }
+      .card:nth-of-type(4) {
+        animation-delay: 180ms;
+      }
+
+      .card h2 {
+        margin: 0;
+        padding: 16px 18px 12px;
+        font-size: 16px;
+        letter-spacing: 0.2px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      .card .body {
+        padding: 14px 18px 18px;
+        font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        color: var(--muted);
+        line-height: 1.62;
+      }
+
+      .hl {
+        color: rgba(255, 255, 255, 0.92);
+      }
+
+      .note {
+        display: grid;
+        gap: 10px;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.15);
+        border: 1px dashed rgba(255, 255, 255, 0.18);
+        border-radius: 14px;
+        margin: 10px 0 0;
+      }
+
+      .note .line {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        margin-top: 6px;
+        background: var(--accent);
+        box-shadow: 0 0 0 4px rgba(66, 214, 198, 0.14);
+        flex: 0 0 auto;
+      }
+
+      .dot.warn {
+        background: var(--accent2);
+        box-shadow: 0 0 0 4px rgba(255, 179, 92, 0.14);
+      }
+
+      .dot.bad {
+        background: var(--bad);
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+      }
+
+      .kbd {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        padding: 2px 7px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.22);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 12px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th,
+      td {
+        padding: 12px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        vertical-align: top;
+      }
+      th {
+        text-align: left;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.88);
+      }
+      td {
+        color: rgba(255, 255, 255, 0.74);
+      }
+
+      .tagrow {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .tag {
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.14);
+        color: rgba(255, 255, 255, 0.78);
+        cursor: pointer;
+        user-select: none;
+        transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+      }
+      .tag:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.24);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .tag.active {
+        border-color: rgba(66, 214, 198, 0.6);
+        background: rgba(66, 214, 198, 0.12);
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      details {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 12px 12px;
+        margin-top: 10px;
+      }
+      details > summary {
+        cursor: pointer;
+        list-style: none;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.9);
+        font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      }
+      details > summary::-webkit-details-marker {
+        display: none;
+      }
+      details > summary .small {
+        display: block;
+        margin-top: 6px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.66);
+        line-height: 1.45;
+        font-size: 13px;
+      }
+      details .inside {
+        margin-top: 10px;
+        color: rgba(255, 255, 255, 0.72);
+        line-height: 1.6;
+        font-size: 13px;
+        font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      .callout {
+        border: 1px solid rgba(66, 214, 198, 0.28);
+        background: radial-gradient(900px 300px at 0% 0%, rgba(66, 214, 198, 0.15), rgba(255, 255, 255, 0.04));
+      }
+
+      .warnbox {
+        border: 1px solid rgba(255, 179, 92, 0.32);
+        background: radial-gradient(900px 280px at 0% 0%, rgba(255, 179, 92, 0.14), rgba(255, 255, 255, 0.04));
+      }
+
+      pre {
+        margin: 12px 0 0;
+        padding: 12px 12px;
+        border-radius: 14px;
+        background: rgba(0, 0, 0, 0.22);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        overflow-x: auto;
+        color: rgba(255, 255, 255, 0.84);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: 12.5px;
+        line-height: 1.55;
+      }
+
+      code {
+        font-family: inherit;
+      }
+
+      .cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      @media (max-width: 920px) {
+        .cols {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .mini {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 12px 12px;
+      }
+      .mini h3 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        font-weight: 800;
+        color: rgba(255, 255, 255, 0.9);
+        font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      }
+      .mini p {
+        margin: 0 0 8px;
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+        line-height: 1.6;
+        font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      .footer {
+        margin-top: 18px;
+        padding: 16px 18px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: var(--radius);
+        background: rgba(0, 0, 0, 0.12);
+        color: rgba(255, 255, 255, 0.62);
+        font-family: ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        font-size: 12.5px;
+        line-height: 1.6;
+        animation: rise 520ms ease-out both;
+        animation-delay: 220ms;
+      }
+
+      @keyframes rise {
+        from {
+          transform: translateY(10px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="kicker">
+          <div class="pill"><b>NEXUS</b> Strategy Brief</div>
+          <div class="pill">Goal: <b>48h MVP</b> + <b>7d Breakthrough</b></div>
+          <div class="pill">Output: <b>Benchmark-locked</b> evidence</div>
+        </div>
+        <h1>Vì sao “Funding/Basis Carry (Perp)” được ưu tiên hơn Momentum / Mean Reversion cho sprint 7 ngày?</h1>
+        <div class="sub">
+          Bạn đang tối ưu cho <span class="hl">tốc độ chứng minh</span> và <span class="hl">giảm rủi ro overfit</span>.
+          Trang này giải thích khái niệm + trade-off để bạn chốt hướng đi nhanh, khôn ngoan.
+        </div>
+      </header>
+
+      <div class="grid">
+        <section class="card callout">
+          <h2>1) Tư duy chọn “wedge” cho 7 ngày</h2>
+          <div class="body">
+            Trong 7 ngày, bạn không thiếu tốc độ dev. Bạn thiếu <span class="hl">thời gian backtest + lặp lại</span> và thiếu
+            <span class="hl">bằng chứng OOS</span>.
+            <div class="note">
+              <div class="line">
+                <span class="dot"></span>
+                <div>
+                  Chọn chiến lược có <span class="hl">cơ chế lợi nhuận đơn giản</span> (ít giả định, ít tham số) giúp “PASS/FAIL” nhanh.
+                </div>
+              </div>
+              <div class="line">
+                <span class="dot warn"></span>
+                <div>
+                  Momentum/Mean-Reversion có thể rất mạnh, nhưng thường cần nhiều quyết định thiết kế (features, filters, regime, risk model)
+                  → dễ kéo dài vòng lặp.
+                </div>
+              </div>
+              <div class="line">
+                <span class="dot bad"></span>
+                <div>
+                  Cross-exchange arbitrage sớm thường “ăn time” ở execution + fill model + latency + fee tier + transfer constraints.
+                  Nếu bạn chưa có infra sẵn, rủi ro trễ tiến độ cao.
+                </div>
+              </div>
+            </div>
+            <div class="tagrow" id="quickTags">
+              <div class="tag active" data-focus="funding">Funding/Basis Carry</div>
+              <div class="tag" data-focus="momentum">Momentum</div>
+              <div class="tag" data-focus="meanrev">Mean Reversion</div>
+              <div class="tag" data-focus="arb">Cross-Exchange Arb</div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="card">
+          <h2>2) Glossary (nhấn để mở)</h2>
+          <div class="body">
+            <details open>
+              <summary>Alpha, Benchmark, OOS là gì?<span class="small">Cốt lõi để bạn “kể câu chuyện” mà không bị bắt bẻ.</span></summary>
+              <div class="inside">
+                <p>
+                  <span class="hl">Alpha</span>: phần lợi nhuận “đến từ tín hiệu/edge” sau khi đã tính chi phí và rủi ro.
+                </p>
+                <p>
+                  <span class="hl">Benchmark</span>: mốc so sánh. Ví dụ: strategy gốc, buy&hold, trend 200DMA, vol-target…
+                </p>
+                <p>
+                  <span class="hl">OOS (Out-of-Sample)</span>: dữ liệu “không dùng để chọn tham số”. Đây là nơi chứng minh thật.
+                </p>
+              </div>
+            </details>
+            <details>
+              <summary>Locked Benchmark là gì?<span class="small">Vì sao “self-learn” chỉ an toàn khi benchmark bị khóa.</span></summary>
+              <div class="inside">
+                <p>
+                  <span class="hl">Locked Benchmark</span>: bộ đánh giá bị “đóng băng” (dataset version + split + code hash).
+                  Agent/model không được quyền sửa luật chơi.
+                </p>
+                <p>
+                  Lợi ích: tránh “tự học” kiểu tự tối ưu vào test set (overfit). Đây là nền tảng để bạn dám nói “Verified”.
+                </p>
+              </div>
+            </details>
+            <details>
+              <summary>Evidence Ledger / Audit trail là gì?<span class="small">Tại sao nó là moat.</span></summary>
+              <div class="inside">
+                <p>
+                  <span class="hl">Evidence Ledger</span>: nhật ký append-only cho mọi run: <span class="kbd">commit</span>,
+                  <span class="kbd">config</span>, <span class="kbd">seed</span>, <span class="kbd">data_version</span>, metrics, artifact.
+                </p>
+                <p>
+                  Khi người khác hỏi “bằng chứng đâu?”, bạn đưa ra ledger là họ có thể tái lập.
+                </p>
+              </div>
+            </details>
+            <details>
+              <summary>Ablation, Canary, Guardrails?<span class="small">3 khái niệm giúp “breakthrough” an toàn.</span></summary>
+              <div class="inside">
+                <p>
+                  <span class="hl">Ablation</span>: “tắt NEXUS đi” (hoặc bỏ 1 module) để chứng minh uplift thật.
+                </p>
+                <p>
+                  <span class="hl">Canary</span>: chạy thử (paper/small size) trước khi promote. Dùng để phát hiện drift sớm.
+                </p>
+                <p>
+                  <span class="hl">Guardrails/Risk OS</span>: giới hạn đòn bẩy, drawdown, exposure, turnover, kill-switch…
+                </p>
+              </div>
+            </details>
+          </div>
+        </aside>
+
+        <section class="card" id="comparison">
+          <h2>3) So sánh 4 hướng theo tiêu chí “ra kết quả nhanh + dễ chứng minh”</h2>
+          <div class="body">
+            <table>
+              <thead>
+                <tr>
+                  <th>Hướng</th>
+                  <th>Điểm mạnh cho sprint 7 ngày</th>
+                  <th>Khó ở đâu (time sink)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr id="row-funding">
+                  <td><span class="hl">Funding/Basis Carry (Perp)</span></td>
+                  <td>
+                    Cơ chế “premium/discount” rõ, ít degrees-of-freedom; baseline đơn giản; cost model tự nhiên
+                    (fees + slippage + funding).
+                  </td>
+                  <td>Regime shifts; risk management (crash); borrow/liq constraints (nếu dùng leverage).</td>
+                </tr>
+                <tr id="row-momentum">
+                  <td><span class="hl">Momentum (time-series)</span></td>
+                  <td>Rất phổ quát; dễ bắt trend dài; phù hợp multi-asset; câu chuyện rõ.</td>
+                  <td>Chọn horizon/filters/risk sizing; dễ “đẹp backtest” nhưng OOS yếu nếu tối ưu quá tay.</td>
+                </tr>
+                <tr id="row-meanrev">
+                  <td><span class="hl">Mean Reversion</span></td>
+                  <td>Có thể cho win-rate cao; hợp khung intraday; dễ xây rule-based.</td>
+                  <td>Execution/cost nhạy; tail risk (đi ngược trend); cần stop/filters/regime detection.</td>
+                </tr>
+                <tr id="row-arb">
+                  <td><span class="hl">Cross-Exchange Arbitrage</span></td>
+                  <td>Concept “alpha” dễ hiểu với market; có cảm giác moat infra.</td>
+                  <td>API + fee tier + latency + transfer + downtime; backtest khó mô phỏng fills thật; ops nặng.</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <details class="warnbox">
+              <summary>Điểm mấu chốt: “breakthrough” 7 ngày nghĩa là gì?<span class="small">Định nghĩa để khỏi tự lừa mình.</span></summary>
+              <div class="inside">
+                <p><span class="hl">Breakthrough</span> trong sprint này không nhất thiết là “alpha vĩnh cửu”. Nó là:</p>
+                <ul>
+                  <li>1 pipeline chạy lại được (1 lệnh), có benchmark-locked.</li>
+                  <li>1 case study có ablation: baseline vs improved (cost-adjusted, OOS).</li>
+                  <li>Evidence ledger đầy đủ để người khác audit.</li>
+                  <li>Canary plan + guardrails (để scale sau).</li>
+                </ul>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <section class="card" id="funding">
+          <h2>4) Funding/Basis Carry (Perp) là gì? (giải thích dễ hiểu)</h2>
+          <div class="body">
+            <p>
+              Trong perpetual futures (perp), sàn dùng <span class="hl">funding rate</span> để kéo giá perp về gần spot.
+              Nếu funding dương, người long trả tiền cho short; funding âm thì ngược lại.
+            </p>
+            <div class="note">
+              <div class="line">
+                <span class="dot"></span>
+                <div>
+                  “Carry” đơn giản: ưu tiên đứng phía được nhận funding (nhưng phải quản trị rủi ro vì giá có thể đi ngược).
+                </div>
+              </div>
+              <div class="line">
+                <span class="dot warn"></span>
+                <div>
+                  “Basis” là chênh lệch perp vs spot (hoặc futures vs spot). Nó liên quan đến funding/kỳ vọng.
+                </div>
+              </div>
+            </div>
+
+            <details open class="callout">
+              <summary>Cơ chế Funding: ai trả ai, và trả bao nhiêu?<span class="small">Bạn chỉ cần nhớ 1 quy tắc dấu.</span></summary>
+              <div class="inside">
+                <p>
+                  Perp không có ngày đáo hạn, nên sàn cần “neo giá” perp về gần index/spot. Funding là khoản thanh toán
+                  định kỳ giữa <span class="hl">Long</span> và <span class="hl">Short</span>.
+                </p>
+                <p class="hl">Quy tắc dấu:</p>
+                <ul>
+                  <li><span class="hl">Funding &gt; 0</span>: Long trả Short (Short nhận funding).</li>
+                  <li><span class="hl">Funding &lt; 0</span>: Short trả Long (Long nhận funding).</li>
+                </ul>
+                <p class="hl">Công thức đơn giản hoá:</p>
+                <pre><code>FundingPayment ≈ Notional * FundingRate
+Notional ≈ |PositionSize| * MarkPrice
+</code></pre>
+                <p>
+                  Mỗi sàn có chi tiết “premium index / interest component”, nhưng MVP chỉ cần đúng:
+                  <span class="hl">timestamp funding</span>, <span class="hl">sign</span>, và <span class="hl">notional</span>.
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary>Basis là gì? Nó liên quan gì tới carry?<span class="small">Tại sao cùng 1 funding nhưng PnL có thể khác.</span></summary>
+              <div class="inside">
+                <p>
+                  <span class="hl">Basis</span> (đơn giản) là chênh lệch giá:
+                </p>
+                <pre><code>Basis = PerpPrice - SpotIndexPrice
+BasisPct = (PerpPrice / SpotIndexPrice) - 1
+</code></pre>
+                <p>
+                  Khi perp đắt hơn spot (basis dương), thị trường thường đang “crowded long”. Funding hay dương.
+                  Carry trader hay đứng phía <span class="hl">short perp</span> (nhận funding), và nếu basis co lại, còn ăn thêm “convergence”.
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary>PnL decomposition: bạn kiếm tiền từ đâu, và mất tiền từ đâu?<span class="small">Phần giúp bạn audit chiến lược.</span></summary>
+              <div class="inside">
+                <p class="hl">Với 1 vị thế perp (chỉ perp):</p>
+                <pre><code>PnL ≈ Position * PriceMove  +  FundingPayment  -  Fees  -  Slippage
+</code></pre>
+                <p>
+                  Nếu bạn chỉ “ngả về phía nhận funding” nhưng vẫn để vị thế directional (net long/net short),
+                  thì PnL dễ bị <span class="hl">PriceMove</span> áp đảo.
+                </p>
+                <p class="hl">Với market-neutral (long spot + short perp khi funding dương):</p>
+                <pre><code>PnL ≈ FundingPayment  +  BasisConvergence  -  Costs (fees, slippage, borrow/custody, hedge errors)
+</code></pre>
+              </div>
+            </details>
+
+            <div class="cols">
+              <div class="mini">
+                <h3>Biến thể A: Market-Neutral (Spot + Perp)</h3>
+                <p><span class="hl">Khi funding dương</span>: short perp + long spot (delta gần 0) để nhận funding.</p>
+                <p>Ưu: PnL “sạch” hơn. Nhược: cần spot leg + custody/borrow + ops.</p>
+              </div>
+              <div class="mini">
+                <h3>Biến thể B: Perp-Only Cross-Sectional (nhanh nhất)</h3>
+                <p>Long nhóm funding âm (long nhận) và short nhóm funding dương (short nhận), cố gắng giữ <span class="hl">dollar-neutral</span>.</p>
+                <p>Ưu: không cần spot. Nhược: vẫn có basis/price risk (correlation, crash).</p>
+              </div>
+              <div class="mini">
+                <h3>Biến thể C: Directional Carry Overlay</h3>
+                <p>Ví dụ bạn vốn net-long, chỉ “ngả thêm” sang coins funding âm để nhận carry.</p>
+                <p>Ưu: đơn giản. Nhược: khó chứng minh alpha vì PnL bị thị trường áp đảo.</p>
+              </div>
+              <div class="mini warnbox">
+                <h3>Quick sanity check</h3>
+                <p>Backtest <span class="hl">cost x2</span> + walk-forward + stress days.</p>
+                <p>Bắt buộc có <span class="hl">ablation</span>: tắt funding signal → kết quả giảm.</p>
+              </div>
+            </div>
+
+            <details class="warnbox">
+              <summary>Những bẫy backtest hay gặp (funding/basis)<span class="small">Tránh 5 lỗi này để khỏi “alpha ảo”.</span></summary>
+              <div class="inside">
+                <ul>
+                  <li><span class="hl">Look-ahead funding</span>: dùng funding kỳ tới làm signal để vào trước khi nó xảy ra.</li>
+                  <li><span class="hl">Universe leakage</span>: chọn top volume bằng dữ liệu tương lai; phải dùng volume lagged.</li>
+                  <li><span class="hl">Fee/slippage</span> không thực tế: perp nhạy chi phí; phải mô hình hóa thẳng tay.</li>
+                  <li><span class="hl">Leverage/liquidation</span> bị bỏ qua: thêm exposure caps + stop/risk gate.</li>
+                  <li><span class="hl">Exchange risk</span>: downtime, funding anomalies, delist; ít nhất phải có “halt rules”.</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="callout">
+              <summary>MVP algo (perp-only) cực tối giản cho 7 ngày<span class="small">Đủ tạo evidence nhanh, rồi NEXUS tối ưu dần.</span></summary>
+              <div class="inside">
+                <pre><code>Schedule: mỗi 8h ngay trước funding
+Signal: zscore(funding_rate_lagged_1) + 0.5*zscore(basis_lagged_1h)
+Rank: short top K (funding dương cao), long bottom K (funding âm)
+Weights: inverse-vol, dollar-neutral, leverage cap
+Gates: maxDD, max turnover, min liquidity, crash filter
+PnL: price + funding - fees - slippage
+</code></pre>
+              </div>
+            </details>
+
+            <details>
+              <summary>MVP rule (ví dụ rất tối giản)<span class="small">Đủ để backtest nhanh và ra evidence.</span></summary>
+              <div class="inside">
+                <p>
+                  Universe: top 20–30 USDT‑M perps theo volume. Frequency: 1h.
+                </p>
+                <p>
+                  Rule: mỗi 8h (hoặc theo schedule funding), rank theo funding (hoặc basis proxy) → chọn 5–10 mã có carry hấp dẫn.
+                  Sizing theo volatility targeting + giới hạn leverage.
+                </p>
+                <p>
+                  Gate: max drawdown, max turnover, stress-day filter, fee/slippage model.
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary>Tại sao nó “nhanh” hơn cho 7 ngày?<span class="small">Lý do kỹ thuật, không phải marketing.</span></summary>
+              <div class="inside">
+                <ul>
+                  <li>Cơ chế lợi nhuận “hữu hình” (funding) → dễ viết baseline + dễ giải thích.</li>
+                  <li>Ít tham số hơn (so với momentum/meanrev multi-filter) → ít overfit hơn trong sprint ngắn.</li>
+                  <li>Chi phí giao dịch được “gắn vào bài toán” ngay từ đầu (funding/fees/slippage) → evidence mạnh.</li>
+                </ul>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <section class="card" id="momentum">
+          <h2>5) Momentum là gì? Vì sao không ưu tiên số 1 (nhưng vẫn làm được)</h2>
+          <div class="body">
+            <p>
+              <span class="hl">Momentum (time-series momentum)</span>: giá tăng có xu hướng tiếp tục tăng (trend following), giá giảm có xu hướng tiếp tục giảm.
+              Thường dựa trên return lookback (20–252 ngày) + risk sizing.
+            </p>
+            <details>
+              <summary>Vì sao sprint 7 ngày dễ bị “đẹp backtest”?<span class="small">Những điểm hay làm mất thời gian.</span></summary>
+              <div class="inside">
+                <ul>
+                  <li>Chọn horizon (20/60/120/252) + filters (vol, breakout, MA, time-of-day) → nhiều degrees-of-freedom.</li>
+                  <li>Regime dependence mạnh (range-bound vs trending) → cần robustness suite kỹ.</li>
+                  <li>Momentum intraday trong crypto bị fee/slippage “ăn” nhanh nếu turnover cao.</li>
+                </ul>
+              </div>
+            </details>
+            <details class="callout">
+              <summary>Nếu bạn muốn làm Momentum ngay, MVP nào là “khôn”?<span class="small">Cắt tối đa degrees-of-freedom.</span></summary>
+              <div class="inside">
+                <ul>
+                  <li>Chỉ 1–2 horizon (ví dụ 60d + 120d), không thêm 10 filters.</li>
+                  <li>Vol-target + rebalance thưa (daily/weekly) để giảm cost.</li>
+                  <li>Walk-forward cố định và stress cost x2 ngay từ đầu.</li>
+                </ul>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <section class="card" id="meanrev">
+          <h2>6) Mean Reversion là gì? Rủi ro chính nằm ở đâu</h2>
+          <div class="body">
+            <p>
+              <span class="hl">Mean Reversion</span>: giá lệch khỏi “giá trị trung bình” có xu hướng quay về.
+              Ví dụ: RSI oversold/overbought, z-score của spread, Bollinger Bands…
+            </p>
+            <details>
+              <summary>Điểm mạnh & điểm yếu kỹ thuật<span class="small">Vì sao thường “nhạy chi phí” và “tail risk”.</span></summary>
+              <div class="inside">
+                <ul>
+                  <li>Điểm mạnh: win-rate có thể cao, dễ tạo rule-based.</li>
+                  <li>Điểm yếu: khi trend mạnh, mean-reversion “bắt dao rơi” → cần stop + regime filter.</li>
+                  <li>Cost: intraday mean-reversion thường turnover cao; nếu không mô hình phí tốt thì backtest ảo.</li>
+                </ul>
+              </div>
+            </details>
+            <details class="callout">
+              <summary>MVP mean-reversion khôn ngoan (nếu bạn muốn)<span class="small">Giảm rủi ro “đốt 7 ngày”.</span></summary>
+              <div class="inside">
+                <ul>
+                  <li>Chọn timeframe dài hơn (1h/4h) thay vì 1m.</li>
+                  <li>Thêm 1 regime filter tối giản (ví dụ ADX/MA slope) để tránh trade khi trend mạnh.</li>
+                  <li>Hard stop + exposure cap + stress test crash days.</li>
+                </ul>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <section class="card" id="arb">
+          <h2>7) Cross-Exchange Arbitrage: khi nào nên làm (đúng lúc)</h2>
+          <div class="body">
+            <p>
+              Arbitrage giữa các sàn thường hấp dẫn vì “logic” rõ. Nhưng để chứng minh nhanh và đúng, bạn phải mô phỏng
+              <span class="hl">fills + latency + fee tier + transfer constraints</span>.
+            </p>
+            <details class="warnbox">
+              <summary>Vì sao nó hay làm trễ tiến độ?<span class="small">3 thứ hay phá sprint.</span></summary>
+              <div class="inside">
+                <ul>
+                  <li>Backtest không phản ánh microstructure thật → bạn tốn ngày để “fix fill model”.</li>
+                  <li>Ops: rate-limit, downtime, reconnect, order state sync…</li>
+                  <li>Edge bị ăn bởi fee/slippage nếu không có maker/taker optimization.</li>
+                </ul>
+              </div>
+            </details>
+            <details class="callout">
+              <summary>Khi nào nó trở thành “moat đúng” cho NEXUS?<span class="small">Sau khi đã có truth layer.</span></summary>
+              <div class="inside">
+                <p>
+                  Khi bạn đã có: locked benchmark + ledger + canary + risk OS, thì build arb/execution workforce sẽ “đẻ moat”.
+                  Lúc đó, hệ thống của bạn chứng minh được improvement liên tục và audit được.
+                </p>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>8) Kết luận nhanh (để bạn chốt quyết định)</h2>
+          <div class="body">
+            <p class="hl">Nếu mục tiêu là “ra breakthrough trong 7 ngày”, ưu tiên hướng có cơ chế rõ + ít degrees-of-freedom:</p>
+            <div class="note">
+              <div class="line">
+                <span class="dot"></span>
+                <div>
+                  Ưu tiên #1: <span class="hl">Funding/Basis Carry (single-venue)</span> + risk-managed overlay + evidence ledger.
+                </div>
+              </div>
+              <div class="line">
+                <span class="dot warn"></span>
+                <div>
+                  Song song (tuỳ bạn): Momentum hoặc Mean-Reversion nhưng bắt buộc “MVP tối giản” + locked eval.
+                </div>
+              </div>
+              <div class="line">
+                <span class="dot bad"></span>
+                <div>
+                  Để sau: Cross-exchange arbitrage nếu chưa có infra execution đầy đủ.
+                </div>
+              </div>
+            </div>
+
+            <details>
+              <summary>3 câu hỏi bạn chỉ cần trả lời để bắt đầu triển khai<span class="small">Trả lời xong là có thể viết checklist 48h.</span></summary>
+              <div class="inside">
+                <ol>
+                  <li>Wedge: funding/basis hay momentum hay mean-reversion (chọn 1 chính)?</li>
+                  <li>Universe: top bao nhiêu perp, timeframe (1h/4h/1d)?</li>
+                  <li>Breakthrough bạn muốn show: uplift metrics hay “verified self-learn” (auto-tune + canary)?</li>
+                </ol>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <section class="card callout" id="benchmark">
+          <h2>9) Benchmark v1: scorecard + chỉ số rõ ràng (không làm “khơi khơi”)</h2>
+          <div class="body">
+            <p>
+              Bạn đúng: muốn PR/định giá thì phải có <span class="hl">chỉ số rõ ràng</span> và <span class="hl">tái lập</span>.
+              Benchmark v1 nên chia 3 tầng để khỏi bị bắt bẻ:
+            </p>
+            <div class="note">
+              <div class="line">
+                <span class="dot"></span>
+                <div><span class="hl">T1 (bắt buộc)</span>: Ablation (strategy gốc vs strategy + NEXUS).</div>
+              </div>
+              <div class="line">
+                <span class="dot warn"></span>
+                <div><span class="hl">T2</span>: Public baselines (B&amp;H BTC/ETH, simple trend, vol-target).</div>
+              </div>
+              <div class="line">
+                <span class="dot bad"></span>
+                <div><span class="hl">T3</span>: Robustness (walk-forward, cost x2, regime split, stress days).</div>
+              </div>
+            </div>
+
+            <details open>
+              <summary>Scorecard tối thiểu (metric nào cũng phải có)<span class="small">Đây là bộ chỉ số “đủ thuyết phục” trong 7 ngày.</span></summary>
+              <div class="inside">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      <th>Nói lên điều gì</th>
+                      <th>Ghi chú (crypto/perp)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="hl">Net Return / CAGR</span></td>
+                      <td>Lợi nhuận sau phí (để so sánh trực quan)</td>
+                      <td>Crypto 24/7: annualize theo 365 ngày, không theo 252.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="hl">Volatility</span></td>
+                      <td>Độ biến động</td>
+                      <td>Dùng log returns hoặc simple returns nhất quán.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="hl">Sharpe</span></td>
+                      <td>Lợi nhuận trên mỗi unit rủi ro</td>
+                      <td>Risk-free thường ~0 cho crypto; annualize theo tần suất (1h/4h/1d).</td>
+                    </tr>
+                    <tr>
+                      <td><span class="hl">Sortino</span></td>
+                      <td>Phạt downside mạnh hơn (hợp crypto)</td>
+                      <td>Downside deviation giúp tránh “Sharpe ảo” do upside spikes.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="hl">Max Drawdown (MDD)</span></td>
+                      <td>Độ sụt giảm lớn nhất</td>
+                      <td>Quan trọng hơn return khi bạn muốn scale/raise.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="hl">Calmar</span></td>
+                      <td>CAGR / MDD (đánh đổi return vs drawdown)</td>
+                      <td>Crypto dùng Calmar dễ “đấm thẳng” hơn Sharpe.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="hl">Turnover</span></td>
+                      <td>Mức giao dịch (proxy cho cost)</td>
+                      <td>Turnover cao = dễ chết vì fee/slippage.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="hl">Cost breakdown</span></td>
+                      <td>Fees + slippage + funding contribution</td>
+                      <td>Với carry, cần tách PnL: price vs funding vs costs.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="hl">Beta/Correlation to BTC</span></td>
+                      <td>Có đang “ăn thị trường” không?</td>
+                      <td>Nếu beta cao, bạn đang chỉ long/short market chứ chưa chắc alpha.</td>
+                    </tr>
+                    <tr>
+                      <td><span class="hl">Stability</span></td>
+                      <td>Pass rate qua các windows</td>
+                      <td>Mục tiêu: improvement xuất hiện ở nhiều window, không chỉ 1 đoạn đẹp.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <details>
+              <summary>Công thức cần nhớ (đủ để “định nghĩa benchmark”)<span class="small">Không cần phức tạp hoá để bắt đầu.</span></summary>
+              <div class="inside">
+                <pre><code># Assume risk-free ~ 0 for crypto
+Sharpe ≈ mean(r) / std(r) * sqrt(annualization_factor)
+
+Calmar = CAGR / |MaxDrawdown|
+
+annualization_factor:
+  daily: 365
+  hourly: 365*24
+</code></pre>
+              </div>
+            </details>
+
+            <details class="warnbox">
+              <summary>Pass/Fail gợi ý cho sprint 7 ngày<span class="small">Bạn có thể chỉnh lại sau, nhưng phải chốt trước khi chạy.</span></summary>
+              <div class="inside">
+                <ul>
+                  <li><span class="hl">T1 uplift</span>: strategy + NEXUS phải tốt hơn baseline (cost-adjusted) theo Sharpe hoặc Calmar.</li>
+                  <li><span class="hl">Robustness</span>: vẫn pass khi fees/slippage x2 và khi split theo regime.</li>
+                  <li><span class="hl">Stability</span>: improvement xuất hiện ở đa số windows (walk-forward), không chỉ 1 khúc.</li>
+                  <li><span class="hl">Ablation</span>: tắt funding/basis signal → kết quả giảm rõ.</li>
+                </ul>
+              </div>
+            </details>
+          </div>
+        </section>
+
+        <section class="card" id="why-not-all">
+          <h2>10) “Dev dễ rồi, sao không làm hết?” (lý do phải chọn)</h2>
+          <div class="body">
+            <p>
+              Dev nhanh không giải quyết được 2 vấn đề làm bạn mất thời gian nhất: <span class="hl">selection bias</span> và
+              <span class="hl">compute + verification</span>.
+            </p>
+            <div class="note">
+              <div class="line">
+                <span class="dot bad"></span>
+                <div>
+                  Nếu bạn thử 20–50 chiến lược/hyperparams, kiểu gì cũng có vài cái “đẹp” chỉ vì may mắn. Không khóa benchmark/holdout
+                  thì bạn sẽ chọn nhầm “alpha ảo”.
+                </div>
+              </div>
+              <div class="line">
+                <span class="dot warn"></span>
+                <div>
+                  Mỗi chiến lược mới tăng degrees-of-freedom: horizon, filters, sizing, stops, universe… → tăng nguy cơ overfit và kéo dài backtest.
+                </div>
+              </div>
+              <div class="line">
+                <span class="dot"></span>
+                <div>
+                  Cách làm “đúng mà vẫn nhanh”: build framework hỗ trợ nhiều strategy, nhưng sprint này chọn <span class="hl">1 track chính</span>
+                  để tạo evidence/PR; các track khác chạy shadow dưới cùng evaluator/ledger.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="footer">
+        Gợi ý vận hành: “self-learn” chỉ được phép thay đổi policy/params khi PASS locked benchmark + canary ổn định.
+        Nếu muốn, mình sẽ chuyển nội dung này thành checklist triển khai 48h + 7 ngày theo đúng repo bạn đang build.
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const tags = Array.from(document.querySelectorAll("#quickTags .tag"));
+        const rows = {
+          funding: document.getElementById("row-funding"),
+          momentum: document.getElementById("row-momentum"),
+          meanrev: document.getElementById("row-meanrev"),
+          arb: document.getElementById("row-arb"),
+        };
+        const sections = {
+          funding: document.getElementById("funding"),
+          momentum: document.getElementById("momentum"),
+          meanrev: document.getElementById("meanrev"),
+          arb: document.getElementById("arb"),
+        };
+
+        function clearRowGlow() {
+          Object.values(rows).forEach((el) => {
+            if (!el) return;
+            el.style.background = "transparent";
+          });
+        }
+
+        function glow(key) {
+          clearRowGlow();
+          const row = rows[key];
+          if (row) {
+            row.style.background = "rgba(66, 214, 198, 0.08)";
+            row.style.transition = "background 180ms ease";
+            setTimeout(() => (row.style.background = "transparent"), 800);
+          }
+          const sec = sections[key];
+          if (sec) {
+            sec.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+
+        tags.forEach((tag) => {
+          tag.addEventListener("click", () => {
+            tags.forEach((t) => t.classList.remove("active"));
+            tag.classList.add("active");
+            glow(tag.dataset.focus);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,63 @@
+{
+  "run_name": "synthetic_momentum_demo",
+  "seed": 1337,
+  "venue": {
+    "name": "binance_usdm",
+    "kind": "crypto_perp",
+    "fees_verified": false
+  },
+  "data": {
+    "provider": "synthetic_perp_v1",
+    "start": "2025-01-01T00:00:00Z",
+    "end": "2026-01-01T00:00:00Z",
+    "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT"],
+    "bar_interval_minutes": 60,
+    "funding_interval_hours": 8
+  },
+  "execution": {
+    "style": "taker",
+    "slippage_bps": 3.0,
+    "spread_bps": 0.0,
+    "impact": {
+      "model": "none",
+      "coef_bps": 0.0
+    }
+  },
+  "strategy": {
+    "name": "momentum_xs_v1",
+    "params": {
+      "lookback_bars": 720,
+      "rebalance_interval_bars": 24,
+      "k_per_side": 2,
+      "risk_weighting": "inverse_vol",
+      "vol_lookback_bars": 72,
+      "target_gross_leverage": 1.0
+    }
+  },
+  "costs": {
+    "fee_rate": 0.0004,
+    "slippage_rate": 0.0003,
+    "cost_multiplier": 1.0
+  },
+  "benchmark": {
+    "version": "v1",
+    "annualization": {
+      "periods_per_year": 8760
+    },
+    "walk_forward": {
+      "enabled": true,
+      "window_bars": 720,
+      "step_bars": 240
+    }
+  },
+  "risk": {
+    "max_drawdown": 0.5,
+    "max_turnover_per_rebalance": 3.0
+  },
+  "self_learn": {
+    "enabled": true,
+    "objective": "median_sharpe",
+    "min_uplift": 0.05,
+    "holdout_fraction": 0.2
+  }
+}
