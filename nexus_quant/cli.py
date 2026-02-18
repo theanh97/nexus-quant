@@ -12,6 +12,7 @@ from .guardian_cli import guardian_main
 from .promote_cli import promote_main
 from .wisdom_cli import wisdom_main
 from .research_cli import research_main
+from .reflect_cli import reflect_main
 
 
 def _parse_args() -> argparse.Namespace:
@@ -63,6 +64,11 @@ def _parse_args() -> argparse.Namespace:
     w_p = sub.add_parser("wisdom", help="Curate long-horizon wisdom checkpoints (ledger + memory)")
     w_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
     w_p.add_argument("--tail-events", type=int, default=200, help="How many ledger events to summarize (default: 200)")
+
+    rf_p = sub.add_parser("reflect", help="Deterministic reflection (analyze evidence -> update safe overrides)")
+    rf_p.add_argument("--config", required=True, help="Path to JSON config")
+    rf_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    rf_p.add_argument("--tail-events", type=int, default=200, help="How many ledger events to scan (default: 200)")
     return p.parse_args()
 
 
@@ -92,6 +98,8 @@ def main() -> int:
         return promote_main(config_path=Path(args.config), best_params_path=Path(args.best), artifacts_dir=Path(args.artifacts), apply=bool(args.apply))
     if args.cmd == "wisdom":
         return wisdom_main(["--artifacts", str(args.artifacts), "--tail-events", str(args.tail_events)])
+    if args.cmd == "reflect":
+        return reflect_main(config_path=Path(args.config), artifacts_dir=Path(args.artifacts), tail_events=int(args.tail_events))
 
     cfg_path = Path(args.config)
     if not cfg_path.exists():

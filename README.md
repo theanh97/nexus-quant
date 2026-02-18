@@ -20,7 +20,7 @@ Run a small self-learning loop (search params, then re-evaluate):
 python3 -m nexus_quant improve --config configs/run_synthetic_funding.json --trials 30
 ```
 
-Run Orion autopilot (task bus: run -> improve -> wisdom -> handoff):
+Run Orion autopilot (task bus: run -> improve -> wisdom -> reflect -> handoff):
 
 ```bash
 python3 -m nexus_quant autopilot --config configs/run_synthetic_funding.json --bootstrap --steps 10
@@ -30,6 +30,12 @@ Curate long-horizon wisdom checkpoints (ledger + memory):
 
 ```bash
 python3 -m nexus_quant wisdom --artifacts artifacts --tail-events 200
+```
+
+Run deterministic reflection (analyze evidence -> update safe overrides):
+
+```bash
+python3 -m nexus_quant reflect --config configs/run_synthetic_funding.json --artifacts artifacts --tail-events 200
 ```
 
 Monitor autopilot heartbeat:

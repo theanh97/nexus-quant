@@ -1,2 +1,1 @@
-__all__ = ["hashing", "time"]
-
+__all__ = ["hashing", "merge", "time"]

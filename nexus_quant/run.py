@@ -15,6 +15,7 @@ from .backtest.costs import cost_model_from_config
 from .evaluation.benchmark import BenchmarkConfig, run_benchmark_pack_v1
 from .ledger.ledger import LedgerEvent, append_ledger_event
 from .self_learn.search import improve_strategy_params
+from .utils.merge import deep_merge
 
 
 def _utcnow_iso() -> str:
@@ -51,9 +52,12 @@ def _code_fingerprint() -> str:
     return sha256_text("\n".join(parts))[:16]
 
 
-def run_one(config_path: Path, out_dir: Path) -> None:
-    cfg_text = config_path.read_text(encoding="utf-8")
-    cfg = json.loads(cfg_text)
+def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str, Any]] = None) -> None:
+    base_text = config_path.read_text(encoding="utf-8")
+    cfg = json.loads(base_text)
+    if cfg_override:
+        cfg = deep_merge(cfg, cfg_override)
+    cfg_text = json.dumps(cfg, sort_keys=True)
 
     seed = int(cfg.get("seed", 0))
     run_name = str(cfg.get("run_name") or config_path.stem)
@@ -107,6 +111,8 @@ def run_one(config_path: Path, out_dir: Path) -> None:
         data_fingerprint=dataset.fingerprint,
         payload={
             "run_group_id": run_group_id,
+            "config_path": str(config_path),
+            "config_overrides": cfg_override or {},
             "venue": cfg.get("venue") or {},
             "execution": cfg.get("execution") or {},
             "costs": cfg.get("costs") or {},
@@ -124,9 +130,14 @@ def run_one(config_path: Path, out_dir: Path) -> None:
     append_ledger_event(out_dir / "ledger" / "ledger.jsonl", event)
 
 
-def improve_one(config_path: Path, out_dir: Path, trials: int = 30) -> None:
-    cfg_text = config_path.read_text(encoding="utf-8")
-    cfg = json.loads(cfg_text)
+def improve_one(
+    config_path: Path, out_dir: Path, trials: int = 30, *, cfg_override: Optional[Dict[str, Any]] = None
+) -> None:
+    base_text = config_path.read_text(encoding="utf-8")
+    cfg = json.loads(base_text)
+    if cfg_override:
+        cfg = deep_merge(cfg, cfg_override)
+    cfg_text = json.dumps(cfg, sort_keys=True)
     seed = int(cfg.get("seed", 0))
     run_name = str(cfg.get("run_name") or config_path.stem)
     config_id = _hash_run_identity(cfg_text)
@@ -185,7 +196,16 @@ def improve_one(config_path: Path, out_dir: Path, trials: int = 30) -> None:
         config_sha=sha256_text(cfg_text),
         code_fingerprint=code_fp,
         data_fingerprint=dataset.fingerprint,
-        payload={**improvement, "run_group_id": run_group_id, "venue": cfg.get("venue") or {}, "execution": cfg.get("execution") or {}, "costs": cfg.get("costs") or {}, "data": cfg.get("data") or {}},
+        payload={
+            **improvement,
+            "run_group_id": run_group_id,
+            "config_path": str(config_path),
+            "config_overrides": cfg_override or {},
+            "venue": cfg.get("venue") or {},
+            "execution": cfg.get("execution") or {},
+            "costs": cfg.get("costs") or {},
+            "data": cfg.get("data") or {},
+        },
     )
     append_ledger_event(out_dir / "ledger" / "ledger.jsonl", event)
 
@@ -194,7 +214,7 @@ def _compute_verdict(bench: Dict[str, Any], risk_cfg: Dict[str, Any], data_quali
     reasons = []
     summary = bench.get("summary") or {}
     mdd = float(summary.get("max_drawdown", 0.0) or 0.0)
-    turnover_avg = float(summary.get("turnover_avg", 0.0) or 0.0)
+    turnover_max = float(summary.get("turnover_max", 0.0) or 0.0)
 
     max_mdd = float(risk_cfg.get("max_drawdown") or 0.35)
     max_turnover = float(risk_cfg.get("max_turnover_per_rebalance") or 2.0)
@@ -203,14 +223,14 @@ def _compute_verdict(bench: Dict[str, Any], risk_cfg: Dict[str, Any], data_quali
         reasons.append("data_quality_fail")
     if mdd > max_mdd:
         reasons.append("mdd_gt_threshold")
-    if turnover_avg > max_turnover:
-        reasons.append("turnover_avg_gt_threshold")
+    if turnover_max > max_turnover:
+        reasons.append("turnover_max_gt_threshold")
 
     return {
         "pass": len(reasons) == 0,
         "reasons": reasons,
         "thresholds": {"max_drawdown": max_mdd, "max_turnover_per_rebalance": max_turnover},
-        "values": {"max_drawdown": round(mdd, 6), "turnover_avg": round(turnover_avg, 6)},
+        "values": {"max_drawdown": round(mdd, 6), "turnover_max": round(turnover_max, 6)},
     }
 
 

@@ -9,6 +9,8 @@ from typing import Any, Dict, Optional
 from ..memory.store import MemoryStore
 from ..run import run_one, improve_one
 from ..wisdom.curate import curate_wisdom
+from ..learning.reflection import reflect_and_update
+from .overrides import load_overrides
 from .tasks import TaskStore
 
 
@@ -49,6 +51,7 @@ class Orion:
             payload={"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir), "trials": int(self.cfg.trials)},
         )
         self.task_store.create(kind="wisdom", payload={"artifacts": str(self.cfg.artifacts_dir)})
+        self.task_store.create(kind="reflect", payload={"config": str(self.cfg.config_path), "artifacts": str(self.cfg.artifacts_dir)})
         self.task_store.create(kind="handoff", payload={"artifacts": str(self.cfg.artifacts_dir)})
 
     def run_once(self) -> Dict[str, Any]:
@@ -56,12 +59,17 @@ class Orion:
         if not task:
             return {"ok": True, "message": "no pending tasks"}
         try:
+            ov = load_overrides(self.cfg.artifacts_dir)
+            cfg_override = ov.get("config_overrides") if isinstance(ov, dict) else None
+            orion_ov = (ov.get("orion") or {}) if isinstance(ov, dict) else {}
+
             if task.kind == "run":
-                run_one(Path(task.payload["config"]), out_dir=Path(task.payload["out"]))
+                run_one(Path(task.payload["config"]), out_dir=Path(task.payload["out"]), cfg_override=cfg_override)
                 self.task_store.mark_done(task.id, {"ok": True})
                 return {"ok": True, "task": task.kind}
             if task.kind == "improve":
-                improve_one(Path(task.payload["config"]), out_dir=Path(task.payload["out"]), trials=int(task.payload.get("trials") or 30))
+                trials = int(orion_ov.get("trials") or task.payload.get("trials") or 30)
+                improve_one(Path(task.payload["config"]), out_dir=Path(task.payload["out"]), trials=trials, cfg_override=cfg_override)
                 self.task_store.mark_done(task.id, {"ok": True})
                 return {"ok": True, "task": task.kind}
             if task.kind == "handoff":
@@ -72,6 +80,14 @@ class Orion:
                 out = curate_wisdom(artifacts_dir=Path(task.payload["artifacts"]))
                 self.task_store.mark_done(task.id, out)
                 return {"ok": True, "task": task.kind, "wisdom": out}
+            if task.kind == "reflect":
+                out = reflect_and_update(
+                    config_path=Path(task.payload["config"]),
+                    artifacts_dir=Path(task.payload["artifacts"]),
+                    tail_events=200,
+                )
+                self.task_store.mark_done(task.id, out)
+                return {"ok": True, "task": task.kind, "reflect": out}
             raise ValueError(f"Unknown task kind: {task.kind}")
         except Exception as e:
             self.task_store.mark_failed(task.id, str(e))

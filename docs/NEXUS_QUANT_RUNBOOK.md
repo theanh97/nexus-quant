@@ -57,7 +57,7 @@ Mục tiêu của repo này: chạy R&D định lượng theo kiểu **audit đ�
 - Total return, CAGR, Vol
 - Sharpe, Sortino
 - Max drawdown, Calmar
-- Turnover
+- Turnover (avg + max per rebalance)
 - Beta/Corr vs BTC
 - Walk-forward stability (fraction profitable, fraction MDD ok)
 
@@ -114,11 +114,16 @@ Orion tạo task + chạy tuần tự:
 1. `run` (baseline backtest + benchmark + ledger)
 2. `improve` (self-learning + holdout + stress + ablation artifacts)
 3. `wisdom` (curate checkpoint: ledger + memory -> wisdom artifacts)
-4. `handoff` (tạo file bàn giao + câu hỏi cho human)
+4. `reflect` (deterministic reflection: phân tích evidence -> update safe overrides)
+5. `handoff` (tạo file bàn giao + câu hỏi cho human)
 
 Commands:
 - `python3 -m nexus_quant autopilot --config <cfg.json> --bootstrap --steps 10`
 - 24/7 mode: `python3 -m nexus_quant autopilot --config <cfg.json> --bootstrap --loop --interval-seconds 300`
+
+Reflection (deterministic, LLM-free):
+- `python3 -m nexus_quant reflect --config <cfg.json> --artifacts artifacts --tail-events 200`
+- Auto-updates safe overrides: `artifacts/state/overrides.json`
 
 Monitoring:
 - Heartbeat: `artifacts/state/orion_heartbeat.json`

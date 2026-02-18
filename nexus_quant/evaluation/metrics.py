@@ -110,9 +110,11 @@ def summarize(
 
     t_total = 0.0
     t_avg = 0.0
+    t_max = 0.0
     if trades:
         t_total = sum(float(x.get("turnover", 0.0)) for x in trades)
         t_avg = t_total / float(len(trades)) if trades else 0.0
+        t_max = max((float(x.get("turnover", 0.0)) for x in trades), default=0.0)
 
     out: Dict[str, Any] = {
         "periods": periods,
@@ -128,10 +130,10 @@ def summarize(
         "win_rate": win,
         "turnover_total": t_total,
         "turnover_avg": t_avg,
+        "turnover_max": t_max,
     }
 
     if benchmark_returns is not None:
         out.update(beta_and_corr(strategy_returns=returns, benchmark_returns=benchmark_returns))
 
     return out
-

@@ -93,6 +93,8 @@ class BacktestEngine:
                 weights = {s: float(target.get(s, 0.0)) for s in symbols}
                 trades.append(
                     {
+                        "idx": idx,
+                        "ts_epoch": int(ts),
                         "ts": iso_utc(ts),
                         "turnover": turnover,
                         **{k: bd[k] for k in sorted(bd.keys())},

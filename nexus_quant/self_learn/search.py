@@ -285,13 +285,22 @@ def _verdict(
     base_hold = base_eval["holdout"]
     cand_hold = cand_eval["holdout"]
 
-    passes_train = float(cand_train.get("max_drawdown", 0.0)) <= float(gates["max_drawdown"])
-    passes_hold = float(cand_hold.get("max_drawdown", 0.0)) <= float(gates["max_drawdown"])
+    mdd_train_ok = float(cand_train.get("max_drawdown", 0.0)) <= float(gates["max_drawdown"])
+    mdd_hold_ok = float(cand_hold.get("max_drawdown", 0.0)) <= float(gates["max_drawdown"])
+    turn_train_ok = float(cand_train.get("turnover_max", 0.0)) <= float(gates["max_turnover_per_rebalance"])
+    turn_hold_ok = float(cand_hold.get("turnover_max", 0.0)) <= float(gates["max_turnover_per_rebalance"])
 
-    if not passes_train:
+    passes_train = mdd_train_ok and turn_train_ok
+    passes_hold = mdd_hold_ok and turn_hold_ok
+
+    if not mdd_train_ok:
         reasons.append("train_mdd_gate_fail")
-    if not passes_hold:
+    if not mdd_hold_ok:
         reasons.append("holdout_mdd_gate_fail")
+    if not turn_train_ok:
+        reasons.append("train_turnover_gate_fail")
+    if not turn_hold_ok:
+        reasons.append("holdout_turnover_gate_fail")
 
     base_train_score = _objective_value(base_train, objective)
     cand_train_score = _objective_value(cand_train, objective)
@@ -325,8 +334,22 @@ def _eval_split(
     train_eq = equity_from_returns(train_r, start=1.0)
     hold_eq = equity_from_returns(hold_r, start=1.0)
 
-    train = summarize(train_r, train_eq, periods_per_year=periods_per_year, trades=None)
-    holdout = summarize(hold_r, hold_eq, periods_per_year=periods_per_year, trades=None)
+    trades = list(getattr(res, "trades", []) or [])
+    train_trades = []
+    hold_trades = []
+    for t in trades:
+        try:
+            idx = int(t.get("idx") or 0)
+        except Exception:
+            idx = 0
+        # Trade at bar idx impacts return index (idx-1).
+        if idx > 0 and (idx - 1) < split:
+            train_trades.append(t)
+        elif idx > 0:
+            hold_trades.append(t)
+
+    train = summarize(train_r, train_eq, periods_per_year=periods_per_year, trades=train_trades)
+    holdout = summarize(hold_r, hold_eq, periods_per_year=periods_per_year, trades=hold_trades)
 
     # Add simple windowed medians (objective-friendly) using bench walk-forward config.
     wf = getattr(bench_cfg, "walk_forward", None)
@@ -432,6 +455,27 @@ def _sample_candidate_cfg(
         cand["k_per_side"] = k
         cand["lookback_bars"] = pick("lookback_bars", cast=int, fallback=[6, 12, 24, 48, 72])
         cand["rebalance_interval_bars"] = pick("rebalance_interval_bars", cast=int, fallback=[6, 12, 24])
+        cand["risk_weighting"] = pick("risk_weighting", cast=str, fallback=["equal", "inverse_vol"])
+        cand["target_gross_leverage"] = pick("target_gross_leverage", cast=float, fallback=[0.6, 0.8, 1.0, 1.2])
+        return {"name": name, "params": cand}
+
+    if name == "multi_factor_xs_v1":
+        max_k = max(1, len(dataset.symbols) // 2)
+        k = pick("k_per_side", cast=int, fallback=[1, 2, 3, 4])
+        k = max(1, min(k, max_k))
+        cand = dict(base_params)
+        cand["k_per_side"] = k
+
+        cand["w_funding"] = pick("w_funding", cast=float, fallback=[0.5, 0.8, 1.0, 1.2, 1.6])
+        cand["w_basis"] = pick("w_basis", cast=float, fallback=[0.0, 0.2, 0.5, 0.8])
+        cand["w_momentum"] = pick("w_momentum", cast=float, fallback=[0.0, 0.2, 0.5, 0.8])
+        cand["w_mean_reversion"] = pick("w_mean_reversion", cast=float, fallback=[0.0, 0.2, 0.5, 0.8])
+
+        cand["momentum_lookback_bars"] = pick("momentum_lookback_bars", cast=int, fallback=[168, 336, 720, 1440])
+        cand["mean_reversion_lookback_bars"] = pick("mean_reversion_lookback_bars", cast=int, fallback=[6, 12, 24, 48, 72])
+        cand["rebalance_interval_bars"] = pick("rebalance_interval_bars", cast=int, fallback=[8, 24, 48, 168])
+        cand["rebalance_on_funding"] = pick("rebalance_on_funding", cast=lambda x: str(x).lower() in {"1", "true", "yes", "on"}, fallback=[False, True])
+        cand["use_basis_proxy"] = pick("use_basis_proxy", cast=lambda x: str(x).lower() in {"1", "true", "yes", "on"}, fallback=[True, False])
         cand["risk_weighting"] = pick("risk_weighting", cast=str, fallback=["equal", "inverse_vol"])
         cand["target_gross_leverage"] = pick("target_gross_leverage", cast=float, fallback=[0.6, 0.8, 1.0, 1.2])
         return {"name": name, "params": cand}
