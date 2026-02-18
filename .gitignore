@@ -8,7 +8,7 @@ __pycache__/
 
 # Runtime artifacts
 artifacts/
-artifacts_test/
+artifacts*/
 data/generated/
 logs/
 

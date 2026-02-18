@@ -137,9 +137,10 @@ def cost_model_from_config(
         taker_fee = venue_cfg.get("taker_fee_rate", venue_cfg.get("taker_fee"))
     fee_rate_legacy = costs_cfg.get("fee_rate")
     if maker_fee is None and taker_fee is None:
-        # If only fee_rate exists, treat as taker fee and set maker slightly lower by default.
+        # If only fee_rate exists, treat it as the fee for the selected execution style.
+        # (Don't guess maker/taker relationship; keep it conservative/auditable.)
         fr = max(0.0, float(fee_rate_legacy or 0.0))
-        maker_fee = fr * 0.6
+        maker_fee = fr
         taker_fee = fr
     fee = FeeModel(maker_fee_rate=max(0.0, float(maker_fee or 0.0)), taker_fee_rate=max(0.0, float(taker_fee or 0.0)))
 
