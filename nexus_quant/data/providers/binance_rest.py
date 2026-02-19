@@ -36,9 +36,15 @@ from .base import DataProvider
 _KLINES_URL = "https://fapi.binance.com/fapi/v1/klines"
 _FUNDING_URL = "https://fapi.binance.com/fapi/v1/fundingRate"
 
+# Positioning analytics endpoints (public, no auth required)
+_OI_HIST_URL = "https://fapi.binance.com/futures/data/openInterestHist"
+_GLOBAL_LS_URL = "https://fapi.binance.com/futures/data/globalLongShortAccountRatio"
+_TOP_LS_URL = "https://fapi.binance.com/futures/data/topLongShortPositionRatio"
+
 # Binance hard limits per request
 _KLINES_MAX_LIMIT = 1500
 _FUNDING_MAX_LIMIT = 1000
+_POSITIONING_MAX_LIMIT = 500  # /futures/data/* endpoints max 500 rows
 
 # Rate limiting: seconds to sleep between HTTP requests
 _RATE_SLEEP = 0.1
@@ -256,6 +262,99 @@ def _fetch_funding_paginated(
 
 
 # ---------------------------------------------------------------------------
+# Positioning data pagination helpers
+# ---------------------------------------------------------------------------
+
+def _fetch_positioning_paginated(
+    endpoint: str,
+    symbol: str,
+    period: str,
+    start_ms: int,
+    end_ms: int,
+    cache_dir: Path,
+    value_key: str,
+    label: str,
+) -> List[Dict[str, Any]]:
+    """
+    Fetch positioning analytics data (open interest, L/S ratios) from Binance
+    /futures/data/* endpoints.  These return max 500 rows per request.
+
+    IMPORTANT: These endpoints do NOT support `startTime`.  They only accept
+    `endTime` and `limit`, returning the most recent N rows before endTime.
+    Binance only retains approximately 30 days of history for these endpoints,
+    so historical backtests beyond ~30 days ago will have no positioning data.
+
+    We paginate backwards from endTime.
+
+    Parameters
+    ----------
+    endpoint   : Full URL (e.g. _OI_HIST_URL, _GLOBAL_LS_URL, _TOP_LS_URL)
+    symbol     : e.g. "BTCUSDT"
+    period     : Bar period e.g. "1h", "5m", "15m", "30m", "1d"
+    start_ms   : Start time in epoch milliseconds (lower bound for results)
+    end_ms     : End time in epoch milliseconds
+    cache_dir  : Local cache directory
+    value_key  : Key used in print label (for logging)
+    label      : Human-readable label for progress output
+
+    Returns list of raw API response dicts, each with a "timestamp" field (epoch ms),
+    sorted by timestamp ascending.
+    """
+    all_events: List[Dict[str, Any]] = []
+    cursor_end_ms = end_ms
+
+    # Interval in ms for cursor advancement
+    period_seconds = _INTERVAL_SECONDS.get(period, 3600)
+    period_ms = period_seconds * 1000
+
+    while cursor_end_ms > start_ms:
+        # These endpoints only take symbol, period, limit, and optionally endTime
+        params: Dict[str, Any] = {
+            "symbol": symbol,
+            "period": period,
+            "endTime": cursor_end_ms,
+            "limit": _POSITIONING_MAX_LIMIT,
+        }
+
+        from datetime import datetime, timezone
+        dt_label = datetime.fromtimestamp(cursor_end_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+        print(f"  Fetching {symbol} {label} endTime={dt_label} ...")
+
+        try:
+            events = _fetch_cached(endpoint, params, cache_dir)
+        except Exception as exc:
+            print(f"      [warn] Failed to fetch {label} for {symbol}: {exc}")
+            break
+
+        if not events or not isinstance(events, list):
+            break
+
+        # Filter to only keep events within [start_ms, end_ms)
+        filtered = [e for e in events if start_ms <= int(e.get("timestamp", 0)) < end_ms]
+        all_events.extend(filtered)
+
+        # Move cursor backwards: set endTime to just before the earliest returned event
+        first_ts = int(events[0].get("timestamp", 0))
+        cursor_end_ms = first_ts - period_ms
+
+        # If we got fewer rows than the limit, no more historical data available
+        if len(events) < _POSITIONING_MAX_LIMIT:
+            break
+
+    # Deduplicate and sort by timestamp ascending
+    seen: set = set()
+    unique_events: List[Dict[str, Any]] = []
+    for e in all_events:
+        ts = int(e.get("timestamp", 0))
+        if ts not in seen:
+            seen.add(ts)
+            unique_events.append(e)
+    unique_events.sort(key=lambda e: int(e.get("timestamp", 0)))
+
+    return unique_events
+
+
+# ---------------------------------------------------------------------------
 # Main provider class
 # ---------------------------------------------------------------------------
 
@@ -390,6 +489,101 @@ class BinanceRestProvider(DataProvider):
             funding[sym] = f_map
             print(f"  -> {len(f_map)} funding events loaded for {sym}")
 
+        # --- Step 2b: Fetch positioning data (OI, L/S ratios) -- best effort --
+        # These endpoints may not have data for all symbols or periods.
+        # We store per-symbol maps {ts_s -> value} and align later.
+        sym_oi: Dict[str, Dict[int, float]] = {}          # OI value in USD
+        sym_global_ls: Dict[str, Dict[int, float]] = {}   # global L/S ratio
+        sym_top_ls: Dict[str, Dict[int, float]] = {}      # top trader L/S ratio
+
+        # Only fetch positioning data if:
+        # 1. Bar interval is supported (1h, 5m, 15m, 30m, 1d)
+        # 2. Requested end time is within ~30 days of now (Binance only retains ~30d)
+        positioning_period = self.interval if self.interval in ("5m", "15m", "30m", "1h", "1d") else None
+        if positioning_period:
+            import time as _time
+            now_ms = int(_time.time() * 1000)
+            max_history_ms = 30 * 86400 * 1000  # 30 days
+            if end_ms < (now_ms - max_history_ms):
+                print(f"\n[BinanceRestProvider] Skipping positioning data (end={end_ms} is more than 30 days ago; Binance retains ~30 days)")
+                positioning_period = None
+        if positioning_period:
+            for sym in self.symbols:
+                # --- Open Interest History ---
+                print(f"\n[{sym}] Fetching open interest history ...")
+                raw_oi = _fetch_positioning_paginated(
+                    endpoint=_OI_HIST_URL,
+                    symbol=sym,
+                    period=positioning_period,
+                    start_ms=start_ms,
+                    end_ms=end_ms,
+                    cache_dir=self.cache_dir,
+                    value_key="sumOpenInterestValue",
+                    label="OI",
+                )
+                oi_map: Dict[int, float] = {}
+                for ev in raw_oi:
+                    ts_s = int(ev.get("timestamp", 0)) // 1000
+                    if ts_s < self.start_s or ts_s >= self.end_s:
+                        continue
+                    try:
+                        oi_map[ts_s] = float(ev.get("sumOpenInterestValue", 0.0))
+                    except (TypeError, ValueError):
+                        pass
+                sym_oi[sym] = oi_map
+                print(f"  -> {len(oi_map)} OI bars for {sym}")
+
+                # --- Global Long/Short Ratio ---
+                print(f"  [{sym}] Fetching global L/S ratio ...")
+                raw_gls = _fetch_positioning_paginated(
+                    endpoint=_GLOBAL_LS_URL,
+                    symbol=sym,
+                    period=positioning_period,
+                    start_ms=start_ms,
+                    end_ms=end_ms,
+                    cache_dir=self.cache_dir,
+                    value_key="longShortRatio",
+                    label="globalLS",
+                )
+                gls_map: Dict[int, float] = {}
+                for ev in raw_gls:
+                    ts_s = int(ev.get("timestamp", 0)) // 1000
+                    if ts_s < self.start_s or ts_s >= self.end_s:
+                        continue
+                    try:
+                        gls_map[ts_s] = float(ev.get("longShortRatio", 1.0))
+                    except (TypeError, ValueError):
+                        pass
+                sym_global_ls[sym] = gls_map
+                print(f"  -> {len(gls_map)} global L/S bars for {sym}")
+
+                # --- Top Trader Position Ratio ---
+                print(f"  [{sym}] Fetching top trader L/S ratio ...")
+                raw_tls = _fetch_positioning_paginated(
+                    endpoint=_TOP_LS_URL,
+                    symbol=sym,
+                    period=positioning_period,
+                    start_ms=start_ms,
+                    end_ms=end_ms,
+                    cache_dir=self.cache_dir,
+                    value_key="longShortRatio",
+                    label="topLS",
+                )
+                tls_map: Dict[int, float] = {}
+                for ev in raw_tls:
+                    ts_s = int(ev.get("timestamp", 0)) // 1000
+                    if ts_s < self.start_s or ts_s >= self.end_s:
+                        continue
+                    try:
+                        tls_map[ts_s] = float(ev.get("longShortRatio", 1.0))
+                    except (TypeError, ValueError):
+                        pass
+                sym_top_ls[sym] = tls_map
+                print(f"  -> {len(tls_map)} top trader L/S bars for {sym}")
+        else:
+            if self.interval not in ("5m", "15m", "30m", "1h", "1d"):
+                print(f"\n[BinanceRestProvider] Skipping positioning data (unsupported interval: {self.interval})")
+
         # --- Step 3: Build common timeline (intersection of available bars) --
         print("\n[BinanceRestProvider] Building aligned timeline ...")
         common_ts: Optional[set] = None
@@ -431,6 +625,56 @@ class BinanceRestProvider(DataProvider):
             funding[sym] = sym_funding_in_range
             funding_times[sym] = sorted(sym_funding_in_range.keys())
 
+        # --- Step 4b: Align positioning data to common timeline ----------------
+        # Positioning data may have gaps — we forward-fill from the last known
+        # value.  If no data is available at all for a symbol, we use 0.0 / 1.0
+        # defaults so the strategy can detect "no data" and skip gracefully.
+        open_interest: Optional[Dict[str, List[float]]] = None
+        long_short_ratio_global: Optional[Dict[str, List[float]]] = None
+        long_short_ratio_top: Optional[Dict[str, List[float]]] = None
+
+        if positioning_period and sym_oi:
+            open_interest = {}
+            long_short_ratio_global = {}
+            long_short_ratio_top = {}
+
+            for sym in self.symbols:
+                oi_src = sym_oi.get(sym, {})
+                gls_src = sym_global_ls.get(sym, {})
+                tls_src = sym_top_ls.get(sym, {})
+
+                oi_list: List[float] = []
+                gls_list: List[float] = []
+                tls_list: List[float] = []
+
+                # Forward-fill: carry last known value forward through gaps
+                last_oi = 0.0
+                last_gls = 1.0   # default L/S ratio = 1.0 (neutral)
+                last_tls = 1.0
+
+                for t in timeline:
+                    if t in oi_src:
+                        last_oi = oi_src[t]
+                    oi_list.append(last_oi)
+
+                    if t in gls_src:
+                        last_gls = gls_src[t]
+                    gls_list.append(last_gls)
+
+                    if t in tls_src:
+                        last_tls = tls_src[t]
+                    tls_list.append(last_tls)
+
+                open_interest[sym] = oi_list
+                long_short_ratio_global[sym] = gls_list
+                long_short_ratio_top[sym] = tls_list
+
+            # Count how many positioning bars we actually have
+            total_oi_pts = sum(len(sym_oi.get(s, {})) for s in self.symbols)
+            total_gls_pts = sum(len(sym_global_ls.get(s, {})) for s in self.symbols)
+            total_tls_pts = sum(len(sym_top_ls.get(s, {})) for s in self.symbols)
+            print(f"  -> Positioning aligned: OI={total_oi_pts}, globalLS={total_gls_pts}, topLS={total_tls_pts} raw points")
+
         # --- Step 5: Fingerprint ------------------------------------------
         fingerprint = self._compute_fingerprint(timeline, perp_close, funding)
         print(f"  -> fingerprint: {fingerprint[:16]}...")
@@ -451,6 +695,9 @@ class BinanceRestProvider(DataProvider):
             perp_index_close=None,
             bid_close=None,
             ask_close=None,
+            open_interest=open_interest,
+            long_short_ratio_global=long_short_ratio_global,
+            long_short_ratio_top=long_short_ratio_top,
             _funding_times=funding_times,
             meta={
                 "bar_interval": self.interval,

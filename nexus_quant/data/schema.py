@@ -30,6 +30,12 @@ class MarketDataset:
     perp_index_close: Optional[Dict[str, List[float]]] = None
     bid_close: Optional[Dict[str, List[float]]] = None
     ask_close: Optional[Dict[str, List[float]]] = None
+
+    # Positioning data (from Binance futures analytics endpoints)
+    open_interest: Optional[Dict[str, List[float]]] = None          # symbol -> [OI values per bar]
+    long_short_ratio_global: Optional[Dict[str, List[float]]] = None  # symbol -> [global L/S ratio per bar]
+    long_short_ratio_top: Optional[Dict[str, List[float]]] = None     # symbol -> [top trader L/S ratio per bar]
+
     meta: Dict[str, Any] = field(default_factory=dict)
 
     # Precomputed for fast "last funding before t" queries (optional).

@@ -16,6 +16,7 @@ from .nexus_alpha_v2 import NexusAlphaV2Strategy
 from .ml_factor_v3 import MLFactorV3Strategy
 from .regime_adaptive import NexusAlphaV1RegimeStrategy, NexusAlphaV1VolScaledStrategy
 from .orderflow_alpha import OrderflowAlphaV1Strategy
+from .positioning_alpha import PositioningAlphaV1Strategy
 from .nexus_ensemble_v1 import NexusEnsembleV1Strategy
 
 
@@ -51,6 +52,9 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
 
     if name == "orderflow_alpha_v1":
         return OrderflowAlphaV1Strategy(params=params)
+
+    if name == "positioning_alpha_v1":
+        return PositioningAlphaV1Strategy(params=params)
 
     if name == "nexus_ensemble_v1":
         return NexusEnsembleV1Strategy(params=params)
