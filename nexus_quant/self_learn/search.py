@@ -480,6 +480,24 @@ def _sample_candidate_cfg(
         cand["target_gross_leverage"] = pick("target_gross_leverage", cast=float, fallback=[0.6, 0.8, 1.0, 1.2])
         return {"name": name, "params": cand}
 
+    if name in ("nexus_alpha_v1", "nexus_alpha_v1_vol_scaled", "nexus_alpha_v1_regime"):
+        max_k = max(1, len(dataset.symbols) // 2)
+        k = pick("k_per_side", cast=int, fallback=[1, 2, 3])
+        k = max(1, min(k, max_k))
+        cand = dict(base_params)
+        cand["k_per_side"] = k
+        cand["w_carry"] = pick("w_carry", cast=float, fallback=[0.15, 0.25, 0.35, 0.45, 0.55])
+        cand["w_mom"] = pick("w_mom", cast=float, fallback=[0.25, 0.35, 0.45, 0.55, 0.65])
+        cand["w_confirm"] = pick("w_confirm", cast=float, fallback=[0.0, 0.10, 0.20, 0.30])
+        cand["w_mean_reversion"] = pick("w_mean_reversion", cast=float, fallback=[0.0, 0.05, 0.10, 0.20, 0.30])
+        cand["w_vol_momentum"] = pick("w_vol_momentum", cast=float, fallback=[0.0, 0.05, 0.10])
+        cand["w_funding_trend"] = pick("w_funding_trend", cast=float, fallback=[0.0, 0.05, 0.10])
+        cand["rebalance_interval_bars"] = pick("rebalance_interval_bars", cast=int, fallback=[72, 120, 168, 240, 336])
+        cand["target_gross_leverage"] = pick("target_gross_leverage", cast=float, fallback=[0.20, 0.30, 0.35, 0.45, 0.55])
+        cand["mr_lookback_bars"] = pick("mr_lookback_bars", cast=int, fallback=[24, 36, 48, 72, 96])
+        cand["risk_weighting"] = pick("risk_weighting", cast=str, fallback=["equal", "inverse_vol"])
+        return {"name": name, "params": cand}
+
     # Unknown strategy: no-op
     return {"name": name, "params": base_params}
 
