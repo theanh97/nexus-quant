@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pgrep:*)",
+      "Bash(done)",
+      "Read(//Library/**)",
+      "Read(//Applications/**)",
+      "Bash(\"/Users/qtmobile/Desktop/Nexus -:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/qtmobile/Desktop/Nexus - Quant Trading "
+    ]
+  }
+}

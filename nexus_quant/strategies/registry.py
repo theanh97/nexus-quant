@@ -11,6 +11,7 @@ from .ml_factor import MLFactorCrossSectionV1Strategy
 from .ensemble import EnsembleV1Strategy
 from .tsmom import TimeSerisMomentumV1Strategy
 from .combined_carry_mom import CombinedCarryMomentumV1Strategy
+from .nexus_alpha import NexusAlphaV1Strategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -31,6 +32,8 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
         return TimeSerisMomentumV1Strategy(params=params)
     if name == "combined_carry_mom_v1":
         return CombinedCarryMomentumV1Strategy(params=params)
+    if name == "nexus_alpha_v1":
+        return NexusAlphaV1Strategy(params=params)
 
     if name == "ensemble_v1":
         sub_cfgs = params.pop("sub_strategies", [])
