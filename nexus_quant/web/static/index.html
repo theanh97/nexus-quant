@@ -864,6 +864,16 @@
           </button>
           <button
             class="tab-btn"
+            id="tabbtn-console"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-console"
+            data-tab="console"
+          >
+            🖥 Console
+          </button>
+          <button
+            class="tab-btn"
             id="tabbtn-tasks"
             role="tab"
             aria-selected="false"
@@ -1331,6 +1341,78 @@
       <!-- =========================================================
         MARKET TAB — Live Binance Funding Rates + Market Overview
       ========================================================= -->
+
+      <!-- =========================================================
+        NEXUS CONSOLE TAB - Live events, alerts, notifications
+      ========================================================= -->
+      <section class="page" id="page-console" role="tabpanel" aria-labelledby="tabbtn-console" hidden>
+        <div class="grid two-even" style="margin-bottom:16px">
+          <!-- Alert Summary -->
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">⚠ Alert Status</div>
+                  <div class="card-sub">Live threshold monitoring (funding, drawdown, tasks)</div>
+                </div>
+                <button class="send-btn" onclick="runAlertCheck()" style="font-size:12px;padding:6px 14px" id="alert-check-btn">⚡ Run Check</button>
+              </div>
+              <div id="alert-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">
+                <div class="metric"><div class="label">Critical</div><div class="value red" id="alert-critical">—</div></div>
+                <div class="metric"><div class="label">Warnings</div><div class="value yellow" id="alert-warnings" style="color:var(--yellow)">—</div></div>
+                <div class="metric"><div class="label">Total</div><div class="value" id="alert-total">—</div></div>
+              </div>
+            </div>
+          </div>
+          <!-- Live Funding Rates snapshot -->
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div class="card-title">📡 Funding Signals</div>
+                <div class="card-sub">Current carry opportunities</div>
+              </div>
+              <div id="console-funding" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px">
+                <div class="muted" style="grid-column:1/-1;font-size:12px">Loading…</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alert Feed -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Alert Feed</div>
+                <div class="card-sub">Recent system alerts</div>
+              </div>
+              <button class="icon-btn" onclick="loadConsole()">↻</button>
+            </div>
+            <div style="overflow-x:auto;margin-top:12px">
+              <table class="table">
+                <thead><tr><th>Time</th><th>Level</th><th>Category</th><th>Message</th></tr></thead>
+                <tbody id="alerts-tbody"><tr><td colspan="4" class="muted">No alerts yet — click ⚡ Run Check</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEXUS Notifications -->
+        <div class="card">
+          <div class="card-inner">
+            <div class="card-header">
+              <div class="card-title">🔔 NEXUS Notifications</div>
+              <div class="card-sub">Internal system messages (diary entries, cycle completions, agent outputs)</div>
+            </div>
+            <div style="overflow-x:auto;margin-top:12px">
+              <table class="table">
+                <thead><tr><th>Time</th><th>Level</th><th>Message</th></tr></thead>
+                <tbody id="notif-tbody"><tr><td colspan="3" class="muted">No notifications yet</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
       <!-- =========================================================
         KANBAN TASKS TAB
       ========================================================= -->
@@ -2649,6 +2731,7 @@
         walkforward: loadWalkForward,
         risk: loadRisk,
         ledger: loadLedger,
+        console: loadConsole,
         market: loadMarket,
         tasks: loadTasks,
         reports: loadReports,
@@ -2890,6 +2973,92 @@
             sendChatMessage();
           }
         });
+      }
+
+
+      // ==========================================================
+      // NEXUS Console
+      // ==========================================================
+      const LEVEL_COLORS = { critical: 'var(--red)', warning: 'var(--yellow)', info: 'var(--accent)', success: 'var(--green)' };
+
+      async function loadConsole() {
+        try {
+          // Load alerts
+          const data = await fetchJSON('/api/alerts?limit=50');
+          const alerts = (data || {}).alerts || [];
+          const tbody = document.getElementById('alerts-tbody');
+          if (tbody) {
+            if (!alerts.length) {
+              tbody.innerHTML = '<tr><td colspan="4" class="muted">No alerts yet — click ⚡ Run Check</td></tr>';
+            } else {
+              tbody.innerHTML = alerts.map(a => {
+                const color = LEVEL_COLORS[a.level] || 'var(--muted)';
+                return '<tr>' +
+                  '<td class="mono muted">' + escapeHtml((a.ts||'').slice(0,16).replace('T',' ')) + '</td>' +
+                  '<td><span class="chip" style="color:' + color + ';border-color:' + color + '">' + escapeHtml(a.level||'').toUpperCase() + '</span></td>' +
+                  '<td class="mono">' + escapeHtml(a.category||'') + '</td>' +
+                  '<td style="font-size:13px">' + escapeHtml(a.message||'') + '</td>' +
+                  '</tr>';
+              }).join('');
+            }
+          }
+        } catch(e) { console.error(e); }
+
+        try {
+          // Load notifications
+          const notifs = await fetchJSON('/api/brain/notifications');
+          const nbody = document.getElementById('notif-tbody');
+          if (nbody) {
+            const list = Array.isArray(notifs) ? notifs : [];
+            if (!list.length) {
+              nbody.innerHTML = '<tr><td colspan="3" class="muted">No notifications</td></tr>';
+            } else {
+              nbody.innerHTML = list.map(n => {
+                const color = LEVEL_COLORS[n.level] || 'var(--muted)';
+                return '<tr>' +
+                  '<td class="mono muted">' + escapeHtml((n.ts||'').slice(0,16).replace('T',' ')) + '</td>' +
+                  '<td><span style="color:' + color + ';font-size:12px;font-weight:700">' + escapeHtml((n.level||'info').toUpperCase()) + '</span></td>' +
+                  '<td style="font-size:13px">' + escapeHtml(n.message||'') + '</td>' +
+                  '</tr>';
+              }).join('');
+            }
+          }
+        } catch(e) { console.error(e); }
+
+        // Load funding for console
+        try {
+          const mkt = await fetchJSON('/api/market');
+          const funding = (mkt||{}).funding || {};
+          const el = document.getElementById('console-funding');
+          if (el && Object.keys(funding).length) {
+            el.innerHTML = Object.entries(funding).map(([sym, f]) => {
+              const rate = f.rate_pct;
+              const color = rate > 0 ? 'var(--red)' : rate < 0 ? 'var(--green)' : 'var(--muted)';
+              const signal = Math.abs(rate) < 0.001 ? 'NEUTRAL' : rate > 0 ? 'SHORT' : 'LONG';
+              return '<div class="metric">' +
+                '<div class="label">' + escapeHtml(sym.replace('USDT','')) + '</div>' +
+                '<div class="value" style="color:' + color + ';font-size:18px">' + signal + '</div>' +
+                '<div class="hint">' + (rate>0?'+':'') + rate.toFixed(4) + '% · ' + (rate*3*365).toFixed(1) + '% APR</div>' +
+                '</div>';
+            }).join('');
+          }
+        } catch(e) {}
+      }
+
+      async function runAlertCheck() {
+        const btn = document.getElementById('alert-check-btn');
+        if (btn) { btn.textContent = '⏳ Checking…'; btn.disabled = true; }
+        try {
+          const r = await fetch('/api/alerts/check', { method: 'POST' });
+          const data = await r.json();
+          // Update summary
+          setText('alert-critical', String(data.critical || 0));
+          setText('alert-warnings', String(data.warnings || 0));
+          setText('alert-total', String(data.total_alerts || 0));
+          // Reload alert feed
+          await loadConsole();
+        } catch(e) { console.error(e); }
+        if (btn) { btn.textContent = '⚡ Run Check'; btn.disabled = false; }
       }
 
       // ==========================================================

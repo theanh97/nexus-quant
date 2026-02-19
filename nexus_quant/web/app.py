@@ -717,6 +717,34 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         except Exception as e:
             return JSONResponse({"response": f"Error: {e}"})
 
+    @app.get("/api/alerts")
+    def api_alerts(limit: int = 30) -> JSONResponse:
+        """Return recent NEXUS system alerts."""
+        try:
+            from ..monitoring.alert_engine import AlertEngine
+            engine = AlertEngine(artifacts_dir)
+            alerts = engine.recent_alerts(limit=limit)
+            return JSONResponse({"alerts": alerts, "total": len(alerts)})
+        except Exception as e:
+            return JSONResponse({"alerts": [], "error": str(e)})
+
+    @app.post("/api/alerts/check")
+    async def api_alerts_check() -> JSONResponse:
+        """Run a full alert check with live market data."""
+        try:
+            from ..monitoring.alert_engine import AlertEngine
+            from ..tools.web_research import fetch_binance_funding_rates
+            market_data: Dict[str, Any] = {}
+            for sym in ["BTCUSDT", "ETHUSDT", "SOLUSDT"]:
+                rates = fetch_binance_funding_rates(sym, limit=1)
+                if rates:
+                    market_data[sym] = {"latest_rate": float(rates[0].get("fundingRate", 0))}
+            engine = AlertEngine(artifacts_dir)
+            result = engine.run_full_check(market_data=market_data)
+            return JSONResponse(result)
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
     @app.get("/api/market")
     def api_market() -> JSONResponse:
         """Live Binance market data: funding rates + top tickers."""
