@@ -19,3 +19,5 @@ logs/
 # Local research (often private / large)
 research/inbox/
 research/library/
+.cache/
+.cache/

@@ -1,5 +1,5 @@
 {
-  "run_name": "binance_ml_factor_live",
+  "run_name": "binance_ml_factor_v2",
   "seed": 42,
   "venue": {"name": "binance_usdm", "kind": "crypto_perp", "vip_tier": 0},
   "data": {
@@ -14,20 +14,25 @@
   "strategy": {
     "name": "ml_factor_xs_v1",
     "params": {
-      "k_per_side": 2,
-      "ols_window": 504,
-      "ols_refit_every": 24,
-      "ols_min_samples": 60,
-      "min_warmup_bars": 600,
+      "k_per_side": 1,
+      "ols_window": 720,
+      "ols_refit_every": 168,
+      "ols_min_samples": 200,
+      "min_warmup_bars": 720,
       "risk_weighting": "inverse_vol",
-      "vol_lookback_bars": 72,
-      "target_gross_leverage": 1.0,
-      "rebalance_interval_bars": 24
+      "vol_lookback_bars": 336,
+      "target_gross_leverage": 0.25,
+      "rebalance_interval_bars": 168
     }
   },
   "costs": {"fee_rate": 0.0005, "slippage_rate": 0.0003, "cost_multiplier": 1.0},
   "benchmark": {"version": "v1", "walk_forward": {"enabled": true}},
-  "risk": {"max_drawdown": 0.35, "max_turnover_per_rebalance": 1.5},
+  "risk": {
+    "max_drawdown": 0.20,
+    "max_turnover_per_rebalance": 0.5,
+    "max_gross_leverage": 0.5,
+    "max_position_per_symbol": 0.25
+  },
   "self_learn": {
     "enabled": true,
     "objective": "median_calmar",
