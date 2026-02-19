@@ -105,6 +105,19 @@ def _parse_args() -> argparse.Namespace:
     tg_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
     tg_p.add_argument("--config", default=None, help="Config for /run command (default: auto-detect)")
 
+    lr_p = sub.add_parser("learn", help="Run NEXUS daily research & self-learning cycle (50+ sources)")
+    lr_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    lr_p.add_argument("--configs", default=None, help="Configs dir (default: auto-detect)")
+    lr_p.add_argument("--loop", action="store_true", help="Run continuously")
+    lr_p.add_argument("--interval", type=int, default=86400, help="Seconds between cycles (default: 86400=24h)")
+    lr_p.add_argument("--max-cycles", type=int, default=0, help="Stop after N cycles (0=infinite)")
+
+    al_p = sub.add_parser("alpha_loop", help="Run AlphaLoop: continuous backtest all strategies, promote champion")
+    al_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    al_p.add_argument("--configs", default=None, help="Configs dir (default: project_root/configs)")
+    al_p.add_argument("--interval", type=int, default=3600, help="Seconds between cycles (default: 3600=1h)")
+    al_p.add_argument("--max-cycles", type=int, default=0, help="Stop after N cycles (0=infinite)")
+
     return p.parse_args()
 
 
@@ -222,6 +235,31 @@ def main() -> int:
         bot = TelegramBot(Path(args.artifacts), config_path=cfg)
         bot.start_polling()
         return 0
+
+    if args.cmd == "learn":
+        from .research.daily_routine import DailyRoutine
+        configs_dir = Path(args.configs) if getattr(args, "configs", None) else None
+        routine = DailyRoutine(
+            artifacts_dir=Path(args.artifacts),
+            configs_dir=configs_dir,
+        )
+        if args.loop:
+            max_c = int(args.max_cycles) if args.max_cycles else None
+            routine.run_continuous(interval_hours=args.interval / 3600.0, max_cycles=max_c)
+        else:
+            result = routine.run_full_day()
+            print(json.dumps(result, indent=2, default=str))
+        return 0
+
+    if args.cmd == "alpha_loop":
+        from .orchestration.alpha_loop import alpha_loop_main
+        configs_dir = Path(args.configs) if getattr(args, "configs", None) else None
+        return alpha_loop_main(
+            artifacts_dir=Path(args.artifacts),
+            configs_dir=configs_dir,
+            interval_seconds=int(args.interval),
+            max_cycles=int(args.max_cycles),
+        )
 
     if args.cmd == "dump-config":
         data = json.loads(cfg_path.read_text(encoding="utf-8"))
