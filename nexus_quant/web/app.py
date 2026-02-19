@@ -20,6 +20,8 @@ try:
     from pydantic import BaseModel
     class ChatRequest(BaseModel):
         message: str = ""
+        model: str = "glm-5"
+        history: list = []
     class FeedbackRequest(BaseModel):
         message: str = ""
         tags: List[str] = []
@@ -804,6 +806,17 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             if m:
                 ctx["metrics"] = m.get("summary") or {}
 
+            # Memory tree context injection (token-efficient)
+            try:
+                from ..memory.tree import MemoryTree
+                _mtree = MemoryTree()
+                _mtree.populate_from_phases()
+                mem_ctx = _mtree.context_for_query(user_msg, max_tokens=500)
+                if mem_ctx:
+                    ctx["memory_tree"] = mem_ctx
+            except Exception:
+                pass
+
             # Load wisdom
             wp = artifacts_dir / "wisdom" / "latest.json"
             if wp.exists():
@@ -839,7 +852,8 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 augmented = user_msg
                 if rag_ctx:
                     augmented = f"{user_msg}\n\nRelevant context (RAG):\n{rag_ctx}"
-                response = answer_question(augmented, ctx, persona=NEXUS_PERSONA)
+                selected_model = str(getattr(body, "model", None) or "glm-5")
+                response = answer_question(augmented, ctx, persona=NEXUS_PERSONA, model=selected_model)
             except Exception as e:
                 response = f"I encountered an issue processing your question: {e}"
 
@@ -895,6 +909,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             payload: Dict[str, Any] = {
                 "response": response,
                 "ts": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+                "model_used": selected_model,
             }
             if tool_result is not None:
                 payload["tool_result"] = tool_result
