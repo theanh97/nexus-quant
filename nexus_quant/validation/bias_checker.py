@@ -335,12 +335,81 @@ def bonferroni_correction(p_values: List[float], alpha: float = 0.05) -> Dict[st
     }
 
 
+def check_survivorship_risk(
+    backtest_start_year: int,
+    universe_selection_year: int = 2024,
+    symbols: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Detects survivorship bias risk when the symbol universe was selected
+    from a later date than the backtest period.
+
+    Known delisted/collapsed coins that would have been in top-10 at various dates:
+    - LUNAUSDT: Top-10 by market cap in Q1 2022, collapsed May 2022
+    - FTTUSDT: Top-20 in 2021-2022, delisted Nov 2022 (FTX collapse)
+
+    Returns: {risk_level, reason, confidence_adjustment, flags}
+    """
+    flags: List[str] = []
+    gap_years = universe_selection_year - backtest_start_year
+
+    if gap_years <= 0:
+        return {
+            "risk_level": "LOW",
+            "reason": "Backtest period is contemporaneous with universe selection",
+            "confidence_adjustment": 0.0,
+            "gap_years": gap_years,
+            "flags": [],
+        }
+
+    if gap_years >= 3:
+        risk = "HIGH"
+        adj = -0.15
+        flags.append("survivorship_gap_3yr_plus")
+    elif gap_years >= 1:
+        risk = "MEDIUM"
+        adj = -0.08
+        flags.append("survivorship_gap_1_2yr")
+    else:
+        risk = "LOW"
+        adj = 0.0
+
+    # Check for known problematic years
+    if backtest_start_year <= 2021 and universe_selection_year >= 2024:
+        flags.append("pre_luna_ftt_universe")
+        adj = min(adj, -0.15)
+        risk = "HIGH"
+    elif backtest_start_year <= 2022 and universe_selection_year >= 2024:
+        flags.append("pre_ftt_universe")
+        if risk != "HIGH":
+            adj = min(adj, -0.10)
+            risk = "MEDIUM"
+
+    reason = (
+        f"Universe selected in {universe_selection_year} but backtest starts in "
+        f"{backtest_start_year} ({gap_years}yr gap). Coins that crashed/delisted "
+        f"between {backtest_start_year} and {universe_selection_year} are excluded, "
+        f"inflating historical results by est. 0.2-0.5 Sharpe."
+    )
+
+    return {
+        "risk_level": risk,
+        "reason": reason,
+        "confidence_adjustment": adj,
+        "gap_years": gap_years,
+        "flags": flags,
+    }
+
+
 def run_full_bias_check(
     returns: List[float],
     is_returns: Optional[List[float]] = None,
     oos_returns: Optional[List[float]] = None,
     n_params_searched: int = 1,
     periods_per_year: float = 8760,
+    backtest_start_year: Optional[int] = None,
+    universe_selection_year: int = 2024,
+    symbols: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     Runs all bias checks and returns a comprehensive report.
@@ -365,6 +434,15 @@ def run_full_bias_check(
             "flags": ["is_oos_not_provided"],
         }
 
+    # Survivorship bias check
+    survivorship: Dict[str, Any] = {"risk_level": "SKIPPED", "confidence_adjustment": 0.0, "flags": []}
+    if backtest_start_year is not None:
+        survivorship = check_survivorship_risk(
+            backtest_start_year=backtest_start_year,
+            universe_selection_year=universe_selection_year,
+            symbols=symbols,
+        )
+
     flags: List[str] = []
     if sharpe_sig.get("n", 0) < 30:
         flags.append("sample_size_small")
@@ -374,6 +452,8 @@ def run_full_bias_check(
         flags.append("likely_overfit")
     if is_oos.get("verdict") == "FAIL":
         flags.extend([f"is_oos:{f}" for f in is_oos.get("flags", [])])
+    if survivorship.get("risk_level") in ("HIGH", "MEDIUM"):
+        flags.extend([f"survivorship:{f}" for f in survivorship.get("flags", [])])
 
     # Confidence score in [0, 1]
     confidence = 0.5
@@ -396,6 +476,10 @@ def run_full_bias_check(
     elif is_oos.get("verdict") == "FAIL":
         confidence -= 0.2
 
+    # Apply survivorship bias adjustment
+    surv_adj = float(survivorship.get("confidence_adjustment", 0.0))
+    confidence += surv_adj
+
     confidence = max(0.0, min(1.0, confidence))
 
     if "sharpe_not_significant_95" in flags:
@@ -408,7 +492,12 @@ def run_full_bias_check(
         overall_verdict = "PASS"
 
     return {
-        "checks": {"sharpe_sig": sharpe_sig, "overfitting": overfitting, "is_oos": is_oos},
+        "checks": {
+            "sharpe_sig": sharpe_sig,
+            "overfitting": overfitting,
+            "is_oos": is_oos,
+            "survivorship": survivorship,
+        },
         "flags": flags,
         "overall_verdict": overall_verdict,
         "confidence_score": confidence,

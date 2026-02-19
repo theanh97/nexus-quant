@@ -121,10 +121,23 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
 
         returns = result.returns if hasattr(result, "returns") else result.to_dict().get("returns", [])
         if returns:
+            # Extract backtest start year for survivorship bias check
+            _data_start = str((cfg.get("data") or {}).get("start") or "")
+            _bt_start_year = None
+            if _data_start:
+                try:
+                    _bt_start_year = int(_data_start[:4])
+                except (ValueError, IndexError):
+                    pass
+            _symbols = list((cfg.get("data") or {}).get("symbols") or [])
+
             bias = run_full_bias_check(
                 returns,
                 n_params_searched=int(cfg.get("self_learn", {}).get("n_trials", 1)),
                 periods_per_year=8760.0,
+                backtest_start_year=_bt_start_year,
+                universe_selection_year=2024,
+                symbols=_symbols,
             )
             bench["bias_check"] = {
                 "verdict": bias["overall_verdict"],
@@ -133,6 +146,7 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
                 "sharpe_tstat": bias["checks"]["sharpe_sig"].get("t_stat"),
                 "significant_95": bias["checks"]["sharpe_sig"].get("significant_95"),
                 "likely_overfit": bias["checks"]["overfitting"].get("likely_overfit"),
+                "survivorship_risk": bias["checks"].get("survivorship", {}).get("risk_level", "SKIPPED"),
             }
     except Exception as e:
         bench["bias_check"] = {"error": str(e)}
