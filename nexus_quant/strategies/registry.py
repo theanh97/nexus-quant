@@ -21,6 +21,7 @@ from .nexus_ensemble_v1 import NexusEnsembleV1Strategy
 from .nexus_ensemble_v2 import NexusEnsembleV2Strategy
 from .funding_carry_alpha import FundingCarryAlphaStrategy
 from .low_vol_alpha import LowVolAlphaStrategy
+from .regime_switch_ensemble import RegimeSwitchEnsembleStrategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -70,6 +71,9 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
 
     if name == "low_vol_alpha":
         return LowVolAlphaStrategy(params=params)
+
+    if name == "regime_switch_ensemble":
+        return RegimeSwitchEnsembleStrategy(params=params)
 
     if name == "ensemble_v1":
         sub_cfgs = params.pop("sub_strategies", [])

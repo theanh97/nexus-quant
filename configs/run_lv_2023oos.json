@@ -1,0 +1,27 @@
+{
+  "run_name": "low_vol_alpha_2023",
+  "seed": 42,
+  "venue": {"name": "binance_usdm", "kind": "crypto_perp", "vip_tier": 0},
+  "data": {
+    "provider": "binance_rest_v1",
+    "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT"],
+    "start": "2023-01-01",
+    "end": "2024-01-01",
+    "bar_interval": "1h",
+    "cache_dir": ".cache/binance_rest"
+  },
+  "execution": {"style": "taker", "slippage_bps": 3.0},
+  "strategy": {
+    "name": "low_vol_alpha",
+    "params": {
+      "k_per_side": 2,
+      "vol_lookback_bars": 168,
+      "target_gross_leverage": 0.35,
+      "rebalance_interval_bars": 24
+    }
+  },
+  "costs": {"fee_rate": 0.0005, "slippage_rate": 0.0003, "cost_multiplier": 1.0},
+  "benchmark": {"version": "v1", "walk_forward": {"enabled": false}},
+  "risk": {"max_drawdown": 0.20, "max_turnover_per_rebalance": 0.8, "max_gross_leverage": 0.7, "max_position_per_symbol": 0.3},
+  "self_learn": {"enabled": false}
+}
