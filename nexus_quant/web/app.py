@@ -306,6 +306,59 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         except Exception as e:
             return JSONResponse({"error": str(e)})
 
+    @app.get("/api/memory/curator")
+    def api_memory_curator() -> JSONResponse:
+        """Curated semantic memory summary + stagnation + strategy registry."""
+        try:
+            from ..memory.curator import MemoryCurator
+
+            curator = MemoryCurator(artifacts_dir)
+            knowledge = _read_json(curator.curated_knowledge_path) or []
+            if not isinstance(knowledge, list):
+                knowledge = []
+
+            def _score(e: Dict[str, Any]) -> float:
+                try:
+                    return float(((e.get("scores") or {}).get("score")) or 0.0)
+                except Exception:
+                    return 0.0
+
+            top = sorted([e for e in knowledge if isinstance(e, dict)], key=_score, reverse=True)[:20]
+            slim_top = [
+                {
+                    "strategy": e.get("strategy"),
+                    "date": e.get("date"),
+                    "score": _score(e),
+                    "insight": (e.get("insight") or "")[:400],
+                }
+                for e in top
+            ]
+
+            return JSONResponse(
+                {
+                    "curated_knowledge": {
+                        "total_entries": len(knowledge),
+                        "top_entries": slim_top,
+                    },
+                    "stagnation": curator.detect_stagnation(),
+                    "strategy_registry": curator.get_strategy_registry(),
+                }
+            )
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
+    @app.post("/api/memory/curate")
+    def api_memory_curate() -> JSONResponse:
+        """Trigger a full memory curation run."""
+        try:
+            from ..memory.curator import MemoryCurator
+
+            curator = MemoryCurator(artifacts_dir)
+            result = curator.curate()
+            return JSONResponse(result or {})
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
     @app.get("/api/status")
     def api_status() -> JSONResponse:
         """Quick health check + summary."""

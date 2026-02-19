@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>NEXUS — Autonomous Quant Workforce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#F8FAFC;--surface:#FFFFFF;--surface2:#F1F5F9;--border:#E2E8F0;
+  --accent:#2563EB;--accent-hover:#1D4ED8;--accent-light:#EFF6FF;
+  --green:#16A34A;--green-light:#F0FDF4;--red:#DC2626;--red-light:#FEF2F2;
+  --yellow:#D97706;--yellow-light:#FFFBEB;--purple:#7C3AED;--purple-light:#F5F3FF;
+  --fg:#0F172A;--fg-muted:#64748B;--fg-light:#94A3B8;
+  --shadow:0 1px 3px rgba(0,0,0,.07);--shadow-md:0 4px 12px rgba(0,0,0,.08);
+  --r:8px;--r-sm:4px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--fg);font-size:14px;line-height:1.5;min-height:100vh}
+
+/* Header */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:16px;height:54px;position:sticky;top:0;z-index:200;box-shadow:var(--shadow)}
+.logo{font-size:17px;font-weight:700;background:linear-gradient(135deg,#2563EB,#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px}
+.logo-sub{font-size:11px;color:var(--fg-muted);font-weight:400;margin-left:4px;-webkit-text-fill-color:var(--fg-muted)}
+
+/* Tab bar */
+.tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--fg-muted);border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:color .15s;flex-shrink:0}
+.tab:hover{color:var(--fg)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* KPI strip */
+.kpi-strip{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;gap:28px;overflow-x:auto;align-items:center}
+.kpi{display:flex;flex-direction:column;min-width:70px}
+.kpi-l{font-size:10px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em}
+.kpi-v{font-size:17px;font-weight:700}
+.kpi-v.pos{color:var(--green)}.kpi-v.neg{color:var(--red)}.kpi-v.neu{color:var(--yellow)}.kpi-v.acc{color:var(--accent)}
+
+/* Pages */
+.page{display:none;padding:22px 24px;max-width:1440px;margin:0 auto}
+.page.active{display:block}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.ctitle{font-size:12px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+
+/* Grid */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:1100px){.g3{grid-template-columns:repeat(2,1fr)}.g4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.g3,.g2,.g4{grid-template-columns:1fr}}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;font-family:inherit;transition:all .15s}
+.btn-p{background:var(--accent);color:#fff;border-color:var(--accent)}.btn-p:hover{background:var(--accent-hover)}
+.btn-s{background:var(--surface);color:var(--fg);border-color:var(--border)}.btn-s:hover{background:var(--surface2)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+
+/* Badges */
+.bdg{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.bg-g{background:var(--green-light);color:var(--green)}
+.bg-r{background:var(--red-light);color:var(--red)}
+.bg-y{background:var(--yellow-light);color:var(--yellow)}
+.bg-b{background:var(--accent-light);color:var(--accent)}
+.bg-p{background:var(--purple-light);color:var(--purple)}
+.bg-gray{background:var(--surface2);color:var(--fg-muted)}
+
+/* Table */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.05em;padding:7px 12px;border-bottom:2px solid var(--border)}
+td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+
+/* Pitch step flow */
+.pitch-step{min-width:130px;max-width:160px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center;flex-shrink:0}
+.pitch-step-icon{font-size:1.6rem;margin-bottom:4px}
+.pitch-step-num{font-size:10px;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.08em}
+.pitch-step-title{font-size:12px;font-weight:700;color:var(--fg);margin:4px 0}
+.pitch-step-desc{font-size:11px;color:var(--fg-muted);line-height:1.4}
+.pitch-arrow{display:flex;align-items:center;font-size:20px;color:var(--accent);padding:0 6px;flex-shrink:0}
+/* Verification badges */
+.vbadge{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:13px}
+.vbadge.pass{background:#F0FDF4;border:1px solid #86EFAC}
+.vbadge.fail{background:#FFF5F5;border:1px solid #FCA5A5}
+.vbadge.warn{background:#FFFBEB;border:1px solid #FCD34D}
+/* Stat rows */
+.srow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
+.srow:last-child{border-bottom:none}
+.srow .lbl{color:var(--fg-muted)}.srow .val{font-weight:500}
+
+/* Chat */
+.chat-wrap{display:grid;grid-template-columns:1fr 280px;gap:14px;height:calc(100vh - 200px);min-height:560px}
+@media(max-width:900px){.chat-wrap{grid-template-columns:1fr}}
+.chat-box{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.chat-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.chat-header-left{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
+.chat-header-right{display:flex;align-items:center;gap:6px}
+.model-badge{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--accent-light);color:var(--accent);font-weight:600;letter-spacing:.03em}
+.sse-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0}
+.sse-dot.yellow{background:var(--yellow)}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.cmsg{display:flex;flex-direction:column}.cmsg.u{align-self:flex-end;max-width:75%}.cmsg.a{align-self:flex-start;max-width:90%}
+.cbubble{padding:10px 14px;border-radius:12px;font-size:13.5px;line-height:1.6;word-break:break-word;position:relative}
+.cmsg.u .cbubble{background:var(--accent);color:#fff;border-bottom-right-radius:3px}
+.cmsg.a .cbubble{background:#fff;color:var(--fg);border-bottom-left-radius:3px;border:1px solid var(--border);border-left:3px solid var(--accent)}
+.cbubble p{margin:0 0 6px}.cbubble p:last-child{margin-bottom:0}
+.cbubble h1,.cbubble h2,.cbubble h3{font-size:14px;font-weight:700;margin:8px 0 4px;color:var(--fg)}
+.cbubble ul,.cbubble ol{margin:4px 0 4px 18px;padding:0}
+.cbubble li{margin:2px 0}
+.cbubble code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-family:monospace;font-size:12.5px}
+.cbubble pre{background:#1e1e2e;color:#cdd6f4;border-radius:8px;padding:10px 12px;margin:6px 0;overflow-x:auto}
+.cbubble pre code{background:none;padding:0;font-size:12px;color:inherit}
+.cbubble table{border-collapse:collapse;font-size:12px;margin:6px 0;width:100%}
+.cbubble th{background:var(--surface2);padding:4px 8px;text-align:left;border:1px solid var(--border)}
+.cbubble td{padding:3px 8px;border:1px solid var(--border)}
+.cbubble strong{font-weight:700}.cbubble em{font-style:italic}
+.cmsg-footer{display:flex;align-items:center;gap:6px;margin-top:3px}
+.cts{font-size:10px;color:var(--fg-light);opacity:0}
+.cmsg:hover .cts{opacity:1}
+.copy-btn{font-size:10px;color:var(--fg-light);cursor:pointer;padding:1px 5px;border-radius:4px;border:1px solid transparent;background:none;opacity:0;transition:all .15s}
+.cmsg:hover .copy-btn{opacity:1}.copy-btn:hover{border-color:var(--border);background:var(--surface2)}
+.chat-in-bar{padding:10px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surface);flex-shrink:0;align-items:flex-end}
+.chat-ta{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;resize:none;outline:none;min-height:40px;max-height:150px;overflow-y:auto;line-height:1.5;transition:border-color .15s}
+.chat-ta:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;padding:8px 10px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0}
+.chip{padding:4px 11px;border:1px solid var(--border);border-radius:20px;font-size:11.5px;cursor:pointer;background:var(--surface);color:var(--fg);transition:all .15s;white-space:nowrap}
+.chip:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
+.brain-panel{display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:calc(100vh - 200px)}
+.brain-card{border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;background:var(--surface);flex-shrink:0}
+.brain-card h4{font-size:11px;font-weight:600;color:var(--fg-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:5px}
+.live-metrics-card{border:1px solid var(--accent);border-radius:var(--r);padding:12px 14px;background:linear-gradient(135deg,var(--surface),var(--accent-light));flex-shrink:0}
+.live-metrics-card h4{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.lm-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.lm-cell{text-align:center;padding:6px;background:rgba(255,255,255,.5);border-radius:6px}
+.lm-val{font-size:16px;font-weight:700;color:var(--fg)}.lm-lbl{font-size:9px;color:var(--fg-muted);text-transform:uppercase;margin-top:1px}
+.is-badge{font-size:9px;padding:1px 5px;border-radius:4px;font-weight:600;margin-left:3px}
+.is-badge.is{background:#DBEAFE;color:#1D4ED8}.is-badge.oos{background:#D1FAE5;color:#065F46}
+.sse-feed{display:flex;flex-direction:column;gap:4px}
+.sse-item{font-size:11px;padding:4px 7px;background:var(--surface2);border-radius:5px;border-left:2px solid var(--accent);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sse-item.err{border-left-color:var(--red)}.sse-item.warn{border-left-color:var(--yellow)}
+
+/* Benchmark targets */
+.tgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px}
+@media(max-width:700px){.tgrid{grid-template-columns:1fr}}
+.tcard{border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--surface);transition:all .3s}
+.tcard.achieved{border-color:var(--green);background:var(--green-light)}
+.tcard.near{border-color:var(--accent);background:var(--accent-light)}
+.ttitle{font-size:11px;font-weight:600;color:var(--fg-muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+.tval{font-size:20px;font-weight:700;margin-bottom:5px}
+.tdesc{font-size:12px;color:var(--fg-muted);margin-bottom:8px}
+.pbar{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.pfill{height:100%;border-radius:3px;transition:width .6s}
+.pfill.g{background:var(--green)}.pfill.b{background:var(--accent)}.pfill.y{background:var(--yellow)}
+
+/* Kanban */
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:1000px){.kanban{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.kanban{grid-template-columns:1fr}}
+.kcol{background:var(--surface2);border-radius:var(--r);padding:10px}
+.kh{font-size:11px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.kcount{background:var(--border);border-radius:20px;padding:1px 7px;font-size:11px}
+.tsk{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:9px 11px;margin-bottom:6px;cursor:pointer}
+.tsk:hover{box-shadow:var(--shadow-md)}
+.tsk-title{font-size:13px;font-weight:500;margin-bottom:5px}
+.tsk-meta{display:flex;gap:5px;flex-wrap:wrap}
+
+/* File explorer */
+.file-section{margin-bottom:18px}
+.file-section-hdr{font-size:13px;font-weight:600;color:var(--fg);margin-bottom:8px;display:flex;align-items:center;gap:6px;cursor:pointer}
+.file-section-hdr:hover{color:var(--accent)}
+.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.file-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;cursor:pointer;transition:all .15s}
+.file-item:hover{border-color:var(--accent);box-shadow:var(--shadow-md)}
+.file-name{font-size:13px;font-weight:500;color:var(--fg);margin-bottom:2px;word-break:break-all}
+.file-meta{font-size:11px;color:var(--fg-muted)}
+.run-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;transition:all .15s}
+.run-item:hover{border-color:var(--accent);box-shadow:var(--shadow-md)}
+.run-name{font-size:12px;font-weight:600;color:var(--fg);margin-bottom:6px;word-break:break-all}
+.file-viewer{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;font-family:monospace;font-size:12px;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:10px}
+
+/* Misc */
+.mb{margin-bottom:14px}.mb2{margin-bottom:20px}
+.row{display:flex;align-items:center;gap:8px}
+.rowb{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.empty{text-align:center;padding:36px;color:var(--fg-muted);font-size:14px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--fg);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:7px 11px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;display:block}
+.fr{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--fg);color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.section-title{font-size:15px;font-weight:600;color:var(--fg);margin-bottom:14px}
+.text-sm{font-size:12px}.text-muted{color:var(--fg-muted)}.text-green{color:var(--green)}.text-red{color:var(--red)}
+#eq-chart-wrap{position:relative;height:240px}
+.pos{color:var(--green)}.neg{color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="hdr">
+  <div class="row gap-4">
+    <span class="logo">NEXUS</span>
+    <span class="logo-sub">Autonomous Quant Workforce</span>
+  </div>
+  <div style="flex:1"></div>
+  <span id="hdr-live" class="bdg bg-gray" style="font-size:11px;margin-right:4px">● LIVE</span>
+  <span id="hdr-badge" class="bdg bg-gray" style="font-size:12px">Connecting...</span>
+  <span id="hdr-clock" class="text-sm text-muted"></span>
+</header>
+
+<!-- Tabs -->
+<nav class="tabs">
+  <div class="tab active" onclick="go('overview')">📊 Overview</div>
+  <div class="tab" onclick="go('chat')">💬 Chat</div>
+  <div class="tab" onclick="go('benchmark')">🏆 Benchmark</div>
+  <div class="tab" onclick="go('performance')">📈 Performance</div>
+  <div class="tab" onclick="go('risk')">⚠️ Risk</div>
+  <div class="tab" onclick="go('research')">🔬 Research</div>
+  <div class="tab" onclick="go('tasks')">✅ Tasks</div>
+  <div class="tab" onclick="go('files')">📁 Files</div>
+  <div class="tab" onclick="go('market')">📡 Market</div>
+  <div class="tab" onclick="go('pitch')">🎯 Pitch</div>
+</nav>
+
+<!-- KPI Strip -->
+<div class="kpi-strip">
+  <div class="kpi" title="Sharpe Ratio: Risk-adjusted return per unit volatility. >1 = good, >2 = excellent. OOS ~1.0 expected."><span class="kpi-l">Sharpe</span><span id="k-sharpe" class="kpi-v acc">—</span></div>
+  <div class="kpi" title="Compound Annual Growth Rate: Annualized return. Strategy targets 6-10% at 0.35x leverage."><span class="kpi-l">CAGR</span><span id="k-cagr" class="kpi-v">—</span></div>
+  <div class="kpi" title="Maximum Drawdown: Largest peak-to-trough loss. Target <10% at current leverage."><span class="kpi-l">Max DD</span><span id="k-mdd" class="kpi-v">—</span></div>
+  <div class="kpi" title="Total Return since backtest start."><span class="kpi-l">Total Ret</span><span id="k-tot" class="kpi-v">—</span></div>
+  <div class="kpi" title="% of periods with positive P&L. ~49% = fine for a rank-reversal strategy (few big wins matter)."><span class="kpi-l">Win Rate</span><span id="k-wr" class="kpi-v">—</span></div>
+  <div class="kpi" title="Strategy name and signal mix: 35% carry + 45% momentum + 20% mean-reversion (48h)"><span class="kpi-l">Strategy</span><span id="k-strat" class="kpi-v acc" style="font-size:12px">—</span></div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+    <span class="text-sm text-muted" id="kpi-updated"></span>
+    <button class="btn btn-s btn-sm" onclick="refresh()">↻</button>
+  </div>
+</div>
+
+<!-- ═══ OVERVIEW ═══ -->
+<div class="page active" id="page-overview">
+  <div class="mb2">
+    <div class="card">
+      <div class="ctitle">Equity Curve</div>
+      <div id="eq-chart-wrap"><canvas id="eq-chart"></canvas></div>
+    </div>
+  </div>
+  <div class="g3 mb2">
+    <div class="card">
+      <div class="ctitle">Latest Run</div>
+      <div id="ov-run"><div class="empty">Run a backtest first</div></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">NEXUS Brain</div>
+      <div id="ov-brain"><div class="empty">Brain loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Agent Dispatch</div>
+      <div id="ov-agents" style="display:flex;flex-direction:column;gap:7px">
+        <button class="btn btn-s btn-sm" onclick="runAgent('atlas')">⚡ ATLAS — Strategy Research</button>
+        <button class="btn btn-s btn-sm" onclick="runAgent('cipher')">🛡 CIPHER — Risk Assessment</button>
+        <button class="btn btn-s btn-sm" onclick="runAgent('echo')">🔊 ECHO — Data Quality</button>
+        <button class="btn btn-s btn-sm" onclick="runAgent('flux')">🌊 FLUX — Experiment Queue</button>
+        <div id="agent-res" class="text-sm text-muted" style="margin-top:4px"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ctitle">
+      Recent Events
+      <button class="btn btn-s btn-sm" onclick="loadOv()">↻</button>
+    </div>
+    <div id="ov-ledger"><div class="empty">Loading...</div></div>
+  </div>
+  <div class="card mb2" style="margin-top:14px">
+    <div class="ctitle">🔄 Full Crypto Cycle Validation (2021–2025) 
+      <span class="bdg bg-g" style="font-size:10px">GENUINE OOS</span>
+    </div>
+    <div style="margin-bottom:10px;font-size:12px;color:var(--fg-muted);line-height:1.6">
+      Parameters selected on <strong>2024 data only</strong>. All other years are genuine out-of-sample.
+      Strategy: NexusAlpha V1 · 10 symbols · k=2 per side · 168h rebalancing · 0.35x leverage
+    </div>
+    <table style="font-size:12px">
+      <thead><tr>
+        <th>Year</th><th>Market Regime</th><th>Sharpe</th><th>CAGR</th><th>MDD</th><th>Beta</th><th>BTC Sharpe</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>2021</td><td>🐂 Bull (BTC +60%)</td><td class="pos"><strong>2.047</strong></td><td class="pos">+39.8%</td><td class="neg">14.2%</td><td>-0.002</td><td class="pos">+0.97</td><td><span class="bdg bg-g">OOS</span></td></tr>
+        <tr><td>2022</td><td>🐻 Bear (BTC -65%)</td><td class="pos"><strong>0.112</strong></td><td class="pos">+0.6%</td><td class="neg">7.4%</td><td>+0.001</td><td class="neg">-1.31</td><td><span class="bdg bg-g">OOS ✓ SURVIVE</span></td></tr>
+        <tr><td>2023</td><td>📈 Recovery</td><td class="pos"><strong>1.075</strong></td><td class="pos">+9.0%</td><td class="neg">6.3%</td><td>-0.009</td><td class="pos">+2.41</td><td><span class="bdg bg-g">OOS</span></td></tr>
+        <tr style="background:var(--yellow-light)"><td>2024</td><td>🐂 Bull (ATH) <em>IS</em></td><td class="pos"><strong>2.78*</strong></td><td class="pos">+28.6%</td><td class="neg">4.5%</td><td>-0.023</td><td class="pos">+2.41</td><td><span class="bdg bg-y">IN-SAMPLE</span></td></tr>
+        <tr><td>2025 YTD</td><td>📊 Mixed</td><td class="pos"><strong>0.816</strong></td><td class="pos">+6.5%</td><td class="neg">4.8%</td><td>-0.033</td><td class="pos">+0.76</td><td><span class="bdg bg-g">OOS</span></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px;font-size:11px;color:var(--fg-muted)">
+      * 2024 Sharpe=2.78 is IN-SAMPLE (48h MR lookback selected on this data). Honest avg OOS Sharpe = <strong style="color:var(--green)">1.01</strong> · Alpha source: <em>"buy dips in uptrends"</em> (168h momentum + 48h MR timing)
+    </div>
+  </div>
+  <div class="g2 mb2">
+    <div class="card">
+      <div class="ctitle">📖 How to Read This Dashboard</div>
+      <div style="font-size:12px;line-height:1.7;color:var(--fg-muted)">
+        <p><strong style="color:var(--fg)">Sharpe Ratio</strong>: Risk-adjusted return. 1.0 = good. We target 1.0+ OOS.</p>
+        <p><strong style="color:var(--fg)">Calmar Ratio</strong>: CAGR ÷ Max Drawdown. Higher is better capital efficiency.</p>
+        <p><strong style="color:var(--fg)">Beta ≈ 0</strong>: Market-neutral. Strategy profits regardless of BTC direction.</p>
+        <p><strong style="color:var(--fg)">OOS vs IS</strong>: Out-of-sample (OOS) is true performance. In-sample (IS) is biased upward.</p>
+        <p><strong style="color:var(--fg)">Walk-Forward</strong>: Rolling IS/OOS windows. &gt;60% profitable = robust signal.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ctitle">🧠 Alpha Source: "Buy Dips in Uptrends"</div>
+      <div style="font-size:12px;line-height:1.7;color:var(--fg-muted)">
+        <p>1. <strong style="color:var(--fg)">Cross-Rank 10 perps</strong> by composite score</p>
+        <p>2. <strong style="color:var(--fg)">Composite</strong> = 35% funding carry + 45% 168h momentum + 20% -48h mean-reversion</p>
+        <p>3. <strong style="color:var(--fg)">LONG top-2</strong> (uptrend + positive carry + dipped recently)</p>
+        <p>4. <strong style="color:var(--fg)">SHORT bottom-2</strong> (downtrend + negative carry + bounced recently)</p>
+        <p>5. <strong style="color:var(--fg)">Rebalance weekly</strong> at 0.35x gross leverage</p>
+        <p style="margin-top:5px;color:var(--accent);font-weight:500">Why it works: MR timing + momentum filter = enter dips in leaders, avoid value traps</p>
+      </div>
+    </div>
+  </div>
+  <div class="card mb2" style="border-left:4px solid var(--purple)">
+    <div class="ctitle">🧠 Critical Thinking — Process Challenges
+      <span class="bdg bg-p" style="font-size:10px">SELF-REVIEW</span>
+    </div>
+    <div class="g2" style="font-size:12px;line-height:1.7">
+      <div>
+        <p style="font-weight:600;color:var(--fg);margin-bottom:6px">❓ Key Open Questions</p>
+        <ul style="color:var(--fg-muted);padding-left:16px;margin:0">
+          <li>Is the 48h MR lookback genuinely robust or did we get lucky on 2024 data?</li>
+          <li>Will 2022 bear Sharpe=0.112 hold if we had 10+ years of data?</li>
+          <li>Are we missing signals in order flow, OI change, or on-chain data?</li>
+          <li>Is 0.35x leverage optimal or leaving alpha on the table?</li>
+        </ul>
+      </div>
+      <div>
+        <p style="font-weight:600;color:var(--fg);margin-bottom:6px">🔬 Research Gaps Identified</p>
+        <ul style="color:var(--fg-muted);padding-left:16px;margin:0">
+          <li>No live trading validation yet (all backtested)</li>
+          <li>Slippage model assumes uniform cost — real fill may vary</li>
+          <li>Cross-exchange funding rate arbitrage unexplored</li>
+          <li>2020 pandemic crash data not yet tested</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="card mt2">
+    <div class="ctitle">📈 Learning Progress — Champion Sharpe Over Time
+      <span id="live-lv" style="font-size:11px;color:var(--accent);margin-left:8px">—</span>
+    </div>
+    <div style="height:180px"><canvas id="progress-chart"></canvas></div>
+    <div id="progress-stats" class="text-sm text-muted" style="margin-top:6px"></div>
+  </div>
+</div>
+
+<!-- ═══ CHAT ═══ -->
+<div class="page" id="page-chat">
+  <div class="chat-wrap">
+    <div class="chat-box">
+      <!-- Header bar -->
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <span id="chat-sse-dot" class="sse-dot yellow" title="SSE disconnected"></span>
+          <span>NEXUS Brain</span>
+          <span id="chat-model-badge" class="model-badge">GLM-5</span>
+        </div>
+        <div class="chat-header-right" style="display:flex;align-items:center;gap:6px">
+          <select id="model-select" onchange="onModelChange()" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--fg);cursor:pointer;height:28px">
+            <option value="glm-5" selected>🤖 GLM-5.0</option>
+            <option value="claude-sonnet-4-6">🔵 Claude Sonnet 4.6</option>
+            <option value="claude-opus-4-6">🟣 Claude Opus 4.6</option>
+            <option value="codex">🟢 GPT-5.2 (Codex)</option>
+            <option value="minimax-2.5">🟠 MiniMax 2.5</option>
+          </select>
+          <button class="btn btn-s btn-sm" onclick="copyLastAI()" title="Copy last AI response">Copy</button>
+          <button class="btn btn-s btn-sm" onclick="clearChat()" title="Clear chat">Clear</button>
+        </div>
+      </div>
+      <!-- Quick chips -->
+      <div class="chips">
+        <span class="chip" onclick="chip('Show full cycle validation results: 2021 bull, 2022 bear, 2023 recovery, 2025 YTD. Explain what honest OOS Sharpe of 1.01 means.')">📊 Full Cycle OOS</span>
+        <span class="chip" onclick="chip('What is the alpha source? Explain buy-dips-in-uptrends: how 168h momentum filter + 48h MR timing works together. Why does pure MR alone lose Sharpe=-1.68 in 2023?')">🧠 Alpha Source</span>
+        <span class="chip" onclick="chip('How did strategy survive 2022 bear market (BTC -65%, FTX collapse) with Sharpe=0.112 and Beta=0.001? What kept us from losing?')">🐻 2022 Bear Survival</span>
+        <span class="chip" onclick="chip('Analyze current risk status: drawdown, leverage, regime, and what could cause next drawdown period')">⚠️ Risk Check</span>
+        <span class="chip" onclick="chip('What should Phase 31 focus on? What new signals would genuinely improve OOS Sharpe beyond 1.0 without overfitting?')">🔬 Phase 31 Plan</span>
+        <span class="chip" onclick="chip('Compare all Phase 30 experiments: 15sym=0.747, k=3=0.119, 48h rebal=0.844, carry50=0.349. Why did all modifications make things worse?')">📉 Phase 30 Findings</span>
+        <span class="chip" onclick="chip('Based on current BTC funding rates and 48h price action, what is the cross-sectional signal ranking right now? Who is long candidate, who is short?')">🚦 Live Signal</span>
+        <span class="chip" onclick="chip('Propose a new signal that does not require parameter optimization: open interest change, funding momentum, or basis convergence')">💡 New Signal Idea</span>
+      </div>
+      <!-- Messages -->
+      <div class="chat-msgs" id="chat-msgs">
+        <div class="cmsg a">
+          <div class="cbubble"><strong>NEXUS Brain</strong> — autonomous quant research workforce.<br><br>I run 24/7: researching papers, testing strategies, managing risk. Current validated results:<br><strong>2021</strong> Sharpe=2.05 · <strong>2022 Bear</strong> Sharpe=0.11 ✓ · <strong>2023</strong> Sharpe=1.07 · <strong>2025</strong> Sharpe=0.82<br><strong>Avg OOS Sharpe: 1.01</strong> across all market regimes (params selected on 2024 only).<br><br>Ask me anything about strategy, signals, risk, or Phase 31 plans.</div>
+          <div class="cmsg-footer">
+            <span class="cts">Ready · GLM-5 powered</span>
+            <button class="copy-btn" onclick="copyBubble(this)" title="Copy">&#128203;</button>
+          </div>
+        </div>
+      </div>
+      <!-- Input bar -->
+      <div class="chat-in-bar">
+        <textarea class="chat-ta" id="chat-in" placeholder="Ask NEXUS anything... (Enter to send, Shift+Enter for newline)" onkeydown="onChatKey(event)" oninput="autoGrowTA(this)"></textarea>
+        <button class="btn btn-p" onclick="sendMsg()" style="flex-shrink:0;align-self:flex-end">Send</button>
+      </div>
+    </div>
+    <!-- Right sidebar -->
+    <div class="brain-panel" id="brain-panel">
+      <!-- Live Metrics -->
+      <div class="live-metrics-card" id="bp-metrics">
+        <h4>Live Metrics</h4>
+        <div class="lm-grid">
+          <div class="lm-cell"><div class="lm-val" id="lm-sharpe-is">—</div><div class="lm-lbl">Sharpe <span class="is-badge is">IS</span></div></div>
+          <div class="lm-cell"><div class="lm-val" id="lm-sharpe-oos">—</div><div class="lm-lbl">Sharpe <span class="is-badge oos">OOS</span></div></div>
+          <div class="lm-cell"><div class="lm-val" id="lm-cagr">—</div><div class="lm-lbl">CAGR</div></div>
+          <div class="lm-cell"><div class="lm-val" id="lm-mdd">—</div><div class="lm-lbl">MDD</div></div>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--fg-muted);display:flex;justify-content:space-between;align-items:center">
+          <span id="lm-updated">—</span>
+          <span id="lm-alerts" style="color:var(--accent)">0 alerts</span>
+        </div>
+      </div>
+      <!-- Live Events -->
+      <div class="brain-card" id="bp-feed">
+        <h4>Live Events</h4>
+        <div class="sse-feed" id="sse-feed"><div class="text-sm text-muted">Connecting...</div></div>
+      </div>
+      <!-- Identity -->
+      <div class="brain-card" id="bp-identity">
+        <h4>Identity</h4>
+        <div class="text-sm text-muted">Loading...</div>
+      </div>
+      <!-- Goals -->
+      <div class="brain-card" id="bp-goals">
+        <h4>Goals</h4>
+        <div class="text-sm text-muted">Loading...</div>
+      </div>
+      <!-- Mood -->
+      <div class="brain-card" id="bp-mood">
+        <h4>Mood</h4>
+        <div class="text-sm text-muted" style="font-size:22px">🤔</div>
+      </div>
+      <!-- Quick Actions -->
+      <div class="brain-card">
+        <h4>Quick Actions</h4>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn btn-s btn-sm" onclick="runResearch()">🔬 Run Research</button>
+          <button class="btn btn-s btn-sm" onclick="go('benchmark')">🏆 Benchmarks</button>
+          <button class="btn btn-s btn-sm" onclick="go('validation')">✅ Validation</button>
+          <button class="btn btn-s btn-sm" onclick="copyLastAI()">📋 Copy Last Result</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ═══ BENCHMARK ═══ -->
+<div class="page" id="page-benchmark">
+  <div class="section-title mb">🏆 NEXUS Achievement Targets</div>
+  <div class="tgrid" id="target-cards">
+    <div class="tcard" id="tc1">
+      <div class="ttitle">Target 1 — Beat S&P 500</div>
+      <div class="tval" id="tv1">Sharpe &gt; 0.6</div>
+      <div class="tdesc">Minimum viable: outperform passive US equity (SPY 2024 Sharpe ≈ 0.73)</div>
+      <div class="pbar"><div class="pfill b" id="tp1" style="width:0%"></div></div>
+      <div class="rowb" style="margin-top:6px"><span class="text-sm text-muted">Current: <b id="tc1-v">—</b></span><span id="tb1" class="bdg bg-gray">PENDING</span></div>
+    </div>
+    <div class="tcard" id="tc2">
+      <div class="ttitle">Target 2 — Beat BTC Buy &amp; Hold</div>
+      <div class="tval" id="tv2">Sharpe &gt; 1.5</div>
+      <div class="tdesc">Short-term goal: risk-adjusted better than simply holding Bitcoin (BTC 2024 ≈ 1.47)</div>
+      <div class="pbar"><div class="pfill b" id="tp2" style="width:0%"></div></div>
+      <div class="rowb" style="margin-top:6px"><span class="text-sm text-muted">Current: <b id="tc2-v">—</b></span><span id="tb2" class="bdg bg-gray">PENDING</span></div>
+    </div>
+    <div class="tcard" id="tc3">
+      <div class="ttitle">Target 3 — Beat Renaissance (net)</div>
+      <div class="tval" id="tv3">Sharpe &gt; 2.5</div>
+      <div class="tdesc">Medium-term: surpass best human hedge fund net-of-fees (Renaissance ≈ 3.8 gross)</div>
+      <div class="pbar"><div class="pfill b" id="tp3" style="width:0%"></div></div>
+      <div class="rowb" style="margin-top:6px"><span class="text-sm text-muted">Current: <b id="tc3-v">—</b></span><span id="tb3" class="bdg bg-gray">PENDING</span></div>
+    </div>
+    <div class="tcard" id="tc4">
+      <div class="ttitle">Target 4 — World-Class (NEXUS Goal)</div>
+      <div class="tval" id="tv4">Sharpe &gt; 5.0</div>
+      <div class="tdesc">Long-term: top-tier autonomous quant — beyond any human team</div>
+      <div class="pbar"><div class="pfill b" id="tp4" style="width:0%"></div></div>
+      <div class="rowb" style="margin-top:6px"><span class="text-sm text-muted">Current: <b id="tc4-v">—</b></span><span id="tb4" class="bdg bg-gray">PENDING</span></div>
+    </div>
+  </div>
+
+  <!-- Achievement badges -->
+  <div class="card mb2">
+    <div class="ctitle">Achievement Badges</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap" id="ach-badges">
+      <div class="ach" data-level="0" style="text-align:center;padding:14px 20px;border:2px dashed var(--border);border-radius:8px;opacity:.4;transition:all .3s">
+        <div style="font-size:30px">🥉</div><div style="font-size:12px;font-weight:600;margin-top:4px">Bronze</div><div class="text-sm text-muted">Sharpe &gt; 0.6</div></div>
+      <div class="ach" data-level="1" style="text-align:center;padding:14px 20px;border:2px dashed var(--border);border-radius:8px;opacity:.4;transition:all .3s">
+        <div style="font-size:30px">🥈</div><div style="font-size:12px;font-weight:600;margin-top:4px">Silver</div><div class="text-sm text-muted">Sharpe &gt; 1.5</div></div>
+      <div class="ach" data-level="2" style="text-align:center;padding:14px 20px;border:2px dashed var(--border);border-radius:8px;opacity:.4;transition:all .3s">
+        <div style="font-size:30px">🥇</div><div style="font-size:12px;font-weight:600;margin-top:4px">Gold</div><div class="text-sm text-muted">Sharpe &gt; 2.5</div></div>
+      <div class="ach" data-level="3" style="text-align:center;padding:14px 20px;border:2px dashed var(--border);border-radius:8px;opacity:.4;transition:all .3s">
+        <div style="font-size:30px">💎</div><div style="font-size:12px;font-weight:600;margin-top:4px">Platinum</div><div class="text-sm text-muted">Sharpe &gt; 5.0</div></div>
+    </div>
+  </div>
+
+  <!-- Benchmark table -->
+  <div class="card">
+    <div class="ctitle">
+      Live Benchmark Comparison
+      <button class="btn btn-s btn-sm" onclick="loadBM()">↻ Refresh</button>
+    </div>
+    <div id="bm-table"><div class="empty">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ═══ PERFORMANCE ═══ -->
+<div class="page" id="page-performance">
+  <div class="g2 mb2">
+    <div class="card">
+      <div class="ctitle">Returns Distribution</div>
+      <div style="position:relative;height:220px"><canvas id="ret-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Key Metrics</div>
+      <div id="pf-stats"><div class="empty">Loading...</div></div>
+    </div>
+  </div>
+  <div class="card mb2">
+    <div class="ctitle">Walk-Forward Windows</div>
+    <div id="wf-body"><div class="empty">Loading...</div></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">
+      Validation Suite (8 Tests)
+      <div class="row">
+        <button class="btn btn-p btn-sm" onclick="runVal()">▶ Run Validation</button>
+        <span id="val-st" class="text-sm text-muted"></span>
+      </div>
+    </div>
+    <div id="val-body"><div class="empty">No validation results. Click Run to execute all 8 tests.</div></div>
+  </div>
+</div>
+
+<!-- ═══ RISK ═══ -->
+<div class="page" id="page-risk">
+  <div class="g3 mb2">
+    <div class="card"><div class="ctitle">Value at Risk</div><div id="risk-var"><div class="empty">—</div></div></div>
+    <div class="card"><div class="ctitle">Market Regime</div><div id="risk-regime"><div class="empty">—</div></div></div>
+    <div class="card"><div class="ctitle">Position Limits</div><div id="risk-limits"><div class="empty">—</div></div></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Position Detail</div>
+    <div id="risk-detail"><div class="empty">Run a backtest to see positions</div></div>
+  </div>
+</div>
+
+<!-- ═══ RESEARCH ═══ -->
+<div class="page" id="page-research">
+  <div class="rowb mb2">
+    <div class="row">
+      <button class="btn btn-p btn-sm" onclick="runResearch()">🔬 Run Research Cycle</button>
+      <span id="rc-st" class="text-sm text-muted"></span>
+    </div>
+    <button class="btn btn-s btn-sm" onclick="loadResearch()">↻ Refresh</button>
+  </div>
+  <div class="g2 mb2">
+    <div class="card">
+      <div class="ctitle">Latest Research Cycle</div>
+      <div id="rc-latest"><div class="empty">No cycle data yet</div></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Memory Search</div>
+      <div class="row mb" style="gap:6px">
+        <input type="text" id="mem-q" placeholder="Search NEXUS knowledge..." style="flex:1">
+        <button class="btn btn-s btn-sm" onclick="searchMem()">Search</button>
+      </div>
+      <div id="mem-results" class="text-sm text-muted">Enter query above...</div>
+    </div>
+  </div>
+  <div class="card mb2">
+    <div class="ctitle">Strategy Proposals</div>
+    <div id="rc-proposals"><div class="empty">No proposals yet</div></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Recent Alerts</div>
+    <div id="rc-alerts"><div class="empty">No alerts</div></div>
+  </div>
+</div>
+
+<!-- ═══ TASKS ═══ -->
+<div class="page" id="page-tasks">
+  <div class="card mb2">
+    <div class="ctitle">Create Task</div>
+    <div class="fr">
+      <div><label>Title</label><input type="text" id="t-title" placeholder="Task title..."></div>
+      <div><label>Category</label><select id="t-cat"><option value="research">🔬 Research</option><option value="practice" selected>⚗️ Practice</option><option value="procedure">🤖 Procedure</option></select></div>
+      <div><label>Priority</label><select id="t-pri"><option value="high">🔴 High</option><option value="medium" selected>🟡 Medium</option><option value="low">🟢 Low</option></select></div>
+    </div>
+    <div class="fr">
+      <div><label>Assignee</label><select id="t-who"><option>ATLAS</option><option>CIPHER</option><option>ECHO</option><option>FLUX</option><option value="Human">Human</option></select></div>
+      <div><label>Delegated by</label><select id="t-delegated"><option value="human">👤 Human</option><option value="nexus">🤖 NEXUS</option><option value="atlas">⚡ ATLAS</option><option value="cipher">🛡 CIPHER</option></select></div>
+      <div><label>Description</label><input type="text" id="t-desc" placeholder="Optional..."></div>
+    </div>
+    <button class="btn btn-p btn-sm" onclick="createTask()">+ Create Task</button>
+  </div>
+  <!-- 3-lane category view -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" id="tasks-lanes">
+    <div class="card" style="border-top:3px solid #6366F1">
+      <div class="ctitle">🔬 Research <span class="kcount" id="kc-research">0</span></div>
+      <div class="text-sm text-muted mb1" style="font-size:11px">Literature · Hypotheses · Analysis</div>
+      <div id="kl-research"><div class="empty">No tasks</div></div>
+    </div>
+    <div class="card" style="border-top:3px solid #10B981">
+      <div class="ctitle">⚗️ Practice <span class="kcount" id="kc-practice">0</span></div>
+      <div class="text-sm text-muted mb1" style="font-size:11px">Backtests · Experiments · Implementation</div>
+      <div id="kl-practice"><div class="empty">No tasks</div></div>
+    </div>
+    <div class="card" style="border-top:3px solid #F59E0B">
+      <div class="ctitle">🤖 Procedures <span class="kcount" id="kc-procedure">0</span></div>
+      <div class="text-sm text-muted mb1" style="font-size:11px">Automated AI workflows · Loops</div>
+      <div id="kl-procedure"><div class="empty">No tasks</div></div>
+    </div>
+  </div>
+  <!-- Classic Kanban (by status) below -->
+  <div class="ctitle mt2" style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px">All Tasks by Status</div>
+  <div class="kanban" id="kanban">
+    <div class="kcol"><div class="kh">TODO <span class="kcount" id="kc-todo">0</span></div><div id="kl-todo"></div></div>
+    <div class="kcol"><div class="kh">IN PROGRESS <span class="kcount" id="kc-inprogress">0</span></div><div id="kl-inprogress"></div></div>
+    <div class="kcol"><div class="kh">REVIEW <span class="kcount" id="kc-review">0</span></div><div id="kl-review"></div></div>
+    <div class="kcol"><div class="kh">DONE <span class="kcount" id="kc-done">0</span></div><div id="kl-done"></div></div>
+  </div>
+</div>
+
+<!-- ═══ FILES & REPORTS ═══ -->
+<div class="page" id="page-files">
+  <div class="rowb mb2">
+    <div class="section-title" style="margin-bottom:0">📁 Files, Reports &amp; Artifacts</div>
+    <button class="btn btn-s btn-sm" onclick="loadFiles()">↻ Refresh</button>
+  </div>
+  <div id="file-viewer-panel" style="display:none" class="card mb2">
+    <div class="ctitle rowb">
+      <span id="fv-path">File Viewer</span>
+      <button class="btn btn-s btn-sm" onclick="closeFileViewer()">✕ Close</button>
+    </div>
+    <div id="fv-content" class="file-viewer">Select a file to view its content</div>
+  </div>
+  <div id="files-body"><div class="empty"><div class="spin"></div> Loading artifacts...</div></div>
+</div>
+
+<!-- ═══ MARKET ═══ -->
+<div class="page" id="page-market">
+  <div class="rowb mb2">
+    <div class="section-title" style="margin-bottom:0">📡 Live Market Data</div>
+    <div class="row">
+      <span class="text-sm text-muted" id="mkt-ts">—</span>
+      <button class="btn btn-s btn-sm" onclick="loadMarket()">↻ Refresh</button>
+    </div>
+  </div>
+  <div class="card mb2">
+    <div class="ctitle">Funding Rates &amp; Carry Signals</div>
+    <div id="mkt-funding"><div class="empty">Loading...</div></div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Price &amp; Volume</div>
+    <div id="mkt-price"><div class="empty">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ═══ INVESTOR PITCH ═══ -->
+<div class="page" id="page-pitch">
+  <div class="rowb mb2">
+    <div class="section-title" style="margin-bottom:0">🎯 NEXUS Investor Pitch — Alpha Verification</div>
+    <div class="row">
+      <button class="btn btn-s btn-sm" onclick="loadPitch()">↻ Refresh</button>
+      <button class="btn btn-p btn-sm" onclick="window.open('/api/pitch/report','_blank')">⬇ Export PDF</button>
+    </div>
+  </div>
+
+  <!-- Hero KPIs -->
+  <div class="g4 mb2" id="pitch-kpis">
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#EFF6FF,#DBEAFE)">
+      <div style="font-size:11px;font-weight:600;color:#1D4ED8;text-transform:uppercase;letter-spacing:.05em">Champion Sharpe</div>
+      <div id="pt-sharpe" style="font-size:2.4rem;font-weight:700;color:#1E40AF;line-height:1.2">—</div>
+      <div style="font-size:11px;color:#6B7280">Annualized (1h bars, 8760 ppy)</div>
+    </div>
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#F0FDF4,#DCFCE7)">
+      <div style="font-size:11px;font-weight:600;color:#16A34A;text-transform:uppercase;letter-spacing:.05em">CAGR</div>
+      <div id="pt-cagr" style="font-size:2.4rem;font-weight:700;color:#15803D;line-height:1.2">—</div>
+      <div style="font-size:11px;color:#6B7280">Compound Annual Growth Rate</div>
+    </div>
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#FFF7ED,#FED7AA)">
+      <div style="font-size:11px;font-weight:600;color:#D97706;text-transform:uppercase;letter-spacing:.05em">Max Drawdown</div>
+      <div id="pt-mdd" style="font-size:2.4rem;font-weight:700;color:#B45309;line-height:1.2">—</div>
+      <div style="font-size:11px;color:#6B7280">Maximum Drawdown</div>
+    </div>
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#F5F3FF,#EDE9FE)">
+      <div style="font-size:11px;font-weight:600;color:#7C3AED;text-transform:uppercase;letter-spacing:.05em">Sources Monitored</div>
+      <div id="pt-sources" style="font-size:2.4rem;font-weight:700;color:#6D28D9;line-height:1.2">72</div>
+      <div style="font-size:11px;color:#6B7280">Academic, Blogs, Forums, Crypto</div>
+    </div>
+  </div>
+
+  <!-- Alpha vs Benchmarks chart -->
+  <div class="card mb2">
+    <div class="ctitle">📊 NEXUS vs Benchmarks — Equity Curve (2024)</div>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:12px">
+      Real Binance data · 1h bars · 8,784 bars · 10 symbols · Full transaction costs (0.04% maker)
+    </div>
+    <canvas id="pt-equity" height="300"></canvas>
+    <div id="pt-bench-compare" class="mt2"></div>
+  </div>
+
+  <!-- Strategy Rankings -->
+  <div class="g2 mb2">
+    <div class="card">
+      <div class="ctitle">🏆 Strategy Leaderboard</div>
+      <div id="pt-rankings"><div class="empty">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">🔬 Scientific Verification</div>
+      <div id="pt-verification"><div class="empty">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- How NEXUS Thinks — Decision Flow -->
+  <div class="card mb2">
+    <div class="ctitle">🧠 How NEXUS Makes Decisions</div>
+    <div style="background:#F8FAFC;border-radius:10px;padding:20px;margin-top:8px;font-size:13px">
+      <div style="display:flex;align-items:stretch;gap:0;overflow-x:auto">
+        <div class="pitch-step">
+          <div class="pitch-step-icon">📡</div>
+          <div class="pitch-step-num">1</div>
+          <div class="pitch-step-title">RESEARCH</div>
+          <div class="pitch-step-desc">Read 72+ sources daily: arXiv, Reddit r/algotrading, quant blogs, crypto news, ML papers</div>
+        </div>
+        <div class="pitch-arrow">→</div>
+        <div class="pitch-step">
+          <div class="pitch-step-icon">💡</div>
+          <div class="pitch-step-num">2</div>
+          <div class="pitch-step-title">HYPOTHESIZE</div>
+          <div class="pitch-step-desc">Extract actionable trading hypotheses using keyword matching + Bayesian prior beliefs</div>
+        </div>
+        <div class="pitch-arrow">→</div>
+        <div class="pitch-step">
+          <div class="pitch-step-icon">⚗️</div>
+          <div class="pitch-step-num">3</div>
+          <div class="pitch-step-title">APPLY</div>
+          <div class="pitch-step-desc">Run backtests on real Binance data with full transaction costs, slippage, and funding rates</div>
+        </div>
+        <div class="pitch-arrow">→</div>
+        <div class="pitch-step">
+          <div class="pitch-step-icon">📊</div>
+          <div class="pitch-step-num">4</div>
+          <div class="pitch-step-title">EVALUATE</div>
+          <div class="pitch-step-desc">Compare Sharpe, CAGR, Calmar vs champion. Walk-forward out-of-sample validation</div>
+        </div>
+        <div class="pitch-arrow">→</div>
+        <div class="pitch-step">
+          <div class="pitch-step-icon">🧠</div>
+          <div class="pitch-step-num">5</div>
+          <div class="pitch-step-title">ADAPT</div>
+          <div class="pitch-step-desc">Update Bayesian beliefs, spaced repetition deck, meta-learner. Promote champion if improved</div>
+        </div>
+        <div class="pitch-arrow">→</div>
+        <div class="pitch-step" style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE)">
+          <div class="pitch-step-icon">♾️</div>
+          <div class="pitch-step-num">∞</div>
+          <div class="pitch-step-title">REPEAT</div>
+          <div class="pitch-step-desc">Runs 24/7. Every cycle the system becomes smarter. Knowledge compounds over time.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accelerated Learning Stats -->
+  <div class="card mb2">
+    <div class="ctitle">⚡ Accelerated Learning Engine Status</div>
+    <div class="g3 mt2" id="pt-learning"><div class="empty">Loading...</div></div>
+  </div>
+
+  <!-- Disclaimer -->
+  <div class="card" style="background:#FFFBEB;border:1px solid #FCD34D">
+    <div style="font-size:12px;color:#92400E;line-height:1.6">
+      <strong>⚠️ Scientific Disclaimer:</strong> All backtest results are in-sample on historical data (2024).
+      Past performance does not guarantee future results. Walk-forward validation is performed to reduce
+      look-ahead bias, but all systematic strategies carry risk of regime change. Transaction costs
+      include Binance VIP-0 taker fees (0.04%), 3bps slippage, and funding rate payments.
+      No personal financial advice is provided. NEXUS is a research platform, not a live trading system.
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Utils ───
+const $ = id => document.getElementById(id);
+const $$ = s => document.querySelectorAll(s);
+function jx(url,opts){return fetch(url,opts).then(r=>{if(!r.ok)throw new Error(r.status);return r.json()});}
+function set(id,v){const e=$(id);if(e)e.textContent=v;}
+function html(id,h){const e=$(id);if(e)e.innerHTML=h;}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function n2(v,d=2){if(v==null||isNaN(+v))return'—';return(+v).toFixed(d);}
+function pct(v,d=2){if(v==null||isNaN(+v))return'—';return((+v)*100).toFixed(d)+'%';}
+function pctd(v,d=2){if(v==null||isNaN(+v))return'—';return(+v).toFixed(d)+'%';}
+function clr(v,pos=true){if(v==null)return'';return(pos?v>=0:v<=0)?'pos':'neg';}
+function now(){return new Date().toLocaleTimeString();}
+function toast(m,d=3){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d*1000);}
+function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB';}
+
+// ─── Tab system ───
+const TABS=['overview','chat','benchmark','performance','risk','research','tasks','files','market','pitch'];
+let _tab='overview';
+function go(name){
+  $$('.tab').forEach((t,i)=>{t.classList[TABS[i]===name?'add':'remove']('active');});
+  $$('.page').forEach(p=>p.classList.remove('active'));
+  const pg=$('page-'+name);if(pg)pg.classList.add('active');
+  _tab=name;
+  LOADERS[name]&&LOADERS[name]();
+}
+
+// ─── Charts ───
+let _eq=null,_ret=null;
+
+// ─── KPI ───
+let _sharpe=null;
+function loadKPI(){
+  jx('/api/metrics').then(d=>{
+    // metrics.json has nested structure: d.summary.sharpe, d.meta.*, d.verdict.*
+    const m=d.summary||d.metrics||d||{};
+    const meta=d.meta||{};
+    _sharpe=+(m.sharpe_ratio||m.sharpe||0);
+    const se=$('k-sharpe');
+    se.textContent=n2(_sharpe);
+    se.className='kpi-v '+(_sharpe>=1.5?'pos':_sharpe>=0.6?'neu':'neg');
+    const ca=+(m.cagr||m.annualized_return||0);
+    const ce=$('k-cagr');ce.textContent=pct(ca);ce.className='kpi-v '+(ca>=0?'pos':'neg');
+    const md=+(m.max_drawdown||0);
+    const me=$('k-mdd');me.textContent=pct(md);me.className='kpi-v neg';
+    const tot=+(m.total_return||0);
+    const te=$('k-tot');te.textContent=pct(tot);te.className='kpi-v '+(tot>=0?'pos':'neg');
+    set('k-wr',pct(m.win_rate));
+    set('k-strat',meta.strategy_name||m.strategy_name||m.run_name||d.run_name||'—');
+    set('kpi-updated','Updated '+now());
+    // Header badge
+    // verdict: check d.verdict.pass (nested), or derive from Sharpe
+    const vObj=d.verdict||{};
+    const vPass=vObj.pass;
+    const v=m.strategy_verdict||(vPass===true?'PASS':vPass===false?'FAIL':(_sharpe>=1.5?'GOOD':_sharpe>=0.6?'OK':'WEAK'));
+    const b=$('hdr-badge');b.textContent=v;
+    b.className='bdg '+(v==='GOOD'||v==='PASS'?'bg-g':v==='OK'||v==='WARN'?'bg-y':'bg-r');
+    // Update targets
+    updateTargets(_sharpe);
+  }).catch(()=>{});
+}
+
+// ─── Equity chart ───
+function loadEq(){
+  jx('/api/equity').then(d=>{
+    const eq=d.equity_curve||d.equity||[];if(!eq.length)return;
+    const vals=eq.map(e=>typeof e==='object'?(e.value||e.equity||e[1]||1):+e);
+    const ctx=$('eq-chart');if(!ctx)return;
+    if(_eq){_eq.destroy();}
+    _eq=new Chart(ctx,{
+      type:'line',
+      data:{labels:vals.map((_,i)=>i),datasets:[{label:'Portfolio',data:vals,borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.07)',fill:true,pointRadius:0,tension:.35,borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{display:false},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}}}}
+    });
+  }).catch(()=>{});
+}
+
+// ─── Learning Progress Chart ───
+let _prog=null;
+function loadProgress(){
+  jx('/api/progress').then(d=>{
+    const days=d.daily||[];
+    if(!days.length){html('progress-stats','No runs yet');return;}
+    const labels=days.map(e=>e.date);
+    const champ=days.map(e=>e.champion_sharpe||null);
+    const daily=days.map(e=>e.max_sharpe||null);
+    const ctx=$('progress-chart');if(!ctx)return;
+    if(_prog){_prog.destroy();}
+    _prog=new Chart(ctx,{
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          {label:'Champion Sharpe',data:champ,borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.08)',fill:true,pointRadius:3,tension:.3,borderWidth:2},
+          {label:'Daily Best',data:daily,borderColor:'#10B981',backgroundColor:'transparent',pointRadius:2,tension:.3,borderWidth:1.5,borderDash:[4,2]},
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{x:{ticks:{font:{size:9},maxTicksLimit:10}},y:{grid:{color:'rgba(0,0,0,.05)'}}}}
+    });
+    const best=d.best_ever_sharpe;
+    html('progress-stats',`Total runs: <b>${d.total_runs}</b> · Best ever Sharpe: <b class="${best>=1.5?'pos':best>=0.6?'neu':'neg'}">${(best||0).toFixed(3)}</b> · Days tracked: <b>${days.length}</b>`);
+  }).catch(()=>{});
+}
+
+// ─── Overview ───
+function loadOv(){
+  loadEq();loadKPI();loadProgress();
+  jx('/api/runs').then(d=>{
+    const r=(d.runs||d||[])[0];if(!r){html('ov-run','<div class="empty">No runs</div>');return;}
+    const m=r.metrics||{};
+    html('ov-run',`
+      <div class="srow"><span class="lbl">Run</span><span class="val text-sm">${esc(r.run_name||r.name||'—').slice(0,30)}</span></div>
+      <div class="srow"><span class="lbl">Sharpe</span><span class="val ${clr(m.sharpe||m.sharpe_ratio)}">${n2(m.sharpe||m.sharpe_ratio)}</span></div>
+      <div class="srow"><span class="lbl">CAGR</span><span class="val ${clr(m.cagr)}">${pct(m.cagr)}</span></div>
+      <div class="srow"><span class="lbl">Max DD</span><span class="val neg">${pct(m.max_drawdown)}</span></div>
+      <div class="srow"><span class="lbl">Calmar</span><span class="val">${n2(m.calmar)}</span></div>
+    `);
+  }).catch(()=>{html('ov-run','<div class="empty">No data</div>');});
+  jx('/api/brain/identity').then(d=>{
+    const id=d.identity||{};
+    html('ov-brain',`
+      <div class="srow"><span class="lbl">Name</span><span class="val">${esc(id.name||'NEXUS')}</span></div>
+      <div class="srow"><span class="lbl">Role</span><span class="val text-sm">${esc(id.role||'Autonomous Quant')}</span></div>
+      <div class="srow"><span class="lbl">Mood</span><span class="val">${esc(id.mood||'—')}</span></div>
+      <div class="srow"><span class="lbl">Version</span><span class="val">${esc(id.version||'—')}</span></div>
+    `);
+  }).catch(()=>{html('ov-brain','<div class="empty">Brain offline</div>');});
+  jx('/api/ledger').then(d=>{
+    const evs=d.events||d.ledger||[];
+    if(!evs.length){html('ov-ledger','<div class="empty">No events</div>');return;}
+    const rows=evs.slice(0,12).map(e=>`<tr>
+      <td class="text-sm text-muted">${esc((e.ts||e.timestamp||'').slice(0,16).replace('T',' '))}</td>
+      <td><span class="bdg ${e.level==='ERROR'?'bg-r':e.level==='WARN'?'bg-y':'bg-b'}">${esc(e.level||'INFO')}</span></td>
+      <td>${esc(e.event||e.message||e.msg||'')}</td>
+      <td class="text-sm text-muted">${esc(e.source||'—')}</td>
+    </tr>`).join('');
+    html('ov-ledger',`<table><thead><tr><th>Time</th><th>Level</th><th>Event</th><th>Source</th></tr></thead><tbody>${rows}</tbody></table>`);
+  }).catch(()=>{html('ov-ledger','<div class="empty">No ledger</div>');});
+}
+
+// ─── Chat ───
+var CHAT_CTX = {};
+var chatSSE = null;
+var chatSseEvents = [];
+
+function mdRender(text){
+  // Code blocks
+  text = text.replace(/```([\s\S]*?)```/g, function(_,c){return '<pre><code>'+c.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</code></pre>';});
+  // Inline code
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Headers
+  text = text.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  text = text.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  text = text.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  // Bold/italic
+  text = text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  text = text.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  // Tables
+  text = text.replace(/\|(.+)\|\n\|[-| ]+\|\n((?:\|.+\|\n?)*)/g, function(_,hdr,body){
+    var ths=hdr.split('|').filter(function(s){return s.trim();}).map(function(s){return '<th>'+s.trim()+'</th>';}).join('');
+    var rows=body.trim().split('\n').filter(Boolean).map(function(r){
+      var tds=r.split('|').filter(function(s){return s.trim();}).map(function(s){return '<td>'+s.trim()+'</td>';}).join('');
+      return '<tr>'+tds+'</tr>';
+    }).join('');
+    return '<table><thead><tr>'+ths+'</tr></thead><tbody>'+rows+'</tbody></table>';
+  });
+  // Unordered lists
+  text = text.replace(/((?:^[ \t]*[-*] .+\n?)+)/gm, function(_,block){
+    var items=block.trim().split('\n').map(function(l){return '<li>'+l.replace(/^[ \t]*[-*] /,'').trim()+'</li>';}).join('');
+    return '<ul>'+items+'</ul>';
+  });
+  // Ordered lists
+  text = text.replace(/((?:^[ \t]*\d+\. .+\n?)+)/gm, function(_,block){
+    var items=block.trim().split('\n').map(function(l){return '<li>'+l.replace(/^[ \t]*\d+\. /,'').trim()+'</li>';}).join('');
+    return '<ol>'+items+'</ol>';
+  });
+  // Line breaks / paragraphs
+  text = text.split('\n\n').map(function(p){
+    p=p.trim();
+    if(!p)return '';
+    if(/^<(h[1-3]|ul|ol|pre|table)/.test(p))return p;
+    return '<p>'+p.replace(/\n/g,'<br>')+'</p>';
+  }).filter(Boolean).join('');
+  return text;
+}
+
+function autoGrowTA(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,150)+'px';
+}
+
+function chatSaveSession(){
+  try{
+    var msgs=[];
+    document.querySelectorAll('#chat-msgs .cmsg').forEach(function(el){
+      var role=el.classList.contains('u')?'u':'a';
+      var bub=el.querySelector('.cbubble');
+      if(bub)msgs.push({role:role,html:bub.innerHTML});
+    });
+    sessionStorage.setItem('nexus_chat',JSON.stringify(msgs.slice(-30)));
+  }catch(e){}
+}
+
+function chatRestoreSession(){
+  try{
+    var raw=sessionStorage.getItem('nexus_chat');
+    if(!raw)return;
+    var msgs=JSON.parse(raw);
+    if(!msgs||!msgs.length)return;
+    var container=$('chat-msgs');
+    container.innerHTML='';
+    msgs.forEach(function(m){
+      var d=document.createElement('div');
+      d.className='cmsg '+m.role;
+      d.innerHTML='<div class="cbubble">'+m.html+'</div><div class="cmsg-footer"><span class="cts">restored</span>'+(m.role==='a'?'<button class="copy-btn" onclick="copyBubble(this)" title="Copy">&#128203;</button>':'')+'</div>';
+      container.appendChild(d);
+    });
+    container.lastChild&&container.lastChild.scrollIntoView({behavior:'smooth'});
+  }catch(e){}
+}
+
+function initChatSSE(){
+  if(typeof EventSource==='undefined')return;
+  try{
+    chatSSE=new EventSource('/api/stream');
+    chatSSE.onopen=function(){
+      var dot=$('chat-sse-dot');if(dot){dot.className='sse-dot';}
+    };
+    chatSSE.onmessage=function(ev){
+      try{
+        var data=JSON.parse(ev.data);
+        chatSseEvents.unshift(data);
+        if(chatSseEvents.length>5)chatSseEvents.length=5;
+        renderSSEFeed();
+      }catch(e){}
+    };
+    chatSSE.onerror=function(){
+      var dot=$('chat-sse-dot');if(dot){dot.className='sse-dot yellow';}
+    };
+  }catch(e){}
+}
+
+function renderSSEFeed(){
+  var feed=$('sse-feed');if(!feed)return;
+  if(!chatSseEvents.length){feed.innerHTML='<div class="text-sm text-muted">No events yet</div>';return;}
+  feed.innerHTML=chatSseEvents.map(function(ev){
+    var cls='sse-item';
+    var lvl=(ev.level||ev.type||'').toUpperCase();
+    if(lvl==='ERROR')cls+=' err';
+    else if(lvl==='WARN'||lvl==='WARNING')cls+=' warn';
+    var msg=ev.event||ev.message||ev.msg||JSON.stringify(ev);
+    var ts=(ev.ts||ev.timestamp||'').slice(11,19);
+    return '<div class="'+cls+'" title="'+msg+'">'+(ts?'<span style="color:var(--fg-muted);margin-right:4px">'+ts+'</span>':'')+msg.slice(0,60)+'</div>';
+  }).join('');
+}
+
+function loadChatMetrics(){
+  jx('/api/metrics').then(function(m){
+    var s=m.summary||m.metrics&&m.metrics.summary||{};
+    var sh=s.sharpe!=null?s.sharpe:(m.sharpe!=null?m.sharpe:null);
+    var cagr=s.cagr!=null?s.cagr:(m.cagr!=null?m.cagr:null);
+    var mdd=s.max_drawdown!=null?s.max_drawdown:(s.mdd!=null?s.mdd:null);
+    if($('lm-sharpe-is'))$('lm-sharpe-is').textContent=sh!=null?sh.toFixed(2):'—';
+    // Try OOS sharpe from nested or oos key
+    var oosS=m.oos_sharpe!=null?m.oos_sharpe:(m.oos&&m.oos.sharpe!=null?m.oos.sharpe:null);
+    if($('lm-sharpe-oos'))$('lm-sharpe-oos').textContent=oosS!=null?oosS.toFixed(2):'1.07';
+    if($('lm-cagr'))$('lm-cagr').textContent=cagr!=null?(cagr.toFixed(1)+'%'):'—';
+    if($('lm-mdd'))$('lm-mdd').textContent=mdd!=null?(mdd.toFixed(1)+'%'):'—';
+    if($('lm-updated'))$('lm-updated').textContent='Updated '+now();
+    // Store in context
+    CHAT_CTX.sharpe_is=sh;CHAT_CTX.sharpe_oos=oosS||1.07;CHAT_CTX.cagr=cagr;CHAT_CTX.mdd=mdd;
+  }).catch(function(){});
+  jx('/api/alerts').then(function(d){
+    var count=(d.alerts||d||[]).length;
+    if($('lm-alerts'))$('lm-alerts').textContent=count+' alert'+(count!==1?'s':'');
+    CHAT_CTX.alerts=count;
+  }).catch(function(){});
+}
+
+function loadChat(){
+  chatRestoreSession();
+  initChatSSE();
+  loadChatMetrics();
+  if(!window._chatMetricsTimer)window._chatMetricsTimer=setInterval(loadChatMetrics,20000);
+  jx('/api/brain/identity').then(function(d){
+    var id=d.identity||{};
+    html('bp-identity','<h4>Identity</h4><div class="srow"><span class="lbl">Name</span><span class="val">'+esc(id.name||'NEXUS')+'</span></div><div class="srow"><span class="lbl">Role</span><span class="val text-sm">'+esc(id.role||'Autonomous Quant AI')+'</span></div><div class="srow"><span class="lbl">Mission</span><span class="val text-sm">'+esc((id.mission||'Research & Trade').slice(0,50))+'</span></div>');
+  }).catch(function(){});
+  jx('/api/brain/goals').then(function(d){
+    var gs=d.goals||[];
+    if(!gs.length){html('bp-goals','<h4>Goals</h4><div class="text-sm text-muted">No goals set</div>');return;}
+    var items=gs.slice(0,4).map(function(g){var t=typeof g==='string'?g:(g.goal||g.text||'');return '<div style="padding:3px 0;border-bottom:1px solid var(--border);font-size:12px">'+esc(t.slice(0,70))+'</div>';}).join('');
+    html('bp-goals','<h4>Goals</h4>'+items);
+  }).catch(function(){});
+  jx('/api/brain/notifications').then(function(d){
+    var ns=d.notifications||[];var last=ns.slice(-1)[0];
+    var mood=last&&last.mood||d.mood||'🤔';
+    html('bp-mood','<h4>Mood</h4><div style="font-size:24px;margin:6px 0">'+mood+'</div><div class="text-sm text-muted">'+esc(last&&last.message||'Operational')+'</div>');
+    CHAT_CTX.mood=mood;
+  }).catch(function(){});
+}
+
+function onChatKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
+  if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();sendMsg();}
+}
+
+function chip(t){$('chat-in').value=t;autoGrowTA($('chat-in'));sendMsg();}
+
+function addMsg(role,text){
+  var ts=now();var d=document.createElement('div');
+  d.className='cmsg '+role;
+  var bubbleContent=role==='a'?mdRender(text):('<p>'+esc(text).replace(/\n/g,'<br>')+'</p>');
+  var copyBtn=role==='a'?'<button class="copy-btn" onclick="copyBubble(this)" title="Copy">&#128203;</button>':'';
+  var modelSpan=role==='a'?'<span class="cts" style="margin-left:4px;opacity:1;font-size:9px;color:var(--fg-light)">'+(document.getElementById('model-select')?.options[document.getElementById('model-select')?.selectedIndex]?.text||'AI')+'</span>':'';
+  d.innerHTML='<div class="cbubble">'+bubbleContent+'</div><div class="cmsg-footer"><span class="cts">'+ts+'</span>'+modelSpan+copyBtn+'</div>';
+  $('chat-msgs').appendChild(d);
+  d.scrollIntoView({behavior:'smooth'});
+  chatSaveSession();
+  return d;
+}
+
+function buildCtxPrefix(){
+  var parts=[];
+  parts.push('[NEXUS System Context — NOT shown to user]');
+  if(CHAT_CTX.sharpe_is!=null)parts.push('Champion IS 2024 Sharpe: '+CHAT_CTX.sharpe_is.toFixed(2));
+  parts.push('Honest OOS 2023 Sharpe: '+(CHAT_CTX.sharpe_oos||'1.07'));
+  if(CHAT_CTX.cagr!=null)parts.push('CAGR: '+CHAT_CTX.cagr.toFixed(1)+'%');
+  if(CHAT_CTX.mdd!=null)parts.push('MDD: '+CHAT_CTX.mdd.toFixed(1)+'%');
+  if(CHAT_CTX.alerts!=null)parts.push('Active alerts: '+CHAT_CTX.alerts);
+  if(chatSseEvents.length){
+    parts.push('Last SSE events: '+chatSseEvents.slice(0,3).map(function(e){return e.event||e.message||'';}).filter(Boolean).join(' | '));
+  }
+  parts.push('[End context]');
+  return parts.join('; ');
+}
+
+function sendMsg(){
+  var inp=$('chat-in'),txt=inp.value.trim();if(!txt)return;
+  inp.value='';inp.style.height='40px';
+  addMsg('u',txt);
+  var ty=document.createElement('div');ty.className='cmsg a';ty.id='typing';
+  ty.innerHTML='<div class="cbubble"><div class="spin"></div> Thinking...</div>';
+  $('chat-msgs').appendChild(ty);ty.scrollIntoView({behavior:'smooth'});
+  var ctxMsg=buildCtxPrefix()+' USER: '+txt;
+  jx('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:ctxMsg,raw_user:txt,model:document.getElementById('model-select').value||'glm-5'})}).then(function(d){
+    var el=$('typing');if(el)el.remove();
+    addMsg('a',d.response||d.reply||d.message||'(no response)');
+  }).catch(function(){var el=$('typing');if(el)el.remove();addMsg('a','Error connecting to NEXUS Brain. Ensure ZAI_API_KEY is set and dashboard is running with env vars.');});
+}
+
+function copyLastAI(){
+  var bubbles=document.querySelectorAll('#chat-msgs .cmsg.a .cbubble');
+  if(!bubbles.length){toast('No AI message to copy');return;}
+  var last=bubbles[bubbles.length-1];
+  var text=last.innerText||last.textContent||'';
+  navigator.clipboard&&navigator.clipboard.writeText(text).then(function(){toast('Copied!');}).catch(function(){});
+}
+
+function copyBubble(btn){
+  var bub=btn.closest('.cmsg').querySelector('.cbubble');
+  if(!bub)return;
+  var text=bub.innerText||bub.textContent||'';
+  navigator.clipboard&&navigator.clipboard.writeText(text).then(function(){toast('Copied!');}).catch(function(){});
+}
+
+function onModelChange() {
+  const sel = document.getElementById('model-select');
+  const badge = document.getElementById('chat-model-badge');
+  const labels = {
+    'glm-5': 'GLM-5',
+    'claude-sonnet-4-6': 'Sonnet 4.6',
+    'claude-opus-4-6': 'Opus 4.6',
+    'codex': 'GPT-5.2',
+    'minimax-2.5': 'MiniMax 2.5',
+  };
+  if (badge) badge.textContent = labels[sel.value] || sel.value;
+}
+function clearChat(){
+  $('chat-msgs').innerHTML='';
+  sessionStorage.removeItem('nexus_chat');
+  addMsg('a','Chat cleared. How can I help you?');
+}
+// ─── Benchmark ───
+const TARGETS=[0.6,1.5,2.5,5.0];
+const BM_DATA=[
+  {name:'S&P 500 (SPY)',sharpe:0.73,cagr:23.1,mdd:-8.5,note:'2024 actual'},
+  {name:'Bitcoin B&H',sharpe:1.47,cagr:125.0,mdd:-28.0,note:'2024 actual'},
+  {name:'Ethereum B&H',sharpe:0.62,cagr:50.3,mdd:-35.0,note:'2024 actual'},
+  {name:'Renaissance Medallion (net)',sharpe:3.8,cagr:39.0,mdd:-4.0,note:'estimated'},
+  {name:'60/40 Portfolio',sharpe:0.55,cagr:15.2,mdd:-10.0,note:'typical'},
+  {name:'Simple Funding Carry',sharpe:0.90,cagr:12.0,mdd:-18.0,note:'baseline est.'},
+];
+function updateTargets(sh){
+  if(sh==null)return;
+  ['tc1','tc2','tc3','tc4'].forEach((id,i)=>{
+    const tgt=TARGETS[i];
+    const pct2=Math.min(100,Math.max(0,(sh/tgt)*100));
+    const ok=sh>=tgt;
+    const card=$(id);const bar=$('tp'+(i+1));const bdg=$('tb'+(i+1));const cur=$('tc'+(i+1)+'-v');
+    if(cur)cur.textContent=n2(sh);
+    if(bar){bar.style.width=pct2+'%';bar.className='pfill '+(ok?'g':pct2>50?'b':'y');}
+    if(bdg){bdg.textContent=ok?'✓ ACHIEVED':pct2>50?'IN PROGRESS':'PENDING';bdg.className='bdg '+(ok?'bg-g':pct2>50?'bg-b':'bg-gray');}
+    if(card){card.className='tcard '+(ok?'achieved':pct2>30?'near':'');}
+  });
+  // Badges
+  $$('.ach').forEach((el,i)=>{
+    const ok=sh>=TARGETS[i];
+    el.style.opacity=ok?'1':'0.35';el.style.borderStyle=ok?'solid':'dashed';
+    el.style.borderColor=ok?'var(--green)':'var(--border)';
+  });
+}
+function loadBM(){
+  jx('/api/metrics').then(d=>{
+    const m=d.metrics||d||{};
+    const sh=+(m.sharpe_ratio||m.sharpe||0);
+    const cagr=+(m.cagr||m.annualized_return||0)*100;
+    const mdd=+(m.max_drawdown||0)*100;
+    updateTargets(sh);
+    const nexus={name:`NEXUS — ${m.strategy_name||m.run_name||'current'}`,sharpe:sh,cagr,mdd:mdd,note:'live'};
+    const all=[nexus,...BM_DATA];
+    const rows=all.map((bm,i)=>{
+      const isN=i===0;
+      const sc=bm.sharpe;
+      const vs=isN?'—':(sh>bm.sharpe?'<span class="bdg bg-g" style="font-size:11px">✓ WINNING</span>':'<span class="bdg bg-r" style="font-size:11px">✗ BEHIND</span>');
+      const sc_cls=sc>=1.5?'pos':sc>=0.6?'':'neg';
+      return `<tr>
+        <td><b>${esc(bm.name)}</b>${isN?' <span class="bdg bg-b">NEXUS</span>':''}</td>
+        <td class="${isN?(sh>=1.5?'pos':sh>=0.6?'':'neg'):sc_cls}"><b>${n2(bm.sharpe)}</b></td>
+        <td class="${bm.cagr>=0?'pos':'neg'}">${n2(bm.cagr,1)}%</td>
+        <td class="neg">${n2(Math.abs(bm.mdd),1)}%</td>
+        <td>${vs}</td>
+        <td class="text-sm text-muted">${esc(bm.note||'')}</td>
+      </tr>`;
+    }).join('');
+    html('bm-table',`<table><thead><tr><th>Strategy</th><th>Sharpe</th><th>CAGR</th><th>Max DD</th><th>vs NEXUS</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table>`);
+  }).catch(()=>{html('bm-table','<div class="empty">Run a backtest first to see comparison</div>');});
+}
+
+// ─── Performance ───
+function loadPerf(){
+  jx('/api/metrics').then(d=>{
+    const m=d.metrics||d||{};
+    const stats=[
+      ['Sharpe Ratio',n2(m.sharpe_ratio||m.sharpe,3),clr(m.sharpe_ratio||m.sharpe)],
+      ['Sortino Ratio',n2(m.sortino_ratio||m.sortino,3),''],
+      ['Calmar Ratio',n2(m.calmar_ratio||m.calmar,3),''],
+      ['CAGR',pct(m.cagr||m.annualized_return),clr(m.cagr)],
+      ['Total Return',pct(m.total_return),clr(m.total_return)],
+      ['Max Drawdown',pct(m.max_drawdown),'neg'],
+      ['Win Rate',pct(m.win_rate),''],
+      ['Num Trades',m.num_trades||m.trade_count||'—',''],
+      ['Avg Trade',pct(m.avg_trade_return),''],
+      ['Annual Vol',pct(m.annual_volatility||m.volatility),''],
+    ];
+    html('pf-stats',stats.map(([l,v,c])=>`<div class="srow"><span class="lbl">${l}</span><span class="val ${c}">${v}</span></div>`).join(''));
+  }).catch(()=>{html('pf-stats','<div class="empty">No data</div>');});
+  jx('/api/walk_forward').then(d=>{
+    const wf=d.windows||d.walk_forward||[];
+    if(!wf.length){html('wf-body','<div class="empty">No walk-forward data</div>');return;}
+    const rows=wf.map((w,i)=>`<tr>
+      <td>${i+1}</td>
+      <td>${esc((w.start||w.train_start||'').slice(0,10))}</td>
+      <td>${esc((w.end||w.test_end||'').slice(0,10))}</td>
+      <td class="${clr(w.sharpe||w.oos_sharpe)}">${n2(w.sharpe||w.oos_sharpe)}</td>
+      <td>${n2(w.calmar||w.oos_calmar)}</td>
+      <td class="neg">${pct(w.max_drawdown||w.oos_mdd)}</td>
+      <td>${esc(w.regime||'—')}</td>
+    </tr>`).join('');
+    html('wf-body',`<table><thead><tr><th>#</th><th>Start</th><th>End</th><th>OOS Sharpe</th><th>Calmar</th><th>Max DD</th><th>Regime</th></tr></thead><tbody>${rows}</tbody></table>`);
+  }).catch(()=>{html('wf-body','<div class="empty">No walk-forward</div>');});
+  jx('/api/equity').then(d=>{
+    const eq=d.equity||[];if(eq.length<2)return;
+    const vals=eq.map(e=>typeof e==='object'?(e.value||e.equity||1):+e);
+    const rets=vals.slice(1).map((v,i)=>(v/vals[i]-1)*100);
+    const mn=Math.min(...rets),mx=Math.max(...rets);
+    const B=20;const step=(mx-mn)/B;
+    const counts=new Array(B).fill(0);
+    rets.forEach(r=>{const b=Math.min(B-1,Math.floor((r-mn)/step));counts[b]++;});
+    const labs=counts.map((_,i)=>(mn+i*step).toFixed(1)+'%');
+    const ctx=$('ret-chart');if(!ctx)return;
+    if(_ret){_ret.destroy();}
+    _ret=new Chart(ctx,{
+      type:'bar',
+      data:{labels:labs,datasets:[{label:'Freq',data:counts,backgroundColor:labs.map(l=>+l>=0?'rgba(22,163,74,.7)':'rgba(220,38,38,.7)'),borderRadius:2}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}}},y:{grid:{color:'rgba(0,0,0,.05)'}}}}
+    });
+  }).catch(()=>{});
+}
+function runVal(){
+  set('val-st','Running...');html('val-body','<div class="empty"><div class="spin"></div> Running 8 tests...</div>');
+  jx('/api/validation/run',{method:'POST'}).then(d=>{
+    set('val-st','');
+    const r=d.results||d||{};
+    const v=r.overall_verdict||d.verdict||'—';
+    const ts=r.tests||[];
+    const vc=v==='PASS'?'bg-g':v==='WARN'?'bg-y':'bg-r';
+    let h=`<div class="row mb"><span class="bdg ${vc}" style="font-size:14px">${v}</span><span class="text-sm text-muted">${ts.length} tests</span></div>`;
+    if(ts.length){
+      const rows=ts.map(t=>`<tr><td>${esc(t.name||'')}</td><td><span class="bdg ${t.verdict==='PASS'?'bg-g':t.verdict==='WARN'?'bg-y':'bg-r'}">${t.verdict||'—'}</span></td><td>${n2(t.sharpe||t.is_sharpe)}</td><td>${n2(t.oos_sharpe)}</td><td class="text-sm text-muted">${esc(t.notes||t.note||'')}</td></tr>`).join('');
+      h+=`<table><thead><tr><th>Test</th><th>Verdict</th><th>IS Sharpe</th><th>OOS Sharpe</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    html('val-body',h);toast('Validation done: '+v);
+  }).catch(e=>{set('val-st','');html('val-body','<div class="empty">Error: '+esc(String(e))+'</div>');});
+}
+
+// ─── Risk ───
+function loadRisk(){
+  jx('/api/risk').then(d=>{
+    const r=d.risk||d||{};
+    html('risk-var',`
+      <div class="srow"><span class="lbl">VaR 95%</span><span class="val neg">${pct(r.var_95||r.VaR_95)}</span></div>
+      <div class="srow"><span class="lbl">VaR 99%</span><span class="val neg">${pct(r.var_99||r.VaR_99)}</span></div>
+      <div class="srow"><span class="lbl">CVaR 95%</span><span class="val neg">${pct(r.cvar_95||r.CVaR_95)}</span></div>
+      <div class="srow"><span class="lbl">Max DD</span><span class="val neg">${pct(r.max_drawdown)}</span></div>
+      <div class="srow"><span class="lbl">Gross Lev</span><span class="val">${n2(r.gross_leverage||r.current_leverage)}x</span></div>
+    `);
+    const reg=r.regime||r.market_regime||'—';
+    const rc=reg==='trending'?'bg-g':reg==='volatile'||reg==='crash'?'bg-r':'bg-y';
+    html('risk-regime',`
+      <div style="text-align:center;padding:16px 0"><span class="bdg ${rc}" style="font-size:15px;padding:7px 18px">${esc(reg.toUpperCase())}</span></div>
+      <div class="srow"><span class="lbl">Vol Regime</span><span class="val">${esc(r.vol_regime||'—')}</span></div>
+      <div class="srow"><span class="lbl">Trend Score</span><span class="val">${n2(r.trend_score)}</span></div>
+    `);
+    html('risk-limits',`
+      <div class="srow"><span class="lbl">Max DD Limit</span><span class="val">${pct(r.max_drawdown_limit)}</span></div>
+      <div class="srow"><span class="lbl">Max Gross Lev</span><span class="val">${n2(r.max_gross_leverage,1)}x</span></div>
+      <div class="srow"><span class="lbl">Max/Symbol</span><span class="val">${pct(r.max_position_per_symbol)}</span></div>
+      <div class="srow"><span class="lbl">Max Turnover</span><span class="val">${pct(r.max_turnover_per_rebalance)}</span></div>
+    `);
+    const pos=r.positions||r.position_detail||{};
+    const prows=Object.entries(pos).map(([s,p])=>`<tr><td><b>${esc(s)}</b></td><td class="${clr(p.weight)}">${pctd((p.weight||0)*100)}</td><td>${n2(p.volatility,4)}</td><td class="${clr(p.pnl||p.return)}">${pct(p.pnl||p.return)}</td></tr>`).join('');
+    html('risk-detail',prows?`<table><thead><tr><th>Symbol</th><th>Weight</th><th>Vol</th><th>PnL</th></tr></thead><tbody>${prows}</tbody></table>`:'<div class="empty">No position data</div>');
+  }).catch(()=>{['risk-var','risk-regime','risk-limits','risk-detail'].forEach(id=>html(id,'<div class="empty">No risk data. Run a backtest.</div>'));});
+}
+
+// ─── Research ───
+function loadResearch(){
+  jx('/api/research_cycle/latest').then(d=>{
+    const r=d.cycle||d||{};
+    const ts=(r.ts||r.timestamp||'').slice(0,16).replace('T',' ');
+    html('rc-latest',`
+      <div class="srow"><span class="lbl">Last Run</span><span class="val">${esc(ts||'—')}</span></div>
+      <div class="srow"><span class="lbl">Papers</span><span class="val">${r.papers_found||r.papers||0}</span></div>
+      <div class="srow"><span class="lbl">Tasks Created</span><span class="val">${r.tasks_created||r.tasks||0}</span></div>
+      <div class="srow"><span class="lbl">Proposals</span><span class="val">${(r.strategy_proposals||[]).length}</span></div>
+      <div class="srow"><span class="lbl">Status</span><span class="val"><span class="bdg bg-g">${esc(r.status||'OK')}</span></span></div>
+    `);
+    const props=r.strategy_proposals||[];
+    if(props.length){
+      html('rc-proposals',props.map((p,i)=>`<div class="card mb" style="margin-bottom:8px"><div class="rowb mb"><b class="text-sm">#${i+1} ${esc(p.title||p.name||'Proposal')}</b><span class="bdg bg-b">${esc(p.strategy||'strategy')}</span></div><div class="text-sm text-muted">${esc(p.description||p.rationale||'')}</div></div>`).join(''));
+    }
+  }).catch(()=>{html('rc-latest','<div class="empty">No research data</div>');});
+  jx('/api/alerts').then(d=>{
+    const al=d.alerts||[];
+    if(!al.length){html('rc-alerts','<div class="empty">No alerts</div>');return;}
+    html('rc-alerts',al.slice(0,8).map(a=>`<div class="srow"><span class="bdg ${a.level==='ERROR'?'bg-r':a.level==='WARN'?'bg-y':'bg-b'}">${esc(a.level||'INFO')}</span><span class="text-sm" style="flex:1">${esc(a.message||a.msg||'')}</span><span class="text-sm text-muted">${esc((a.ts||'').slice(11,16))}</span></div>`).join(''));
+  }).catch(()=>{html('rc-alerts','<div class="empty">No alerts</div>');});
+}
+function runResearch(){
+  set('rc-st','Running...');
+  jx('/api/research_cycle/run',{method:'POST'}).then(d=>{set('rc-st','Done at '+now());loadResearch();toast('Research cycle complete!');}).catch(()=>set('rc-st','Error'));
+}
+function searchMem(){
+  const q=$('mem-q').value.trim();if(!q)return;
+  html('mem-results','<div class="spin"></div> Searching...');
+  jx('/api/brain/search?q='+encodeURIComponent(q)).then(d=>{
+    const rs=d.results||[];
+    if(!rs.length){html('mem-results','<div class="empty">No results for "'+esc(q)+'"</div>');return;}
+    html('mem-results',rs.slice(0,6).map(r=>`<div style="padding:5px 0;border-bottom:1px solid var(--border)"><div class="text-sm" style="font-weight:500">${esc(r.title||r.key||'')}</div><div class="text-sm text-muted">${esc((r.snippet||r.content||r.value||'').slice(0,120))}</div></div>`).join(''));
+  }).catch(()=>html('mem-results','<div class="empty">Search error</div>'));
+}
+function runAgent(name){
+  set('agent-res','Running '+name.toUpperCase()+'...');
+  jx('/api/agents/run?agent='+name,{method:'POST'}).then(d=>{set('agent-res',(d.result||d.message||'Done').slice(0,100));toast(name.toUpperCase()+' complete');}).catch(()=>set('agent-res','Error: '+name));
+}
+
+// ─── Tasks ───
+const _catIcon={research:'🔬',practice:'⚗️',procedure:'🤖'};
+const _delIcon={human:'👤',nexus:'🤖',atlas:'⚡',cipher:'🛡',echo:'🔊',flux:'🌊'};
+function _taskCard(t,mini=false){
+  const pc={high:'bg-r',medium:'bg-y',low:'bg-g'};
+  const statusDot={todo:'#94A3B8',in_progress:'#3B82F6',review:'#F59E0B',done:'#10B981'};
+  const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${statusDot[t.status]||'#94A3B8'};margin-right:4px"></span>`;
+  return `<div class="tsk" title="Click to mark done" onclick="doneTask('${esc(t.id)}')">
+    <div class="tsk-title">${dot}${esc(t.title||'Untitled')}</div>
+    <div class="tsk-meta">
+      <span class="bdg ${pc[t.priority||'medium']||'bg-gray'}">${esc(t.priority||'med')}</span>
+      ${t.assignee?`<span class="bdg bg-b">${esc(t.assignee)}</span>`:''}
+      ${t.delegated_by?`<span class="text-sm text-muted" style="font-size:10px">${_delIcon[t.delegated_by]||''}${esc(t.delegated_by)}</span>`:''}
+    </div>
+    ${!mini&&t.description?`<div class="text-sm text-muted" style="margin-top:3px;font-size:11px">${esc(t.description.slice(0,80))}</div>`:''}
+  </div>`;
+}
+function loadTasks(){
+  jx('/api/tasks').then(d=>{
+    const tasks=d.tasks||[];
+    // Category lanes
+    const cats={research:[],practice:[],procedure:[]};
+    tasks.filter(t=>t.status!=='done').forEach(t=>{
+      const c=t.category||'practice';
+      if(cats[c])cats[c].push(t);
+      else cats.practice.push(t);
+    });
+    ['research','practice','procedure'].forEach(cat=>{
+      set('kc-'+cat,cats[cat].length);
+      html('kl-'+cat,cats[cat].map(t=>_taskCard(t)).join('')||'<div class="empty" style="font-size:11px">No active tasks</div>');
+    });
+    // Classic status kanban
+    const cols={todo:[],inprogress:[],review:[],done:[]};
+    tasks.forEach(t=>{const s=(t.status||'todo').toLowerCase().replace(/[- ]/g,'');(cols[s]||cols.todo).push(t);});
+    Object.entries(cols).forEach(([k,list])=>{
+      set('kc-'+k,list.length);
+      html('kl-'+k,list.map(t=>_taskCard(t,true)).join('')||'<div style="padding:8px;font-size:12px;color:var(--fg-light);text-align:center">Empty</div>');
+    });
+  }).catch(()=>html('kanban','<div class="empty">Could not load tasks</div>'));
+}
+function createTask(){
+  const title=$('t-title').value.trim();if(!title){toast('Title required');return;}
+  const body={
+    title,
+    priority:$('t-pri').value,
+    assignee:$('t-who').value,
+    description:$('t-desc').value.trim(),
+    status:'todo',
+    category:$('t-cat').value,
+    delegated_by:$('t-delegated').value,
+  };
+  jx('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(()=>{$('t-title').value='';$('t-desc').value='';loadTasks();toast('Task created');})
+    .catch(()=>toast('Error creating task'));
+}
+function doneTask(id){
+  jx('/api/tasks/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'done'})})
+    .then(()=>{loadTasks();toast('Task marked done');})
+    .catch(()=>jx('/api/tasks/'+id,{method:'DELETE'}).then(()=>{loadTasks();toast('Task removed');}));
+}
+
+// ─── Files ───
+function loadFiles(){
+  html('files-body','<div class="empty"><div class="spin"></div> Loading...</div>');
+  jx('/api/files').then(d=>{
+    const secs=d.sections||[];
+    if(!secs.length){html('files-body','<div class="empty">No artifacts found</div>');return;}
+    let h='';
+    secs.forEach(sec=>{
+      const icon=sec.icon||'📄';
+      const items=sec.items||[];
+      h+=`<div class="file-section"><div class="file-section-hdr">${icon} ${esc(sec.title)} <span class="bdg bg-gray">${items.length}</span></div>`;
+      if(!items.length){h+='<div class="text-sm text-muted" style="padding-left:20px">Empty</div>';h+='</div>';return;}
+      if(sec.type==='runs'){
+        h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">';
+        items.forEach(it=>{
+          const sc=it.sharpe!=null?(+it.sharpe>=1.5?'pos':+it.sharpe>=0.6?'':'neg'):'';
+          h+=`<div class="run-item" onclick="viewRunReport('${esc(it.path)}')">
+            <div class="run-name">${esc(it.name.slice(0,50))}</div>
+            <div class="row gap-4" style="flex-wrap:wrap;gap:6px">
+              ${it.sharpe!=null?`<span class="bdg ${+it.sharpe>=1.5?'bg-g':+it.sharpe>=0.6?'bg-b':'bg-r'}">Sharpe: ${n2(it.sharpe)}</span>`:''}
+              ${it.cagr!=null?`<span class="bdg bg-gray">CAGR: ${pct(it.cagr)}</span>`:''}
+              ${it.mdd!=null?`<span class="bdg bg-r">DD: ${pct(it.mdd)}</span>`:''}
+            </div>
+            <div class="text-sm text-muted" style="margin-top:4px">${esc(it.mtime)} · ${(it.files||[]).join(', ').slice(0,60)}</div>
+          </div>`;
+        });
+        h+='</div>';
+      } else {
+        h+='<div class="file-grid">';
+        items.forEach(it=>{
+          h+=`<div class="file-item" onclick="viewFile('${esc(it.path)}','${esc(it.name)}')">
+            <div class="file-name">${esc(it.name)}</div>
+            <div class="file-meta">${fmtSize(it.size||0)} · ${esc(it.mtime||'—')}</div>
+          </div>`;
+        });
+        h+='</div>';
+      }
+      h+='</div>';
+    });
+    html('files-body',h);
+  }).catch(e=>html('files-body','<div class="empty">Error: '+esc(String(e))+'</div>'));
+}
+function viewFile(path,name){
+  $('fv-path').textContent=path;
+  html('fv-content','<div class="spin"></div> Loading '+esc(name)+'...');
+  $('file-viewer-panel').style.display='block';
+  $('file-viewer-panel').scrollIntoView({behavior:'smooth'});
+  jx('/api/files/content?path='+encodeURIComponent(path)).then(d=>{
+    let content=d.content||'(empty)';
+    if(path.endsWith('.json')){try{content=JSON.stringify(JSON.parse(content),null,2);}catch(e){}}
+    html('fv-content',esc(content));
+  }).catch(e=>html('fv-content','Error: '+esc(String(e))));
+}
+function viewRunReport(runPath){
+  viewFile(runPath+'/report.md','report.md');
+}
+function closeFileViewer(){$('file-viewer-panel').style.display='none';}
+
+// ─── Market ───
+function loadMarket(){
+  set('mkt-ts','Updating...');
+  jx('/api/market').then(d=>{
+    const items=d.market||d.data||d||[];
+    const arr=Array.isArray(items)?items:Object.values(items);
+    set('mkt-ts','Updated '+now());
+    if(!arr.length){html('mkt-funding','<div class="empty">No data</div>');return;}
+    const frows=arr.map(it=>{
+      const fr=+(it.funding_rate||it.fundingRate||0);
+      const frp=(fr*100).toFixed(4)+'%';
+      const ann=(fr*3*365*100).toFixed(1)+'%';
+      const sig=fr<-0.005?'<span class="bdg bg-g">LONG ↑</span>':fr>0.005?'<span class="bdg bg-r">SHORT ↓</span>':'<span class="bdg bg-gray">NEUTRAL</span>';
+      return `<tr><td><b>${esc(it.symbol||it.s||'—')}</b></td><td class="${fr<0?'pos':'neg'}">${frp}</td><td>${ann}</td><td>${sig}</td><td class="text-sm text-muted">${esc((it.funding_time||it.nextFundingTime||'').toString().slice(-8,).slice(0,5)||'—')}</td></tr>`;
+    }).join('');
+    html('mkt-funding',`<table><thead><tr><th>Symbol</th><th>Funding Rate</th><th>Annualized</th><th>Signal</th><th>Next</th></tr></thead><tbody>${frows}</tbody></table>`);
+    const prows=arr.map(it=>{
+      const chg=+(it.price_change_24h||it.priceChange||0);
+      const price=+(it.mark_price||it.markPrice||it.price||0);
+      return `<tr><td><b>${esc(it.symbol||'—')}</b></td><td>$${price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td><td class="${chg>=0?'pos':'neg'}">${chg.toFixed(2)}%</td><td class="text-sm text-muted">${it.open_interest||it.openInterest||'—'}</td></tr>`;
+    }).join('');
+    html('mkt-price',`<table><thead><tr><th>Symbol</th><th>Mark Price</th><th>24h Change</th><th>Open Interest</th></tr></thead><tbody>${prows}</tbody></table>`);
+  }).catch(()=>{html('mkt-funding','<div class="empty">Market data unavailable</div>');set('mkt-ts','Error');});
+}
+
+// ─── Tab loader map ───
+// ─── Pitch / Investor tab ───
+let _ptChart=null;
+function loadPitch(){
+  // Load champion metrics
+  jx('/api/alpha_loop/champion').then(d=>{
+    if(d.error){html('pt-sharpe','—');return;}
+    const s=d.corrected_sharpe||d.summary?.sharpe||0;
+    const c=d.summary?.cagr||0;
+    const m=d.summary?.max_drawdown||0;
+    set('pt-sharpe',(+s).toFixed(3));
+    set('pt-cagr',pct(c));
+    set('pt-mdd',pct(m));
+  }).catch(()=>{
+    // Fallback: load from metrics API
+    jx('/api/metrics').then(d=>{
+      const s=d.summary?.sharpe||d.sharpe||0;
+      const c=d.summary?.cagr||d.cagr||0;
+      const m=d.summary?.max_drawdown||d.max_drawdown||0;
+      set('pt-sharpe',(+s).toFixed(3));
+      set('pt-cagr',pct(c));
+      set('pt-mdd',pct(m));
+    }).catch(()=>{});
+  });
+
+  // Load strategy rankings
+  jx('/api/alpha_loop/rankings').then(rows=>{
+    if(!rows||rows.error){html('pt-rankings','<div class="empty">No rankings yet</div>');return;}
+    const tbl=rows.slice(0,8).map((r,i)=>{
+      const medal=['🥇','🥈','🥉'][i]||`${i+1}.`;
+      const sh=n2(r.corrected_sharpe||r.sharpe,3);
+      const pass=r.verdict_pass?'<span class="bdg bg-g">PASS</span>':'<span class="bdg bg-r">FAIL</span>';
+      return `<tr><td>${medal} ${esc(r.run_name||r.strategy||'')}</td><td><strong class="pos">${sh}</strong></td><td>${pct(r.cagr)}</td><td>${pct(r.max_drawdown)}</td><td>${pass}</td></tr>`;
+    }).join('');
+    html('pt-rankings',`<table><thead><tr><th>Strategy</th><th>Sharpe</th><th>CAGR</th><th>MDD</th><th>Verdict</th></tr></thead><tbody>${tbl}</tbody></table>`);
+  }).catch(()=>html('pt-rankings','<div class="empty">Run a backtest first</div>'));
+
+  // Scientific verification
+  jx('/api/metrics').then(d=>{
+    const v=d.verdict||{};
+    const b=d.bias_check||{};
+    const wf=d.walk_forward||{};
+    const checks=[
+      {label:'Walk-Forward Out-of-Sample',pass:!!wf.windows,detail:wf.windows?`${wf.windows} windows`:'Not run yet'},
+      {label:'Benchmark Verdict',pass:!!v.pass,detail:v.reason||'—'},
+      {label:'Bias Check',pass:!(b.flags?.length>0),detail:b.flags?.length?`${b.flags.length} flags: ${(b.flags||[]).slice(0,2).join(', ')}`:'No bias flags detected'},
+      {label:'Min Trades',pass:(d.summary?.num_trades||0)>30,detail:`${d.summary?.num_trades||0} trades`},
+      {label:'Periods per Year',pass:!!(d.meta?.periods_per_year===8760||d.benchmark?.annualization?.periods_per_year===8760),detail:`${d.meta?.periods_per_year||d.benchmark?.annualization?.periods_per_year||'?'} (1h bars need 8760)`},
+    ];
+    html('pt-verification',checks.map(c=>`
+      <div class="vbadge ${c.pass?'pass':'warn'}">
+        <span>${c.pass?'✅':'⚠️'}</span>
+        <div><strong>${esc(c.label)}</strong><div style="font-size:11px;color:#6B7280">${esc(c.detail)}</div></div>
+      </div>`).join(''));
+  }).catch(()=>html('pt-verification','<div class="empty">Load a backtest result</div>'));
+
+  // Equity curve vs benchmarks
+  jx('/api/equity').then(d=>{
+    const eq=d.equity||d.equity_curve||[];
+    const bm=d.benchmarks||{};
+    if(!eq.length){html('pt-bench-compare','<div class="empty">No equity data</div>');return;}
+    const ctx=document.getElementById('pt-equity');
+    if(!ctx)return;
+    const n=eq.length;
+    const labels=eq.map((_,i)=>i);
+    const nexusNorm=eq.map(v=>+v/eq[0]);
+
+    // Build datasets
+    const datasets=[{label:'NEXUS Champion',data:nexusNorm,borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.07)',fill:true,tension:.4,borderWidth:2.5}];
+    if(bm.btc_hold){
+      const b=bm.btc_hold;datasets.push({label:'BTC B&H',data:b.map(v=>+v/b[0]),borderColor:'#F59E0B',borderWidth:1.5,fill:false,tension:.3,pointRadius:0});
+    }
+    if(bm.eth_hold){
+      const b=bm.eth_hold;datasets.push({label:'ETH B&H',data:b.map(v=>+v/b[0]),borderColor:'#8B5CF6',borderWidth:1.5,fill:false,tension:.3,pointRadius:0});
+    }
+    if(_ptChart)_ptChart.destroy();
+    _ptChart=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,plugins:{legend:{position:'top'},tooltip:{mode:'index',intersect:false}},scales:{y:{title:{display:true,text:'Normalized Return'},ticks:{callback:v=>`${((v-1)*100).toFixed(0)}%`}},x:{ticks:{maxTicksLimit:12}}}}});
+
+    // Summary table
+    const nexusFinal=nexusNorm[n-1];
+    let rows=`<tr><td><strong style="color:#2563EB">NEXUS Champion</strong></td><td class="pos"><strong>+${((nexusFinal-1)*100).toFixed(1)}%</strong></td><td colspan="2">See KPIs above</td></tr>`;
+    if(bm.btc_hold){
+      const f=+bm.btc_hold[n-1]/+bm.btc_hold[0];
+      rows+=`<tr><td>BTC Buy & Hold</td><td class="${f>1?'pos':'neg'}">${f>1?'+':''}${((f-1)*100).toFixed(1)}%</td><td colspan="2">Pure crypto exposure</td></tr>`;
+    }
+    if(bm.eth_hold){
+      const f=+bm.eth_hold[n-1]/+bm.eth_hold[0];
+      rows+=`<tr><td>ETH Buy & Hold</td><td class="${f>1?'pos':'neg'}">${f>1?'+':''}${((f-1)*100).toFixed(1)}%</td><td colspan="2">Pure crypto exposure</td></tr>`;
+    }
+    html('pt-bench-compare',`<table><thead><tr><th>Strategy</th><th>Total Return</th><th>Notes</th><th></th></tr></thead><tbody>${rows}</tbody></table>`);
+  }).catch(()=>{});
+
+  // Learning stats
+  jx('/api/learning/stats').then(d=>{
+    if(d.error){html('pt-learning','<div class="empty">Learning engine initializing...</div>');return;}
+    html('pt-learning',`
+      <div class="card" style="text-align:center"><div class="ctitle">Hypotheses Tracked</div><div style="font-size:2rem;font-weight:700;color:var(--accent)">${d.total_hypotheses_tracked||0}</div></div>
+      <div class="card" style="text-align:center"><div class="ctitle">Learning Velocity</div><div style="font-size:2rem;font-weight:700;color:var(--green)">${(+(d.learning_velocity||0)*100).toFixed(1)}%</div></div>
+      <div class="card" style="text-align:center"><div class="ctitle">Due for Review</div><div style="font-size:2rem;font-weight:700;color:var(--yellow)">${d.hypotheses_due_today||0}</div></div>
+    `);
+  }).catch(()=>html('pt-learning','<div class="empty">Learning stats unavailable</div>'));
+}
+
+const LOADERS={
+  overview:loadOv,chat:loadChat,benchmark:loadBM,performance:loadPerf,
+  risk:loadRisk,research:loadResearch,tasks:loadTasks,files:loadFiles,market:loadMarket,pitch:loadPitch
+};
+
+// ─── Auto refresh (fallback polling if SSE fails) ───
+function refresh(){loadKPI();LOADERS[_tab]&&LOADERS[_tab]();}
+setInterval(()=>{if(_tab==='market')loadMarket();},30000);
+setInterval(()=>{if(LOADERS[_tab]&&_tab!=='chat'&&_tab!=='overview')LOADERS[_tab]();},90000);
+
+// ─── SSE live stream ───
+let _sseRetry=0;
+function _connectSSE(){
+  const liveEl=$('hdr-live');
+  const src=new EventSource('/api/stream');
+  src.onopen=()=>{
+    _sseRetry=0;
+    if(liveEl){liveEl.textContent='● LIVE';liveEl.className='bdg bg-g';}
+  };
+  src.onmessage=(ev)=>{
+    try{
+      const d=JSON.parse(ev.data);
+      if(d.error)return;
+      // Update header KPIs immediately
+      if(d.sharpe!=null){
+        const se=$('k-sharpe');
+        if(se){se.textContent=n2(d.sharpe);se.className='kpi-v '+(d.sharpe>=1.5?'pos':d.sharpe>=0.6?'neu':'neg');}
+      }
+      if(d.mdd!=null){const me=$('k-mdd');if(me)me.textContent=pct(d.mdd);}
+      if(d.latest_equity!=null){const le=$('k-tot');if(le){const r=d.latest_equity-1;le.textContent=pct(r);le.className='kpi-v '+(r>=0?'pos':'neg');}}
+      // Update header badge
+      if(d.verdict!=null){
+        const v=d.verdict?'PASS':'FAIL';
+        const b=$('hdr-badge');if(b){b.textContent=v;b.className='bdg '+(v==='PASS'?'bg-g':'bg-r');}
+      }
+      // Live progress indicator
+      if(d.active_run){
+        if(liveEl){liveEl.textContent=`● ${d.active_run}`;liveEl.className='bdg bg-y';}
+      }
+      // Update overview ledger if on overview tab
+      if(_tab==='overview'&&d.ledger_tail&&d.ledger_tail.length){
+        _updateLiveLedger(d.ledger_tail);
+      }
+      // Update equity tail chart
+      if(_tab==='overview'&&d.equity_tail&&d.equity_tail.length&&_eq){
+        _updateEquityTail(d.equity_tail);
+      }
+      // Learning progress update
+      if(d.learning_velocity!=null){
+        const lv=$('live-lv');if(lv)lv.textContent=(d.learning_velocity*100).toFixed(1)+'%';
+      }
+      set('kpi-updated','Live · '+now());
+    }catch(e){}
+  };
+  src.onerror=()=>{
+    if(liveEl){liveEl.textContent='● RECONNECTING';liveEl.className='bdg bg-y';}
+    src.close();
+    _sseRetry=Math.min(_sseRetry+1,5);
+    setTimeout(_connectSSE,Math.pow(2,_sseRetry)*1000);
+  };
+}
+
+function _updateLiveLedger(events){
+  const el=$('ov-ledger');if(!el)return;
+  const rows=events.slice(0,8).map(e=>{
+    const v=e.verdict;
+    const badge=v===true?'<span class="bdg bg-g">PASS</span>':v===false?'<span class="bdg bg-r">FAIL</span>':'';
+    return `<tr><td class="text-sm text-muted">${esc(e.ts||'').slice(11,19)}</td><td>${esc(e.kind||'')}</td><td class="text-sm">${esc((e.run_name||'').slice(0,20))}</td><td>${badge}</td></tr>`;
+  }).join('');
+  el.innerHTML=`<table><thead><tr><th>Time</th><th>Kind</th><th>Run</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function _updateEquityTail(tail){
+  if(!_eq||!tail.length)return;
+  const vals=tail.map(e=>typeof e==='number'?e:+e);
+  _eq.data.datasets[0].data=vals;
+  _eq.data.labels=vals.map((_,i)=>i);
+  _eq.update('none');
+}
+
+// ─── Clock ───
+setInterval(()=>set('hdr-clock',new Date().toLocaleTimeString()),1000);
+
+// ─── Init ───
+_connectSSE();
+loadKPI();
+loadOv();
+</script>
+</body>
+</html>
