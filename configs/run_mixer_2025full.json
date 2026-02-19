@@ -15,7 +15,7 @@
   "strategy": {
     "name": "regime_mixer",
     "params": {
-      "regime_lookback_bars": 336,
+      "regime_lookback_bars": 168,
       "vol_lookback_bars": 168,
       "bull_threshold": 0.02,
       "bear_threshold": 0.02,

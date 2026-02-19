@@ -116,8 +116,6 @@ class RegimeMixerStrategy(Strategy):
         self._last_regime: str = "unknown"
         self._regime_history: List[str] = []
 
-        pass  # end of __init__
-
     def _p(self, key: str, default: Any) -> Any:
         v = self.params.get(key)
         if v is None:
@@ -218,6 +216,9 @@ class RegimeMixerStrategy(Strategy):
         warmup = max(self._regime_lb, self._vol_lb) * 2 + 10
         if idx <= warmup:
             return False
+        # Let sub-strategies update their internal state
+        self._v1.should_rebalance(dataset, idx)
+        self._lv.should_rebalance(dataset, idx)
         return idx % max(1, self._rebal_interval) == 0
 
     def target_weights(self, dataset: MarketDataset, idx: int, current: Weights) -> Weights:
