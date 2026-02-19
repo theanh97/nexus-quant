@@ -346,15 +346,21 @@ class BrainCritic:
 
         already_run = 0
         already_run_similar = 0
+        already_run_name = 0
         recent_same: List[str] = []
+        recent_name: List[str] = []
         try:
             for r in runs:
+                if r.run_name == exp_name:
+                    already_run_name += 1
+                    recent_name.append(r.run_id)
                 if r.signature == sig:
                     already_run += 1
                     recent_same.append(r.run_id)
                 if r.signature_similar == sig_sim:
                     already_run_similar += 1
             recent_same = recent_same[-5:]
+            recent_name = recent_name[-5:]
         except Exception:
             pass
 
@@ -364,10 +370,17 @@ class BrainCritic:
             reason = f"signature_seen_before:{already_run}"
         if already_run_similar > 0 and already_run_similar != already_run:
             reason = f"similar_signature_seen_before:{already_run_similar},exact:{already_run}"
-        if already_run_similar > int(self.max_repeat) or already_run > int(self.max_repeat):
+        if already_run_name > 0 and already_run_name != already_run:
+            reason = f"run_name_seen_before:{already_run_name},similar:{already_run_similar},exact:{already_run}"
+        if (
+            already_run_name > int(self.max_repeat)
+            or already_run_similar > int(self.max_repeat)
+            or already_run > int(self.max_repeat)
+        ):
             should_run = False
             reason = (
-                f"repeat_blocked:similar={already_run_similar},exact={already_run}>max_repeat={self.max_repeat}"
+                f"repeat_blocked:run_name={already_run_name},similar={already_run_similar},"
+                f"exact={already_run}>max_repeat={self.max_repeat}"
             )
 
         return {
@@ -380,8 +393,10 @@ class BrainCritic:
             "signature_similar_short": sig_sim[:16],
             "already_run": int(already_run),
             "already_run_similar": int(already_run_similar),
+            "already_run_name": int(already_run_name),
             "max_repeat": int(self.max_repeat),
             "recent_same_run_ids": recent_same,
+            "recent_run_ids_for_name": recent_name,
             "total_runs": int(len(runs)),
         }
 

@@ -13,6 +13,7 @@ from .tsmom import TimeSerisMomentumV1Strategy
 from .combined_carry_mom import CombinedCarryMomentumV1Strategy
 from .nexus_alpha import NexusAlphaV1Strategy
 from .nexus_alpha_v2 import NexusAlphaV2Strategy
+from .regime_adaptive import NexusAlphaV1RegimeStrategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -37,6 +38,8 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
         return NexusAlphaV1Strategy(params=params)
     if name == "nexus_alpha_v2":
         return NexusAlphaV2Strategy(params=params)
+    if name == "nexus_alpha_v1_regime":
+        return NexusAlphaV1RegimeStrategy(params=params)
 
     if name == "ensemble_v1":
         sub_cfgs = params.pop("sub_strategies", [])

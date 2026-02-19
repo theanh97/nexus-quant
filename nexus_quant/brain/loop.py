@@ -15,6 +15,16 @@ try:
 except Exception:  # pragma: no cover
     BrainCritic = None  # type: ignore
 
+try:
+    from nexus_quant.memory.curator import MemoryCurator
+except Exception:  # pragma: no cover
+    MemoryCurator = None  # type: ignore
+
+try:
+    from nexus_quant.brain.reminders import write_reminder
+except Exception:  # pragma: no cover
+    write_reminder = None  # type: ignore
+
 
 class NexusAutonomousLoop:
     def __init__(self, cfg_path: Path, artifacts_dir: Path) -> None:
@@ -36,12 +46,13 @@ class NexusAutonomousLoop:
         trials = int(((cfg.get("self_learn") or {}) or {}).get("trials") or 30)
         best_strategy = self._strategy_name(cfg)
         proposal_name = str(cfg.get("run_name") or self.cfg_path.stem)
+        novelty_name = best_strategy or proposal_name
 
         novelty: Optional[Dict[str, Any]] = None
         should_run = True
         if self.critic is not None:
             try:
-                novelty = self.critic.check_novelty(proposal_name, cfg)
+                novelty = self.critic.check_novelty(novelty_name, cfg)
                 should_run = bool(novelty.get("should_run", True)) if isinstance(novelty, dict) else True
             except Exception:
                 should_run = True
@@ -81,7 +92,8 @@ class NexusAutonomousLoop:
         critique: Optional[Dict[str, Any]] = None
         anomalies: List[str] = []
         if not should_run:
-            anomalies.append(f"BrainCritic blocked repeat run: {experiments[0].get('reason')}")
+            novelty_reason = str((novelty or {}).get("reason") or experiments[0].get("reason") or "novelty_gate_blocked")
+            anomalies.append(f"Skipped {novelty_name}: {novelty_reason}")
         if self.critic is not None:
             try:
                 # Log self-critique periodically once we have enough evidence (>=10 runs).
@@ -151,6 +163,30 @@ class NexusAutonomousLoop:
             raw_summary=str(synth.get("raw") or ""),
         )
         diary_path = str(self.artifacts_dir / "brain" / "diary" / "latest.md")
+
+        if should_run and MemoryCurator is not None:
+            try:
+                run_count = int(self.state.get("run_count") or 0) + 1
+            except Exception:
+                run_count = 1
+            self.state["run_count"] = run_count
+            if run_count % 5 == 0:
+                try:
+                    MemoryCurator(self.artifacts_dir).curate()
+                except Exception:
+                    pass
+
+        if write_reminder is not None:
+            try:
+                import time
+
+                now = time.time()
+                last_reminder = float(self.state.get("last_reminder_ts") or 0)
+                if now - last_reminder > 1800:
+                    write_reminder(self.artifacts_dir)
+                    self.state["last_reminder_ts"] = now
+            except Exception:
+                pass
 
         out = {
             "cycle_number": cycle,
