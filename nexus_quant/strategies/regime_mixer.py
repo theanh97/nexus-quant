@@ -182,24 +182,46 @@ class RegimeMixerStrategy(Strategy):
         return recent_vol / longer_vol
 
     def _detect_regime(self, dataset: MarketDataset, idx: int) -> str:
-        """Multi-signal regime detection: bull / bear / sideways / unknown."""
+        """Multi-signal regime detection: bull / bear / sideways / unknown.
+
+        When dual_horizon_regime=True, uses a long-term trend filter (720h)
+        to prevent misclassifying dips in uptrends as 'bear'.
+        Key insight: short-term bear + long-term bull = DIP → keep V1.
+        """
         btc_ret = self._compute_btc_return(dataset, idx)
         vol_ratio = self._compute_vol_ratio(dataset, idx)
 
         if btc_ret is None:
             return "unknown"
 
-        # Vol spike overrides to bear (crash/stress)
+        # Short-term classification
         if vol_ratio is not None and vol_ratio > self._vol_spike:
-            return "bear"
-
-        # Momentum-based classification
-        if btc_ret > self._bull_thr:
-            return "bull"
+            short_regime = "bear"
+        elif btc_ret > self._bull_thr:
+            short_regime = "bull"
         elif btc_ret < -self._bear_thr:
-            return "bear"
+            short_regime = "bear"
         else:
+            short_regime = "sideways"
+
+        if not self._dual_horizon:
+            return short_regime
+
+        # Dual-horizon: check long-term trend context
+        btc_ret_long = self._compute_btc_return(dataset, idx, self._regime_lb_long)
+        if btc_ret_long is None:
+            return short_regime
+
+        # If short-term says bear but long-term trend is bullish → it's a DIP
+        # Reclassify as sideways (which gives V1 some allocation)
+        if short_regime == "bear" and btc_ret_long > self._bull_thr:
             return "sideways"
+
+        # If short-term says sideways but long-term is strongly bullish → treat as bull
+        if short_regime == "sideways" and btc_ret_long > self._bull_thr * 2:
+            return "bull"
+
+        return short_regime
 
     def _update_smooth_weights(self, regime: str) -> None:
         """Exponential smoothing of strategy weights to prevent whipsaw."""
@@ -269,7 +291,10 @@ class RegimeMixerStrategy(Strategy):
         return final_v1, final_lv
 
     def should_rebalance(self, dataset: MarketDataset, idx: int) -> bool:
-        warmup = max(self._regime_lb, self._vol_lb) * 2 + 10
+        lb_max = max(self._regime_lb, self._vol_lb)
+        if self._dual_horizon:
+            lb_max = max(lb_max, self._regime_lb_long)
+        warmup = lb_max * 2 + 10
         if idx <= warmup:
             return False
         # Let sub-strategies update their internal state
