@@ -93,24 +93,55 @@ tr:hover td{background:var(--surface2)}
 .srow .lbl{color:var(--fg-muted)}.srow .val{font-weight:500}
 
 /* Chat */
-.chat-wrap{display:grid;grid-template-columns:1fr 260px;gap:14px;height:calc(100vh-240px);min-height:500px}
+.chat-wrap{display:grid;grid-template-columns:1fr 280px;gap:14px;height:calc(100vh - 200px);min-height:560px}
 @media(max-width:900px){.chat-wrap{grid-template-columns:1fr}}
-.chat-box{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);overflow:hidden;min-height:500px}
-.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-.cmsg{max-width:85%}.cmsg.u{align-self:flex-end}.cmsg.a{align-self:flex-start}
-.cbubble{padding:9px 13px;border-radius:12px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.chat-box{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.chat-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.chat-header-left{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
+.chat-header-right{display:flex;align-items:center;gap:6px}
+.model-badge{font-size:10px;padding:2px 7px;border-radius:10px;background:var(--accent-light);color:var(--accent);font-weight:600;letter-spacing:.03em}
+.sse-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;flex-shrink:0}
+.sse-dot.yellow{background:var(--yellow)}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.cmsg{display:flex;flex-direction:column}.cmsg.u{align-self:flex-end;max-width:75%}.cmsg.a{align-self:flex-start;max-width:90%}
+.cbubble{padding:10px 14px;border-radius:12px;font-size:13.5px;line-height:1.6;word-break:break-word;position:relative}
 .cmsg.u .cbubble{background:var(--accent);color:#fff;border-bottom-right-radius:3px}
-.cmsg.a .cbubble{background:var(--surface2);color:var(--fg);border-bottom-left-radius:3px}
-.cts{font-size:10px;color:var(--fg-light);margin-top:2px}
-.chat-in-bar{padding:10px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surface)}
-.chat-ta{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;resize:none;outline:none;height:40px;max-height:100px;transition:border-color .15s}
+.cmsg.a .cbubble{background:#fff;color:var(--fg);border-bottom-left-radius:3px;border:1px solid var(--border);border-left:3px solid var(--accent)}
+.cbubble p{margin:0 0 6px}.cbubble p:last-child{margin-bottom:0}
+.cbubble h1,.cbubble h2,.cbubble h3{font-size:14px;font-weight:700;margin:8px 0 4px;color:var(--fg)}
+.cbubble ul,.cbubble ol{margin:4px 0 4px 18px;padding:0}
+.cbubble li{margin:2px 0}
+.cbubble code{background:rgba(0,0,0,.07);border-radius:4px;padding:1px 5px;font-family:monospace;font-size:12.5px}
+.cbubble pre{background:#1e1e2e;color:#cdd6f4;border-radius:8px;padding:10px 12px;margin:6px 0;overflow-x:auto}
+.cbubble pre code{background:none;padding:0;font-size:12px;color:inherit}
+.cbubble table{border-collapse:collapse;font-size:12px;margin:6px 0;width:100%}
+.cbubble th{background:var(--surface2);padding:4px 8px;text-align:left;border:1px solid var(--border)}
+.cbubble td{padding:3px 8px;border:1px solid var(--border)}
+.cbubble strong{font-weight:700}.cbubble em{font-style:italic}
+.cmsg-footer{display:flex;align-items:center;gap:6px;margin-top:3px}
+.cts{font-size:10px;color:var(--fg-light);opacity:0}
+.cmsg:hover .cts{opacity:1}
+.copy-btn{font-size:10px;color:var(--fg-light);cursor:pointer;padding:1px 5px;border-radius:4px;border:1px solid transparent;background:none;opacity:0;transition:all .15s}
+.cmsg:hover .copy-btn{opacity:1}.copy-btn:hover{border-color:var(--border);background:var(--surface2)}
+.chat-in-bar{padding:10px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surface);flex-shrink:0;align-items:flex-end}
+.chat-ta{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;resize:none;outline:none;min-height:40px;max-height:150px;overflow-y:auto;line-height:1.5;transition:border-color .15s}
 .chat-ta:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-.chips{display:flex;flex-wrap:wrap;gap:5px;padding:6px 10px 0}
-.chip{padding:4px 11px;border:1px solid var(--border);border-radius:20px;font-size:12px;cursor:pointer;background:var(--surface);color:var(--fg);transition:all .15s}
+.chips{display:flex;flex-wrap:wrap;gap:5px;padding:8px 10px;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0}
+.chip{padding:4px 11px;border:1px solid var(--border);border-radius:20px;font-size:11.5px;cursor:pointer;background:var(--surface);color:var(--fg);transition:all .15s;white-space:nowrap}
 .chip:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
-.brain-panel{display:flex;flex-direction:column;gap:10px}
-.brain-card{border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--surface)}
-.brain-card h4{font-size:12px;font-weight:600;color:var(--fg-muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+.brain-panel{display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:calc(100vh - 200px)}
+.brain-card{border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;background:var(--surface);flex-shrink:0}
+.brain-card h4{font-size:11px;font-weight:600;color:var(--fg-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:5px}
+.live-metrics-card{border:1px solid var(--accent);border-radius:var(--r);padding:12px 14px;background:linear-gradient(135deg,var(--surface),var(--accent-light));flex-shrink:0}
+.live-metrics-card h4{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.lm-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.lm-cell{text-align:center;padding:6px;background:rgba(255,255,255,.5);border-radius:6px}
+.lm-val{font-size:16px;font-weight:700;color:var(--fg)}.lm-lbl{font-size:9px;color:var(--fg-muted);text-transform:uppercase;margin-top:1px}
+.is-badge{font-size:9px;padding:1px 5px;border-radius:4px;font-weight:600;margin-left:3px}
+.is-badge.is{background:#DBEAFE;color:#1D4ED8}.is-badge.oos{background:#D1FAE5;color:#065F46}
+.sse-feed{display:flex;flex-direction:column;gap:4px}
+.sse-item{font-size:11px;padding:4px 7px;background:var(--surface2);border-radius:5px;border-left:2px solid var(--accent);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sse-item.err{border-left-color:var(--red)}.sse-item.warn{border-left-color:var(--yellow)}
 
 /* Benchmark targets */
 .tgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px}
@@ -260,51 +291,94 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
 <div class="page" id="page-chat">
   <div class="chat-wrap">
     <div class="chat-box">
-      <div class="chips">
-        <span class="chip" onclick="chip('Show current performance metrics')">📊 Performance</span>
-        <span class="chip" onclick="chip('What is the BTC funding rate right now?')">📡 BTC Funding</span>
-        <span class="chip" onclick="chip('What is the current risk status and regime?')">⚠️ Risk Status</span>
-        <span class="chip" onclick="chip('Show active goals and progress')">🎯 Goals</span>
-        <span class="chip" onclick="chip('Summarize latest research and proposals')">🔬 Research</span>
-        <span class="chip" onclick="chip('Propose a new strategy improvement for higher Sharpe')">💡 Propose Strategy</span>
-        <span class="chip" onclick="chip('What is NEXUS and how does it work?')">🤖 About NEXUS</span>
-        <span class="chip" onclick="chip('Give me a trading signal for today based on funding rates')">🚦 Signal</span>
-      </div>
-      <div class="chat-msgs" id="chat-msgs">
-        <div class="cmsg a">
-          <div class="cbubble">👋 Hello! I'm <b>NEXUS Brain</b> — the world's first autonomous quantitative research workforce.<br><br>I run 24/7: researching papers, testing strategies, managing risk, and improving performance. Ask me anything about trading strategy, risk, market conditions, or request an improvement proposal.</div>
-          <div class="cts">Ready · GLM-5 powered</div>
+      <!-- Header bar -->
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <span id="chat-sse-dot" class="sse-dot yellow" title="SSE disconnected"></span>
+          <span>NEXUS Brain</span>
+          <span class="model-badge">GLM-5</span>
+        </div>
+        <div class="chat-header-right">
+          <button class="btn btn-s btn-sm" onclick="copyLastAI()" title="Copy last AI response">Copy Last</button>
+          <button class="btn btn-s btn-sm" onclick="clearChat()" title="Clear chat">Clear</button>
         </div>
       </div>
+      <!-- Quick chips -->
+      <div class="chips">
+        <span class="chip" onclick="chip('Show Phase 29 IS/OOS validation results. Explain what IS vs OOS means and what the Sharpe=1.07 OOS means for the strategy.')">📊 Phase 29 Results</span>
+        <span class="chip" onclick="chip('What is the current out-of-sample (OOS) Sharpe vs in-sample? How reliable is the Phase 28 result of 2.78?')">🎯 OOS Status</span>
+        <span class="chip" onclick="chip('Analyze current risk status: drawdown, leverage, regime')">⚠️ Risk Check</span>
+        <span class="chip" onclick="chip('What should Phase 30 focus on to improve OOS Sharpe beyond 1.07 without overfitting?')">🔬 Next Phase</span>
+        <span class="chip" onclick="chip('Propose a new economically-motivated signal that does not require in-sample optimization')">💡 New Signal</span>
+        <span class="chip" onclick="chip('Analyze why the strategy Sharpe dropped from 2.78 (2024 in-sample) to 1.07 (2023 OOS). What market regime differences explain this?')">📈 2023 Deep Dive</span>
+        <span class="chip" onclick="chip('Based on current BTC funding rates and 48h price action, what is the cross-sectional signal for BTCUSDT, ETHUSDT, SOLUSDT right now?')">🚦 Live Signal</span>
+        <span class="chip" onclick="chip('Explain why NexusAlpha V2 (vol-norm MR + regime filter) performed worse than V1 in both 2023 (0.28 vs 1.07) and 2024 (1.55 vs 2.78). What can we do differently?')">🧠 V2 Diagnosis</span>
+      </div>
+      <!-- Messages -->
+      <div class="chat-msgs" id="chat-msgs">
+        <div class="cmsg a">
+          <div class="cbubble"><strong>NEXUS Brain</strong> — autonomous quant research workforce.<br><br>I run 24/7: researching papers, testing strategies, managing risk, improving Sharpe. Current champion: <strong>IS 2024 Sharpe 2.78 | OOS 2023 Sharpe 1.07</strong>.<br><br>Ask me about strategy, risk, market conditions, or request a Phase 30 proposal.</div>
+          <div class="cmsg-footer">
+            <span class="cts">Ready · GLM-5 powered</span>
+            <button class="copy-btn" onclick="copyBubble(this)" title="Copy">&#128203;</button>
+          </div>
+        </div>
+      </div>
+      <!-- Input bar -->
       <div class="chat-in-bar">
-        <textarea class="chat-ta" id="chat-in" placeholder="Ask NEXUS anything..." onkeydown="onChatKey(event)"></textarea>
-        <button class="btn btn-p" onclick="sendMsg()">Send</button>
+        <textarea class="chat-ta" id="chat-in" placeholder="Ask NEXUS anything... (Enter to send, Shift+Enter for newline)" onkeydown="onChatKey(event)" oninput="autoGrowTA(this)"></textarea>
+        <button class="btn btn-p" onclick="sendMsg()" style="flex-shrink:0;align-self:flex-end">Send</button>
       </div>
     </div>
-    <div class="brain-panel">
+    <!-- Right sidebar -->
+    <div class="brain-panel" id="brain-panel">
+      <!-- Live Metrics -->
+      <div class="live-metrics-card" id="bp-metrics">
+        <h4>Live Metrics</h4>
+        <div class="lm-grid">
+          <div class="lm-cell"><div class="lm-val" id="lm-sharpe-is">—</div><div class="lm-lbl">Sharpe <span class="is-badge is">IS</span></div></div>
+          <div class="lm-cell"><div class="lm-val" id="lm-sharpe-oos">—</div><div class="lm-lbl">Sharpe <span class="is-badge oos">OOS</span></div></div>
+          <div class="lm-cell"><div class="lm-val" id="lm-cagr">—</div><div class="lm-lbl">CAGR</div></div>
+          <div class="lm-cell"><div class="lm-val" id="lm-mdd">—</div><div class="lm-lbl">MDD</div></div>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--fg-muted);display:flex;justify-content:space-between;align-items:center">
+          <span id="lm-updated">—</span>
+          <span id="lm-alerts" style="color:var(--accent)">0 alerts</span>
+        </div>
+      </div>
+      <!-- Live Events -->
+      <div class="brain-card" id="bp-feed">
+        <h4>Live Events</h4>
+        <div class="sse-feed" id="sse-feed"><div class="text-sm text-muted">Connecting...</div></div>
+      </div>
+      <!-- Identity -->
       <div class="brain-card" id="bp-identity">
-        <h4>🧠 Identity</h4>
+        <h4>Identity</h4>
         <div class="text-sm text-muted">Loading...</div>
       </div>
+      <!-- Goals -->
       <div class="brain-card" id="bp-goals">
-        <h4>🎯 Goals</h4>
+        <h4>Goals</h4>
         <div class="text-sm text-muted">Loading...</div>
       </div>
+      <!-- Mood -->
       <div class="brain-card" id="bp-mood">
-        <h4>🌡 Mood</h4>
+        <h4>Mood</h4>
         <div class="text-sm text-muted" style="font-size:22px">🤔</div>
       </div>
+      <!-- Quick Actions -->
       <div class="brain-card">
-        <h4>⚡ Actions</h4>
+        <h4>Quick Actions</h4>
         <div style="display:flex;flex-direction:column;gap:6px">
           <button class="btn btn-s btn-sm" onclick="runResearch()">🔬 Run Research</button>
           <button class="btn btn-s btn-sm" onclick="go('benchmark')">🏆 Benchmarks</button>
+          <button class="btn btn-s btn-sm" onclick="go('validation')">✅ Validation</button>
+          <button class="btn btn-s btn-sm" onclick="copyLastAI()">📋 Copy Last Result</button>
         </div>
       </div>
     </div>
   </div>
 </div>
-
 <!-- ═══ BENCHMARK ═══ -->
 <div class="page" id="page-benchmark">
   <div class="section-title mb">🏆 NEXUS Achievement Targets</div>
@@ -785,47 +859,235 @@ function loadOv(){
 }
 
 // ─── Chat ───
-function loadChat(){
-  jx('/api/brain/identity').then(d=>{
-    const id=d.identity||{};
-    html('bp-identity',`<h4>🧠 Identity</h4>
-      <div class="srow"><span class="lbl">Name</span><span class="val">${esc(id.name||'NEXUS')}</span></div>
-      <div class="srow"><span class="lbl">Role</span><span class="val text-sm">${esc(id.role||'Autonomous Quant AI')}</span></div>
-      <div class="srow"><span class="lbl">Mission</span><span class="val text-sm">${esc((id.mission||'Research & Trade').slice(0,40))}</span></div>
-    `);
-  }).catch(()=>{});
-  jx('/api/brain/goals').then(d=>{
-    const gs=d.goals||[];
-    if(!gs.length){html('bp-goals','<h4>🎯 Goals</h4><div class="text-sm text-muted">No goals</div>');return;}
-    const items=gs.slice(0,4).map(g=>{const t=typeof g==='string'?g:(g.goal||g.text||'');return `<div style="padding:3px 0;border-bottom:1px solid var(--border);font-size:12px">${esc(t.slice(0,60))}</div>`;}).join('');
-    html('bp-goals','<h4>🎯 Goals</h4>'+items);
-  }).catch(()=>{});
-  jx('/api/brain/notifications').then(d=>{
-    const ns=d.notifications||[];const last=ns.slice(-1)[0];
-    const mood=last?.mood||d.mood||'🤔';
-    html('bp-mood',`<h4>🌡 Mood</h4><div style="font-size:24px;margin:6px 0">${mood}</div><div class="text-sm text-muted">${esc(last?.message||'Operational')}</div>`);
-  }).catch(()=>{});
-}
-function onChatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
-function chip(t){$('chat-in').value=t;sendMsg();}
-function addMsg(role,text){
-  const ts=now();const d=document.createElement('div');
-  d.className='cmsg '+role;
-  d.innerHTML=`<div class="cbubble">${esc(text)}</div><div class="cts">${ts}</div>`;
-  $('chat-msgs').appendChild(d);d.scrollIntoView({behavior:'smooth'});
-}
-function sendMsg(){
-  const inp=$('chat-in'),txt=inp.value.trim();if(!txt)return;
-  inp.value='';addMsg('u',txt);
-  const ty=document.createElement('div');ty.className='cmsg a';ty.id='typing';
-  ty.innerHTML='<div class="cbubble"><div class="spin"></div></div>';
-  $('chat-msgs').appendChild(ty);ty.scrollIntoView({behavior:'smooth'});
-  jx('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:txt})}).then(d=>{
-    const el=$('typing');if(el)el.remove();
-    addMsg('a',d.response||d.reply||d.message||'(no response)');
-  }).catch(()=>{const el=$('typing');if(el)el.remove();addMsg('a','Error connecting to NEXUS Brain. Ensure ZAI_API_KEY is set.');});
+var CHAT_CTX = {};
+var chatSSE = null;
+var chatSseEvents = [];
+
+function mdRender(text){
+  // Code blocks
+  text = text.replace(/```([\s\S]*?)```/g, function(_,c){return '<pre><code>'+c.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</code></pre>';});
+  // Inline code
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Headers
+  text = text.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+  text = text.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+  text = text.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  // Bold/italic
+  text = text.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  text = text.replace(/\*(.+?)\*/g,'<em>$1</em>');
+  // Tables
+  text = text.replace(/\|(.+)\|\n\|[-| ]+\|\n((?:\|.+\|\n?)*)/g, function(_,hdr,body){
+    var ths=hdr.split('|').filter(function(s){return s.trim();}).map(function(s){return '<th>'+s.trim()+'</th>';}).join('');
+    var rows=body.trim().split('\n').filter(Boolean).map(function(r){
+      var tds=r.split('|').filter(function(s){return s.trim();}).map(function(s){return '<td>'+s.trim()+'</td>';}).join('');
+      return '<tr>'+tds+'</tr>';
+    }).join('');
+    return '<table><thead><tr>'+ths+'</tr></thead><tbody>'+rows+'</tbody></table>';
+  });
+  // Unordered lists
+  text = text.replace(/((?:^[ \t]*[-*] .+\n?)+)/gm, function(_,block){
+    var items=block.trim().split('\n').map(function(l){return '<li>'+l.replace(/^[ \t]*[-*] /,'').trim()+'</li>';}).join('');
+    return '<ul>'+items+'</ul>';
+  });
+  // Ordered lists
+  text = text.replace(/((?:^[ \t]*\d+\. .+\n?)+)/gm, function(_,block){
+    var items=block.trim().split('\n').map(function(l){return '<li>'+l.replace(/^[ \t]*\d+\. /,'').trim()+'</li>';}).join('');
+    return '<ol>'+items+'</ol>';
+  });
+  // Line breaks / paragraphs
+  text = text.split('\n\n').map(function(p){
+    p=p.trim();
+    if(!p)return '';
+    if(/^<(h[1-3]|ul|ol|pre|table)/.test(p))return p;
+    return '<p>'+p.replace(/\n/g,'<br>')+'</p>';
+  }).filter(Boolean).join('');
+  return text;
 }
 
+function autoGrowTA(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,150)+'px';
+}
+
+function chatSaveSession(){
+  try{
+    var msgs=[];
+    document.querySelectorAll('#chat-msgs .cmsg').forEach(function(el){
+      var role=el.classList.contains('u')?'u':'a';
+      var bub=el.querySelector('.cbubble');
+      if(bub)msgs.push({role:role,html:bub.innerHTML});
+    });
+    sessionStorage.setItem('nexus_chat',JSON.stringify(msgs.slice(-30)));
+  }catch(e){}
+}
+
+function chatRestoreSession(){
+  try{
+    var raw=sessionStorage.getItem('nexus_chat');
+    if(!raw)return;
+    var msgs=JSON.parse(raw);
+    if(!msgs||!msgs.length)return;
+    var container=$('chat-msgs');
+    container.innerHTML='';
+    msgs.forEach(function(m){
+      var d=document.createElement('div');
+      d.className='cmsg '+m.role;
+      d.innerHTML='<div class="cbubble">'+m.html+'</div><div class="cmsg-footer"><span class="cts">restored</span>'+(m.role==='a'?'<button class="copy-btn" onclick="copyBubble(this)" title="Copy">&#128203;</button>':'')+'</div>';
+      container.appendChild(d);
+    });
+    container.lastChild&&container.lastChild.scrollIntoView({behavior:'smooth'});
+  }catch(e){}
+}
+
+function initChatSSE(){
+  if(typeof EventSource==='undefined')return;
+  try{
+    chatSSE=new EventSource('/api/stream');
+    chatSSE.onopen=function(){
+      var dot=$('chat-sse-dot');if(dot){dot.className='sse-dot';}
+    };
+    chatSSE.onmessage=function(ev){
+      try{
+        var data=JSON.parse(ev.data);
+        chatSseEvents.unshift(data);
+        if(chatSseEvents.length>5)chatSseEvents.length=5;
+        renderSSEFeed();
+      }catch(e){}
+    };
+    chatSSE.onerror=function(){
+      var dot=$('chat-sse-dot');if(dot){dot.className='sse-dot yellow';}
+    };
+  }catch(e){}
+}
+
+function renderSSEFeed(){
+  var feed=$('sse-feed');if(!feed)return;
+  if(!chatSseEvents.length){feed.innerHTML='<div class="text-sm text-muted">No events yet</div>';return;}
+  feed.innerHTML=chatSseEvents.map(function(ev){
+    var cls='sse-item';
+    var lvl=(ev.level||ev.type||'').toUpperCase();
+    if(lvl==='ERROR')cls+=' err';
+    else if(lvl==='WARN'||lvl==='WARNING')cls+=' warn';
+    var msg=ev.event||ev.message||ev.msg||JSON.stringify(ev);
+    var ts=(ev.ts||ev.timestamp||'').slice(11,19);
+    return '<div class="'+cls+'" title="'+msg+'">'+(ts?'<span style="color:var(--fg-muted);margin-right:4px">'+ts+'</span>':'')+msg.slice(0,60)+'</div>';
+  }).join('');
+}
+
+function loadChatMetrics(){
+  jx('/api/metrics').then(function(m){
+    var s=m.summary||m.metrics&&m.metrics.summary||{};
+    var sh=s.sharpe!=null?s.sharpe:(m.sharpe!=null?m.sharpe:null);
+    var cagr=s.cagr!=null?s.cagr:(m.cagr!=null?m.cagr:null);
+    var mdd=s.max_drawdown!=null?s.max_drawdown:(s.mdd!=null?s.mdd:null);
+    if($('lm-sharpe-is'))$('lm-sharpe-is').textContent=sh!=null?sh.toFixed(2):'—';
+    // Try OOS sharpe from nested or oos key
+    var oosS=m.oos_sharpe!=null?m.oos_sharpe:(m.oos&&m.oos.sharpe!=null?m.oos.sharpe:null);
+    if($('lm-sharpe-oos'))$('lm-sharpe-oos').textContent=oosS!=null?oosS.toFixed(2):'1.07';
+    if($('lm-cagr'))$('lm-cagr').textContent=cagr!=null?(cagr.toFixed(1)+'%'):'—';
+    if($('lm-mdd'))$('lm-mdd').textContent=mdd!=null?(mdd.toFixed(1)+'%'):'—';
+    if($('lm-updated'))$('lm-updated').textContent='Updated '+now();
+    // Store in context
+    CHAT_CTX.sharpe_is=sh;CHAT_CTX.sharpe_oos=oosS||1.07;CHAT_CTX.cagr=cagr;CHAT_CTX.mdd=mdd;
+  }).catch(function(){});
+  jx('/api/alerts').then(function(d){
+    var count=(d.alerts||d||[]).length;
+    if($('lm-alerts'))$('lm-alerts').textContent=count+' alert'+(count!==1?'s':'');
+    CHAT_CTX.alerts=count;
+  }).catch(function(){});
+}
+
+function loadChat(){
+  chatRestoreSession();
+  initChatSSE();
+  loadChatMetrics();
+  if(!window._chatMetricsTimer)window._chatMetricsTimer=setInterval(loadChatMetrics,20000);
+  jx('/api/brain/identity').then(function(d){
+    var id=d.identity||{};
+    html('bp-identity','<h4>Identity</h4><div class="srow"><span class="lbl">Name</span><span class="val">'+esc(id.name||'NEXUS')+'</span></div><div class="srow"><span class="lbl">Role</span><span class="val text-sm">'+esc(id.role||'Autonomous Quant AI')+'</span></div><div class="srow"><span class="lbl">Mission</span><span class="val text-sm">'+esc((id.mission||'Research & Trade').slice(0,50))+'</span></div>');
+  }).catch(function(){});
+  jx('/api/brain/goals').then(function(d){
+    var gs=d.goals||[];
+    if(!gs.length){html('bp-goals','<h4>Goals</h4><div class="text-sm text-muted">No goals set</div>');return;}
+    var items=gs.slice(0,4).map(function(g){var t=typeof g==='string'?g:(g.goal||g.text||'');return '<div style="padding:3px 0;border-bottom:1px solid var(--border);font-size:12px">'+esc(t.slice(0,70))+'</div>';}).join('');
+    html('bp-goals','<h4>Goals</h4>'+items);
+  }).catch(function(){});
+  jx('/api/brain/notifications').then(function(d){
+    var ns=d.notifications||[];var last=ns.slice(-1)[0];
+    var mood=last&&last.mood||d.mood||'🤔';
+    html('bp-mood','<h4>Mood</h4><div style="font-size:24px;margin:6px 0">'+mood+'</div><div class="text-sm text-muted">'+esc(last&&last.message||'Operational')+'</div>');
+    CHAT_CTX.mood=mood;
+  }).catch(function(){});
+}
+
+function onChatKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
+  if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();sendMsg();}
+}
+
+function chip(t){$('chat-in').value=t;autoGrowTA($('chat-in'));sendMsg();}
+
+function addMsg(role,text){
+  var ts=now();var d=document.createElement('div');
+  d.className='cmsg '+role;
+  var bubbleContent=role==='a'?mdRender(text):('<p>'+esc(text).replace(/\n/g,'<br>')+'</p>');
+  var copyBtn=role==='a'?'<button class="copy-btn" onclick="copyBubble(this)" title="Copy">&#128203;</button>':'';
+  d.innerHTML='<div class="cbubble">'+bubbleContent+'</div><div class="cmsg-footer"><span class="cts">'+ts+'</span>'+copyBtn+'</div>';
+  $('chat-msgs').appendChild(d);
+  d.scrollIntoView({behavior:'smooth'});
+  chatSaveSession();
+  return d;
+}
+
+function buildCtxPrefix(){
+  var parts=[];
+  parts.push('[NEXUS System Context — NOT shown to user]');
+  if(CHAT_CTX.sharpe_is!=null)parts.push('Champion IS 2024 Sharpe: '+CHAT_CTX.sharpe_is.toFixed(2));
+  parts.push('Honest OOS 2023 Sharpe: '+(CHAT_CTX.sharpe_oos||'1.07'));
+  if(CHAT_CTX.cagr!=null)parts.push('CAGR: '+CHAT_CTX.cagr.toFixed(1)+'%');
+  if(CHAT_CTX.mdd!=null)parts.push('MDD: '+CHAT_CTX.mdd.toFixed(1)+'%');
+  if(CHAT_CTX.alerts!=null)parts.push('Active alerts: '+CHAT_CTX.alerts);
+  if(chatSseEvents.length){
+    parts.push('Last SSE events: '+chatSseEvents.slice(0,3).map(function(e){return e.event||e.message||'';}).filter(Boolean).join(' | '));
+  }
+  parts.push('[End context]');
+  return parts.join('; ');
+}
+
+function sendMsg(){
+  var inp=$('chat-in'),txt=inp.value.trim();if(!txt)return;
+  inp.value='';inp.style.height='40px';
+  addMsg('u',txt);
+  var ty=document.createElement('div');ty.className='cmsg a';ty.id='typing';
+  ty.innerHTML='<div class="cbubble"><div class="spin"></div> Thinking...</div>';
+  $('chat-msgs').appendChild(ty);ty.scrollIntoView({behavior:'smooth'});
+  var ctxMsg=buildCtxPrefix()+' USER: '+txt;
+  jx('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:ctxMsg,raw_user:txt})}).then(function(d){
+    var el=$('typing');if(el)el.remove();
+    addMsg('a',d.response||d.reply||d.message||'(no response)');
+  }).catch(function(){var el=$('typing');if(el)el.remove();addMsg('a','Error connecting to NEXUS Brain. Ensure ZAI_API_KEY is set and dashboard is running with env vars.');});
+}
+
+function copyLastAI(){
+  var bubbles=document.querySelectorAll('#chat-msgs .cmsg.a .cbubble');
+  if(!bubbles.length){toast('No AI message to copy');return;}
+  var last=bubbles[bubbles.length-1];
+  var text=last.innerText||last.textContent||'';
+  navigator.clipboard&&navigator.clipboard.writeText(text).then(function(){toast('Copied!');}).catch(function(){});
+}
+
+function copyBubble(btn){
+  var bub=btn.closest('.cmsg').querySelector('.cbubble');
+  if(!bub)return;
+  var text=bub.innerText||bub.textContent||'';
+  navigator.clipboard&&navigator.clipboard.writeText(text).then(function(){toast('Copied!');}).catch(function(){});
+}
+
+function clearChat(){
+  $('chat-msgs').innerHTML='';
+  sessionStorage.removeItem('nexus_chat');
+  addMsg('a','Chat cleared. How can I help you?');
+}
 // ─── Benchmark ───
 const TARGETS=[0.6,1.5,2.5,5.0];
 const BM_DATA=[
