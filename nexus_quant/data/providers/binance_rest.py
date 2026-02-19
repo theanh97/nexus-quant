@@ -338,6 +338,7 @@ class BinanceRestProvider(DataProvider):
         # Per-symbol data containers (keyed by epoch-seconds timestamp)
         sym_close: Dict[str, Dict[int, float]] = {}   # ts_s -> close price
         sym_volume: Dict[str, Dict[int, float]] = {}  # ts_s -> volume
+        sym_taker_buy_vol: Dict[str, Dict[int, float]] = {}  # ts_s -> taker buy base vol
         funding: Dict[str, Dict[int, float]] = {}     # ts_s -> funding rate
 
         # --- Step 1: Fetch klines for every symbol ---------------------------
@@ -353,17 +354,21 @@ class BinanceRestProvider(DataProvider):
 
             close_map: Dict[int, float] = {}
             volume_map: Dict[int, float] = {}
+            taker_buy_map: Dict[int, float] = {}
             for row in raw_klines:
-                # row[0] = open_time (ms), row[4] = close, row[5] = volume
+                # row[0] = open_time (ms), row[4] = close, row[5] = volume,
+                # row[9] = taker buy base asset volume
                 ts_s = int(row[0]) // 1000
                 # Only include bars whose open_time falls within [start_s, end_s)
                 if ts_s < self.start_s or ts_s >= self.end_s:
                     continue
                 close_map[ts_s] = float(row[4])
                 volume_map[ts_s] = float(row[5])
+                taker_buy_map[ts_s] = float(row[9]) if len(row) > 9 else 0.0
 
             sym_close[sym] = close_map
             sym_volume[sym] = volume_map
+            sym_taker_buy_vol[sym] = taker_buy_map
             print(f"  -> {len(close_map)} bars loaded for {sym}")
 
         # --- Step 2: Fetch funding rates for every symbol --------------------
@@ -409,6 +414,7 @@ class BinanceRestProvider(DataProvider):
         timeline_set = set(timeline)
         perp_close: Dict[str, List[float]] = {}
         perp_volume: Dict[str, List[float]] = {}
+        taker_buy_volume: Dict[str, List[float]] = {}
         funding_times: Dict[str, List[int]] = {}
 
         for sym in self.symbols:
@@ -416,6 +422,7 @@ class BinanceRestProvider(DataProvider):
             # Volume: fill 0.0 if a bar was somehow missing (shouldn't happen
             # after intersection, but guard for robustness)
             perp_volume[sym] = [sym_volume[sym].get(t, 0.0) for t in timeline]
+            taker_buy_volume[sym] = [sym_taker_buy_vol[sym].get(t, 0.0) for t in timeline]
             # Restrict funding events to the timeline window
             sym_funding_in_range = {
                 t: r for t, r in funding[sym].items()
@@ -438,6 +445,7 @@ class BinanceRestProvider(DataProvider):
             funding=funding,
             fingerprint=fingerprint,
             perp_volume=perp_volume,
+            taker_buy_volume=taker_buy_volume,
             spot_volume=None,
             perp_mark_close=None,
             perp_index_close=None,

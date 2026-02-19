@@ -24,6 +24,7 @@ class MarketDataset:
 
     # Optional extended fields (for real venues / higher-fidelity sims)
     perp_volume: Optional[Dict[str, List[float]]] = None
+    taker_buy_volume: Optional[Dict[str, List[float]]] = None
     spot_volume: Optional[Dict[str, List[float]]] = None
     perp_mark_close: Optional[Dict[str, List[float]]] = None
     perp_index_close: Optional[Dict[str, List[float]]] = None
