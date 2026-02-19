@@ -506,6 +506,21 @@ def _sample_candidate_cfg(
         cand["smoothing_alpha"] = pick("smoothing_alpha", cast=float, fallback=[0.05, 0.10, 0.15, 0.25])
         cand["rebalance_interval_bars"] = pick("rebalance_interval_bars", cast=int, fallback=[12, 24, 48])
         cand["regime_lookback_bars"] = pick("regime_lookback_bars", cast=int, fallback=[72, 168, 336])
+        cand["dual_horizon_regime"] = pick("dual_horizon_regime", cast=bool, fallback=[True, False])
+        cand["regime_lookback_long_bars"] = pick("regime_lookback_long_bars", cast=int, fallback=[336, 504, 720])
+        cand["performance_blend_weight"] = pick("performance_blend_weight", cast=float, fallback=[0.0, 0.3, 0.5])
+        return {"name": name, "params": cand}
+
+    if name == "dispersion_alpha":
+        max_k = max(1, len(dataset.symbols) // 2)
+        k = pick("k_per_side", cast=int, fallback=[1, 2, 3])
+        k = max(1, min(k, max_k))
+        cand = dict(base_params)
+        cand["k_per_side"] = k
+        cand["momentum_lookback_bars"] = pick("momentum_lookback_bars", cast=int, fallback=[48, 72, 96])
+        cand["dispersion_lookback_bars"] = pick("dispersion_lookback_bars", cast=int, fallback=[48, 72, 168])
+        cand["target_gross_leverage"] = pick("target_gross_leverage", cast=float, fallback=[0.20, 0.25, 0.35])
+        cand["rebalance_interval_bars"] = pick("rebalance_interval_bars", cast=int, fallback=[12, 24, 48])
         return {"name": name, "params": cand}
 
     if name == "low_vol_alpha":

@@ -291,10 +291,13 @@ class RegimeMixerStrategy(Strategy):
         return final_v1, final_lv
 
     def should_rebalance(self, dataset: MarketDataset, idx: int) -> bool:
-        lb_max = max(self._regime_lb, self._vol_lb)
+        # Vol ratio needs 2x vol_lb; short-term regime needs regime_lb
+        # Long-term regime only needs its lookback (no vol computation)
+        warmup_short = max(self._regime_lb, self._vol_lb) * 2 + 10
         if self._dual_horizon:
-            lb_max = max(lb_max, self._regime_lb_long)
-        warmup = lb_max * 2 + 10
+            warmup = max(warmup_short, self._regime_lb_long + 10)
+        else:
+            warmup = warmup_short
         if idx <= warmup:
             return False
         # Let sub-strategies update their internal state

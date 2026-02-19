@@ -23,6 +23,7 @@ from .funding_carry_alpha import FundingCarryAlphaStrategy
 from .low_vol_alpha import LowVolAlphaStrategy
 from .regime_switch_ensemble import RegimeSwitchEnsembleStrategy
 from .regime_mixer import RegimeMixerStrategy
+from .dispersion_alpha import DispersionAlphaStrategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -78,6 +79,9 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
 
     if name == "regime_mixer":
         return RegimeMixerStrategy(params=params)
+
+    if name == "dispersion_alpha":
+        return DispersionAlphaStrategy(params=params)
 
     if name == "ensemble_v1":
         sub_cfgs = params.pop("sub_strategies", [])
