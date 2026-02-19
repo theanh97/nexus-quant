@@ -743,6 +743,90 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         except Exception as e:
             return JSONResponse({"error": str(e)}, status_code=500)
 
+    @app.get("/api/research_cycle/latest")
+    def api_research_cycle_latest() -> JSONResponse:
+        """Return the latest research cycle report."""
+        p = artifacts_dir / "research" / "latest_cycle.json"
+        if not p.exists():
+            return JSONResponse({"error": "No research cycle run yet"}, status_code=404)
+        try:
+            return JSONResponse(json.loads(p.read_text("utf-8")))
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
+    @app.post("/api/research_cycle/run")
+    async def api_research_cycle_run() -> JSONResponse:
+        """Trigger a new autonomous research cycle (background)."""
+        import threading, datetime as _dt
+        def _bg_run():
+            try:
+                from ..orchestration.research_cycle import ResearchCycle
+                # pick first available config
+                cfg = None
+                for name in ["run_synthetic_funding.json", "run_synthetic_ml_factor.json"]:
+                    p = _repo_root() / "configs" / name
+                    if p.exists():
+                        cfg = p
+                        break
+                cycle = ResearchCycle(artifacts_dir=artifacts_dir, config_path=cfg)
+                cycle.run()
+            except Exception:
+                pass
+        t = threading.Thread(target=_bg_run, daemon=True)
+        t.start()
+        return JSONResponse({
+            "ok": True,
+            "message": "Research cycle started in background",
+            "ts": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        })
+
+    @app.get("/api/agents/run")
+    async def api_agents_run(agent: str = "atlas") -> JSONResponse:
+        """Run a specific agent on-demand and return proposals."""
+        try:
+            # Build minimal context
+            from ..agents.base import AgentContext
+            metrics = {}
+            runs_dir = artifacts_dir / "runs"
+            if runs_dir.exists():
+                dirs = sorted(runs_dir.iterdir(), key=lambda d: d.stat().st_mtime, reverse=True)
+                for d in dirs[:3]:
+                    mp = d / "metrics.json"
+                    if mp.exists():
+                        m = json.loads(mp.read_text("utf-8"))
+                        metrics = m.get("summary") or {}
+                        break
+            wisdom = {}
+            wp = artifacts_dir / "wisdom" / "latest.json"
+            if wp.exists():
+                wisdom = json.loads(wp.read_text("utf-8"))
+            ctx = AgentContext(wisdom=wisdom, recent_metrics=metrics, regime={})
+
+            agent_map = {
+                "atlas": "AtlasAgent",
+                "cipher": "CipherAgent",
+                "echo": "EchoAgent",
+                "flux": "FluxAgent",
+            }
+            agent_name = agent.lower().strip()
+            if agent_name not in agent_map:
+                return JSONResponse({"error": f"Unknown agent: {agent}. Options: atlas, cipher, echo, flux"}, status_code=400)
+
+            mod_name = f"..agents.{agent_name}"
+            cls_name = agent_map[agent_name]
+            import importlib
+            mod = importlib.import_module(mod_name, package=__name__)
+            agent_cls = getattr(mod, cls_name)
+            result = agent_cls().run(ctx)
+            return JSONResponse({
+                "agent": agent_name,
+                "model_used": result.model_used,
+                "fallback_used": result.fallback_used,
+                "parsed": result.parsed,
+            })
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
     @app.post("/api/feedback")
     async def api_feedback(body: FeedbackRequest) -> JSONResponse:
         import datetime as _dt

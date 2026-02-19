@@ -1047,6 +1047,51 @@
             </div>
           </div>
         </div>
+
+        <div style="height:14px"></div>
+
+        <!-- Research Feed + Agent Dispatch -->
+        <div class="grid two-even">
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">🔬 Research Feed</div>
+                  <div class="card-sub">Latest autonomous research cycle findings</div>
+                </div>
+                <button class="send-btn" onclick="triggerResearchCycle()" style="font-size:12px;padding:6px 14px" id="research-btn">▶ Run Cycle</button>
+              </div>
+              <div id="research-feed" style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+                <div class="muted" style="font-size:13px">No research cycle run yet. Click ▶ Run Cycle to start.</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">🤖 Agent Dispatch</div>
+                  <div class="card-sub">Run specialized agents on-demand</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+                <button class="chip" style="cursor:pointer;padding:10px;font-size:13px;text-align:left" onclick="runAgent('atlas')">
+                  <strong>ATLAS</strong><br><span style="color:var(--muted);font-size:11px">Strategy proposals</span>
+                </button>
+                <button class="chip accent" style="cursor:pointer;padding:10px;font-size:13px;text-align:left" onclick="runAgent('cipher')">
+                  <strong>CIPHER</strong><br><span style="font-size:11px">Risk assessment</span>
+                </button>
+                <button class="chip" style="cursor:pointer;padding:10px;font-size:13px;text-align:left" onclick="runAgent('echo')">
+                  <strong>ECHO</strong><br><span style="color:var(--muted);font-size:11px">QA validation</span>
+                </button>
+                <button class="chip" style="cursor:pointer;padding:10px;font-size:13px;text-align:left" onclick="runAgent('flux')">
+                  <strong>FLUX</strong><br><span style="color:var(--muted);font-size:11px">Task scheduling</span>
+                </button>
+              </div>
+              <div id="agent-result" style="margin-top:12px;font-size:12px;color:var(--muted);min-height:40px;font-family:var(--mono)"></div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- =========================================================
@@ -2848,6 +2893,117 @@
       }
 
       // ==========================================================
+      // Research Cycle + Agent Dispatch
+      // ==========================================================
+      async function loadResearchFeed() {
+        try {
+          const data = await fetchJSON("/api/research_cycle/latest");
+          if (!data || data.error) return;
+          const feed = document.getElementById("research-feed");
+          if (!feed) return;
+
+          const ts = (data.completed_at || data.started_at || "").slice(0, 16).replace("T", " ");
+          const dur = data.duration_sec || 0;
+          const papers = data.arxiv_findings || [];
+          const mkt = data.market_data || {};
+          const tasks = data.tasks_created || [];
+          const errors = data.errors || [];
+          const btcRate = (mkt.BTCUSDT || {}).latest_rate;
+
+          let html = `<div style="font-size:11px;color:var(--muted);margin-bottom:6px">${ts} UTC · ${dur}s · ${tasks.length} tasks created · ${errors.length} errors</div>`;
+
+          // Market data
+          if (btcRate !== undefined) {
+            const color = btcRate > 0 ? "var(--red)" : "var(--green)";
+            const signal = btcRate > 0 ? "SHORT PERP" : "LONG PERP";
+            html += `<div class="card" style="margin:0;padding:10px 12px;background:rgba(68,147,248,.06)">
+              <span style="font-size:12px">📡 BTC Funding: <span style="color:${color};font-family:var(--mono)">${(btcRate*100).toFixed(6)}%</span> → <strong>${signal}</strong></span>
+            </div>`;
+          }
+
+          // arxiv papers
+          if (papers.length) {
+            html += `<div style="font-size:12px;font-weight:650;color:var(--muted);margin-top:6px">📚 Research Papers</div>`;
+            html += papers.slice(0, 3).map(p => `
+              <div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)">
+                <div style="color:var(--text)">${escapeHtml(p.title || "")}</div>
+                <div style="color:var(--muted2);margin-top:2px">${escapeHtml((p.summary || "").slice(0, 120))}…</div>
+              </div>`).join("");
+          }
+
+          // Agent proposals
+          const atlas = (data.agent_proposals || {}).atlas || {};
+          const proposals = atlas.proposals || [];
+          if (proposals.length) {
+            html += `<div style="font-size:12px;font-weight:650;color:var(--muted);margin-top:6px">💡 ATLAS Proposals</div>`;
+            html += proposals.slice(0, 3).map(p => `
+              <div style="font-size:12px;padding:4px 0;display:flex;gap:8px;align-items:flex-start">
+                <span class="chip" style="font-size:10px;padding:2px 6px;flex-shrink:0">P${p.priority||'?'}</span>
+                <div><strong>${escapeHtml(p.name || "")}</strong> — ${escapeHtml(p.rationale || "")}</div>
+              </div>`).join("");
+          }
+
+          feed.innerHTML = html;
+        } catch (e) {
+          // Silently fail — no research cycle yet
+        }
+      }
+
+      async function triggerResearchCycle() {
+        const btn = document.getElementById("research-btn");
+        if (btn) { btn.textContent = "⏳ Running…"; btn.disabled = true; }
+        try {
+          const r = await fetch("/api/research_cycle/run", { method: "POST" });
+          const d = await r.json();
+          if (btn) { btn.textContent = "⏳ Background…"; }
+          // Poll for result after 15s
+          setTimeout(() => {
+            loadResearchFeed();
+            if (btn) { btn.textContent = "▶ Run Cycle"; btn.disabled = false; }
+          }, 15000);
+        } catch (e) {
+          if (btn) { btn.textContent = "▶ Run Cycle"; btn.disabled = false; }
+        }
+      }
+
+      async function runAgent(agentName) {
+        const el = document.getElementById("agent-result");
+        if (el) el.innerHTML = `<span style="color:var(--yellow)">⏳ Calling ${agentName.toUpperCase()}…</span>`;
+        try {
+          const r = await fetch(`/api/agents/run?agent=${agentName}`);
+          const data = await r.json();
+          if (data.error) {
+            if (el) el.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(data.error)}</span>`;
+            return;
+          }
+          const parsed = data.parsed || {};
+          const model = data.model_used || "?";
+          const fallback = data.fallback_used ? " (fallback)" : "";
+          let summary = `[${agentName.toUpperCase()} · ${model}${fallback}]\n`;
+
+          if (agentName === "atlas") {
+            const proposals = parsed.proposals || [];
+            summary += proposals.map(p => `• P${p.priority}: ${p.name} — ${p.rationale || ""}`).join("\n") || "(no proposals)";
+          } else if (agentName === "cipher") {
+            const flags = parsed.flags || parsed.concerns || [];
+            summary += (flags.length ? flags.map(f => `• ${JSON.stringify(f)}`).join("\n") : "(no flags)");
+          } else if (agentName === "echo") {
+            const issues = parsed.issues || parsed.warnings || [];
+            summary += (issues.length ? issues.map(i => `• ${JSON.stringify(i)}`).join("\n") : "(no issues found)");
+          } else {
+            summary += JSON.stringify(parsed, null, 2).slice(0, 300);
+          }
+
+          if (el) el.innerHTML = summary.replace(/\n/g, "<br>").replace(/\t/g, "  ");
+
+          // Auto-load tasks since new ones may have been created
+          if (currentTab() === "tasks") loadTasks();
+        } catch (e) {
+          if (el) el.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(String(e))}</span>`;
+        }
+      }
+
+      // ==========================================================
       // Auto refresh
       // ==========================================================
       function currentTab() {
@@ -2876,6 +3032,7 @@
         loadBrain();
         loadOverview();
         loadBenchmark();
+        loadResearchFeed();
 
         // Poll active tab every 12s
         setInterval(refreshActive, 12000);
