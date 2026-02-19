@@ -935,37 +935,73 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
 
 <!-- ═══ LOGS (Analysis Journal) ═══ -->
 <div class="page" id="page-logs">
-  <div class="card" style="background:var(--info-bg,#EFF6FF);border:1px solid #BFDBFE;margin-bottom:16px">
-    <div style="font-weight:600;margin-bottom:6px">Analysis Journal</div>
-    <div class="text-sm text-muted" style="line-height:1.5">
-      Persistent record of all thinking, analysis, findings, decisions, and multi-model audit results.
-      These logs survive terminal sessions and provide a complete research history.
+  <div style="display:grid;grid-template-columns:1fr 380px;gap:16px">
+    <!-- Left: Log entries -->
+    <div>
+      <div class="card" style="background:var(--info-bg,#EFF6FF);border:1px solid #BFDBFE;margin-bottom:12px">
+        <div style="font-weight:600;margin-bottom:4px">Analysis Journal — Research History</div>
+        <div class="text-sm text-muted">Persistent record of thinking, findings, decisions, and multi-model audits. Auto-refreshes every 10s.</div>
+      </div>
+      <!-- Filters -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <select id="log-filter-type" onchange="loadLogs()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:13px">
+          <option value="">All Types</option>
+          <option value="analysis">Analysis</option>
+          <option value="finding">Finding</option>
+          <option value="decision">Decision</option>
+          <option value="audit">Audit</option>
+        </select>
+        <select id="log-filter-source" onchange="loadLogs()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:13px">
+          <option value="">All Sources</option>
+          <option value="claude">Claude</option>
+          <option value="gpt-5.2">GPT-5.2</option>
+          <option value="glm-5">GLM-5</option>
+          <option value="sonnet-4.6">Sonnet 4.6</option>
+          <option value="multi-model">Multi-Model</option>
+          <option value="user">User</option>
+        </select>
+        <label style="font-size:11px;color:var(--fg-muted);display:flex;align-items:center;gap:4px">
+          <input type="checkbox" id="log-autorefresh" checked onchange="toggleLogAutoRefresh()"> Auto-refresh
+        </label>
+        <button class="btn btn-s" onclick="loadLogs()" style="padding:6px 12px">Refresh</button>
+        <span id="log-count" class="text-sm text-muted" style="margin-left:auto"></span>
+      </div>
+      <!-- Log entries -->
+      <div id="logs-container" style="display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 300px);overflow-y:auto">
+        <div class="empty">Loading analysis logs...</div>
+      </div>
     </div>
-  </div>
-  <!-- Filters -->
-  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-    <select id="log-filter-type" onchange="loadLogs()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:13px">
-      <option value="">All Types</option>
-      <option value="analysis">Analysis</option>
-      <option value="finding">Finding</option>
-      <option value="decision">Decision</option>
-      <option value="audit">Audit</option>
-    </select>
-    <select id="log-filter-source" onchange="loadLogs()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:13px">
-      <option value="">All Sources</option>
-      <option value="claude">Claude</option>
-      <option value="gpt-5.2">GPT-5.2</option>
-      <option value="glm-5">GLM-5</option>
-      <option value="sonnet-4.6">Sonnet 4.6</option>
-      <option value="multi-model">Multi-Model</option>
-      <option value="user">User</option>
-    </select>
-    <button class="btn btn-s" onclick="loadLogs()" style="padding:6px 12px">Refresh</button>
-    <span id="log-count" class="text-sm text-muted" style="margin-left:auto"></span>
-  </div>
-  <!-- Log entries -->
-  <div id="logs-container" style="display:flex;flex-direction:column;gap:10px">
-    <div class="empty">Loading analysis logs...</div>
+    <!-- Right: AI Quick Chat -->
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div style="font-weight:600;margin-bottom:8px">AI Research Assistant</div>
+        <div class="text-sm text-muted" style="margin-bottom:10px">Ask about research findings, strategy analysis, or get quick insights from AI.</div>
+        <div id="log-chat-messages" style="max-height:400px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px">
+        </div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="log-chat-input" placeholder="Ask about research findings..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:13px" onkeydown="if(event.key==='Enter')sendLogChat()">
+          <select id="log-chat-model" style="padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:12px;width:90px">
+            <option value="glm-5">GLM-5</option>
+          </select>
+          <button class="btn btn-s" onclick="sendLogChat()" style="padding:6px 14px">Send</button>
+        </div>
+      </div>
+      <!-- Quick Stats -->
+      <div class="card">
+        <div style="font-weight:600;margin-bottom:8px">Research Stats</div>
+        <div id="log-stats" class="text-sm" style="line-height:1.8">
+          <div>Loading...</div>
+        </div>
+      </div>
+      <!-- Quick actions -->
+      <div class="card" style="margin-top:12px">
+        <div style="font-weight:600;margin-bottom:8px">Quick Actions</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="btn btn-s" onclick="addLogNote()" style="padding:6px 12px;text-align:left">+ Add Note</button>
+          <button class="btn btn-s" onclick="loadLogs();toast('Logs refreshed')" style="padding:6px 12px;text-align:left">Refresh All</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1995,9 +2031,92 @@ function loadLogs(){
       </div>`;
     }
     html('logs-container',h);
+    loadLogStats();
   }).catch(e=>{
     html('logs-container','<div class="empty">Error loading logs: '+esc(e.message)+'</div>');
   });
+}
+
+// ─── Log Stats ───
+function loadLogStats(){
+  jx('/api/analysis_log?n=500').then(d=>{
+    const entries=d.entries||[];
+    if(!entries.length){html('log-stats','<div class="text-muted">No entries yet</div>');return;}
+    const byType={},bySrc={};
+    let latest='';
+    for(const e of entries){
+      byType[e.type]=(byType[e.type]||0)+1;
+      if(e.source)bySrc[e.source]=(bySrc[e.source]||0)+1;
+      if(e.ts&&e.ts>latest)latest=e.ts;
+    }
+    let h=`<div><b>${entries.length}</b> total entries</div>`;
+    h+='<div style="margin-top:6px;font-weight:600;font-size:11px;color:var(--fg-muted)">BY TYPE</div>';
+    const typeIcon={analysis:'🔍',finding:'💡',decision:'✅',audit:'🤖'};
+    for(const[t,c] of Object.entries(byType)){
+      h+=`<div>${typeIcon[t]||'📝'} ${t}: <b>${c}</b></div>`;
+    }
+    h+='<div style="margin-top:6px;font-weight:600;font-size:11px;color:var(--fg-muted)">BY SOURCE</div>';
+    for(const[s,c] of Object.entries(bySrc)){
+      h+=`<div>${esc(s)}: <b>${c}</b></div>`;
+    }
+    if(latest){
+      h+=`<div style="margin-top:6px;font-size:11px;color:var(--fg-muted)">Latest: ${new Date(latest).toLocaleString()}</div>`;
+    }
+    html('log-stats',h);
+  }).catch(()=>html('log-stats','<div class="text-muted">Stats unavailable</div>'));
+}
+
+// ─── Log Auto-Refresh ───
+let _logRefreshTimer=null;
+function toggleLogAutoRefresh(){
+  const cb=$('log-autorefresh');
+  if(cb&&cb.checked){
+    if(!_logRefreshTimer)_logRefreshTimer=setInterval(()=>{if(_tab==='logs'){loadLogs();loadLogStats();}},10000);
+  }else{
+    if(_logRefreshTimer){clearInterval(_logRefreshTimer);_logRefreshTimer=null;}
+  }
+}
+// Start auto-refresh by default
+toggleLogAutoRefresh();
+
+// ─── Log AI Chat ───
+function sendLogChat(){
+  const inp=$('log-chat-input');
+  if(!inp)return;
+  const txt=inp.value.trim();
+  if(!txt)return;
+  inp.value='';
+  const msgs=$('log-chat-messages');
+  // Add user message
+  msgs.innerHTML+=`<div style="text-align:right"><div style="display:inline-block;background:var(--accent);color:#fff;padding:6px 12px;border-radius:12px 12px 2px 12px;font-size:13px;max-width:85%">${esc(txt)}</div></div>`;
+  // Add typing indicator
+  msgs.innerHTML+=`<div id="log-typing" style="text-align:left"><div style="display:inline-block;background:var(--surface2,#F1F5F9);padding:6px 12px;border-radius:12px 12px 12px 2px;font-size:13px;color:var(--fg-muted)">Thinking...</div></div>`;
+  msgs.scrollTop=msgs.scrollHeight;
+  // Build context with recent log entries
+  const model=$('log-chat-model')?.value||'glm-5';
+  const ctxMsg='[NEXUS Research Assistant] You are analyzing the research log. Answer based on the findings below.\nUSER: '+txt;
+  jx('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:ctxMsg,raw_user:txt,model:model})}).then(d=>{
+    const el=$('log-typing');if(el)el.remove();
+    const resp=d.response||d.reply||d.message||'(no response)';
+    let formatted=esc(resp).replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`(.+?)`/g,'<code style="background:var(--border);padding:1px 4px;border-radius:3px;font-size:12px">$1</code>');
+    msgs.innerHTML+=`<div style="text-align:left"><div style="display:inline-block;background:var(--surface2,#F1F5F9);padding:8px 12px;border-radius:12px 12px 12px 2px;font-size:13px;max-width:85%;line-height:1.5">${formatted}</div><div style="font-size:10px;color:var(--fg-light);margin-top:2px">${esc(model)} · ${new Date().toLocaleTimeString()}</div></div>`;
+    msgs.scrollTop=msgs.scrollHeight;
+  }).catch(e=>{
+    const el=$('log-typing');if(el)el.remove();
+    msgs.innerHTML+=`<div style="text-align:left"><div style="display:inline-block;background:var(--red-light);color:var(--red);padding:6px 12px;border-radius:12px;font-size:13px">Error: ${esc(e.message)}</div></div>`;
+    msgs.scrollTop=msgs.scrollHeight;
+  });
+}
+
+// ─── Add Log Note ───
+function addLogNote(){
+  const note=prompt('Add a research note:');
+  if(!note||!note.trim())return;
+  jx('/api/analysis_log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'analysis',source:'user',title:'User Note',content:note.trim(),tags:['user-note']})}).then(()=>{
+    toast('Note added');
+    loadLogs();
+    loadLogStats();
+  }).catch(e=>toast('Error: '+e.message));
 }
 
 const LOADERS={
