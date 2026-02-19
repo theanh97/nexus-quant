@@ -251,7 +251,39 @@ class NexusAlphaV1Strategy(Strategy):
         warmup = max(mom_lb, vol_lb) + 2
         if idx <= warmup:
             return False
-        return idx % max(1, interval) == 0
+
+        # Adaptive rebalancing: also rebalance on high cross-sectional dispersion
+        adaptive = self._p("adaptive_rebalance", False)
+        if adaptive and idx % max(1, interval) != 0:
+            # Check if dispersion spike warrants early rebalance (min interval = interval/3)
+            min_gap = max(1, interval // 3)
+            if hasattr(self, '_last_rebal_idx') and (idx - self._last_rebal_idx) < min_gap:
+                return False
+            # Compute cross-sectional return dispersion over last 24h
+            disp_lb = 24
+            if idx > disp_lb + 1:
+                rets = []
+                for s in dataset.symbols:
+                    c = dataset.perp_close[s]
+                    if idx - 1 < len(c) and idx - 1 - disp_lb >= 0:
+                        c0 = c[idx - 1 - disp_lb]
+                        c1 = c[idx - 1]
+                        if c0 > 0:
+                            rets.append(c1 / c0 - 1.0)
+                if len(rets) >= 4:
+                    disp = statistics.pstdev(rets)
+                    # Trigger if dispersion > 2x recent average
+                    avg_disp = getattr(self, '_avg_disp', disp)
+                    self._avg_disp = 0.95 * avg_disp + 0.05 * disp  # EMA
+                    if disp > 2.0 * avg_disp:
+                        self._last_rebal_idx = idx
+                        return True
+            return False
+
+        if idx % max(1, interval) == 0:
+            self._last_rebal_idx = idx
+            return True
+        return False
 
     def target_weights(self, dataset: MarketDataset, idx: int, current: Weights) -> Weights:
         syms = dataset.symbols
@@ -280,9 +312,12 @@ class NexusAlphaV1Strategy(Strategy):
         w_vm     = self._p("w_vol_momentum",    0.05)
         w_ft     = self._p("w_funding_trend",   0.00)
 
-        # Phase 56 signal engineering enhancements (defaults preserve V1 behavior)
+        # Phase 56-57 signal engineering enhancements (defaults preserve V1 behavior)
         conditional_mr   = self._p("conditional_mr", False)      # MR only when momentum agrees
         score_weight_mix = self._p("score_weight_mix", 0.0)      # 0=pure inv-vol, 1=pure score
+        w_accel          = self._p("w_acceleration", 0.0)        # momentum acceleration weight
+        accel_fast_bars  = self._p("accel_fast_bars", 168)       # short momentum for acceleration
+        adaptive_rebal   = self._p("adaptive_rebalance", False)  # rebalance on high dispersion
 
         ts = dataset.timeline[idx]
 
@@ -347,6 +382,23 @@ class NexusAlphaV1Strategy(Strategy):
         ft_z = zscores(ft_raw)
         ft = {s: float(ft_z.get(s, 0.0)) for s in syms}      # +ve = prefer LONG
 
+        # ── Signal 7: Momentum acceleration (Phase 57) ──────────
+        # accel = short_mom - long_mom: positive = accelerating upward
+        accel: Dict[str, float] = {s: 0.0 for s in syms}
+        if w_accel > 0:
+            accel_raw: Dict[str, float] = {}
+            for s in syms:
+                c = dataset.perp_close[s]
+                i1 = min(idx - 1, len(c) - 1)
+                i0_fast = max(0, idx - 1 - accel_fast_bars)
+                c1 = c[i1] if i1 >= 0 else 0.0
+                c0_fast = c[i0_fast] if i0_fast >= 0 and i0_fast < len(c) else 0.0
+                mom_fast = (c1 / c0_fast - 1.0) if c0_fast > 0 else 0.0
+                # acceleration = fast_mom - slow_mom (both raw, before z-scoring)
+                accel_raw[s] = mom_fast - mom_raw[s]
+            az = zscores(accel_raw)
+            accel = {s: float(az.get(s, 0.0)) for s in syms}
+
         # ── Composite score (HIGH = LONG, LOW = SHORT) ────────────
         score: Dict[str, float] = {}
         for s in syms:
@@ -357,6 +409,7 @@ class NexusAlphaV1Strategy(Strategy):
                 + w_mr    * mr[s]
                 + w_vm    * vol_mom[s]
                 + w_ft    * ft[s]
+                + w_accel * accel[s]
             )
 
         ranked = sorted(syms, key=lambda s: score[s], reverse=True)
