@@ -912,6 +912,26 @@
           >
             💬 Chat
           </button>
+          <button
+            class="tab-btn"
+            id="tabbtn-strategy"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-strategy"
+            data-tab="strategy"
+          >
+            🧪 Strategy Lab
+          </button>
+          <button
+            class="tab-btn"
+            id="tabbtn-browser"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-browser"
+            data-tab="browser"
+          >
+            🌐 Browser
+          </button>
           <div class="tab-indicator" id="tab-indicator" aria-hidden="true"></div>
         </nav>
 
@@ -1667,6 +1687,91 @@
           </div>
         </div>
       </section>
+
+      <!-- Strategy Lab Page -->
+      <section class="page" id="page-strategy" role="tabpanel" aria-labelledby="tabbtn-strategy" hidden>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:4px 0">
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">🧪 Strategy Lab</div>
+                  <div class="card-sub">LLM-powered strategy improvement proposals via GLM-5/Claude</div>
+                </div>
+                <button class="btn" onclick="runStrategyGenerator()" id="strategy-run-btn">⚡ Generate</button>
+              </div>
+              <div id="strategy-status" style="color:var(--muted);font-size:12px;margin-top:8px">Click Generate to get LLM proposals based on latest backtest metrics…</div>
+              <div id="strategy-proposals" style="margin-top:12px"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div class="card-title">📋 Recent Proposals</div>
+                <button class="btn btn-ghost" onclick="loadStrategyProposals()">↻ Refresh</button>
+              </div>
+              <div id="strategy-history" style="margin-top:8px;max-height:400px;overflow-y:auto"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-inner">
+            <div class="card-header">
+              <div class="card-title">⚙️ Config Override Preview</div>
+            </div>
+            <pre id="strategy-config-preview" style="font-size:12px;color:var(--muted);margin-top:8px;white-space:pre-wrap">Select a proposal to preview config overrides…</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Browser Agent Page -->
+      <section class="page" id="page-browser" role="tabpanel" aria-labelledby="tabbtn-browser" hidden>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:4px 0">
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">🌐 Browser Agent</div>
+                  <div class="card-sub">Playwright web automation (urllib fallback)</div>
+                </div>
+                <span id="browser-mode-chip" class="chip" style="font-size:11px">—</span>
+              </div>
+              <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+                <input id="browser-url-input" class="input" placeholder="https://fapi.binance.com/fapi/v1/ticker/24hr" style="width:100%;box-sizing:border-box" />
+                <input id="browser-task-input" class="input" placeholder="Extract key financial data and signals" style="width:100%;box-sizing:border-box" />
+                <button class="btn" onclick="runBrowserTask()" id="browser-run-btn">▶ Run</button>
+              </div>
+              <div id="browser-status" style="color:var(--muted);font-size:12px;margin-top:8px"></div>
+              <pre id="browser-result" style="margin-top:12px;font-size:11px;white-space:pre-wrap;max-height:280px;overflow-y:auto;color:var(--fg);background:rgba(0,0,0,0.3);padding:8px;border-radius:6px"></pre>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div class="card-title">🔗 Quick Research</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+                <button class="btn btn-ghost" onclick="browserFetch('https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=8','Analyze BTC funding rate trend')" style="text-align:left;font-size:12px">📊 BTC Funding Rates</button>
+                <button class="btn btn-ghost" onclick="browserFetch('https://fapi.binance.com/fapi/v1/ticker/24hr','List top 20 perps by volume with prices')" style="text-align:left;font-size:12px">📈 Perp Market Overview</button>
+                <button class="btn btn-ghost" onclick="browserFetch('https://fapi.binance.com/fapi/v1/fundingRate?symbol=ETHUSDT&limit=8','Analyze ETH funding rate')" style="text-align:left;font-size:12px">💎 ETH Funding Rates</button>
+                <button class="btn btn-ghost" onclick="browserFetch('https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT','Get BTC open interest value')" style="text-align:left;font-size:12px">🔓 BTC Open Interest</button>
+                <button class="btn btn-ghost" onclick="browserFetch('https://export.arxiv.org/api/query?search_query=ti:funding+rate+crypto&max_results=3','Extract paper titles and key findings')" style="text-align:left;font-size:12px">📚 ArXiv: Crypto Funding Papers</button>
+                <button class="btn btn-ghost" onclick="browserFetch('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT','Extract mark price, index price and basis')" style="text-align:left;font-size:12px">💹 BTC Premium Index</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-inner">
+            <div class="card-header">
+              <div class="card-title">📜 Browser History</div>
+              <button class="btn btn-ghost" onclick="loadBrowserHistory()">↻ Refresh</button>
+            </div>
+            <div id="browser-history" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <script>
@@ -2736,6 +2841,8 @@
         tasks: loadTasks,
         reports: loadReports,
         chat: loadBrain,
+        strategy: loadStrategyLab,
+        browser: loadBrowserTab,
       };
 
       function setActiveTab(name) {
@@ -3170,6 +3277,214 @@
         } catch (e) {
           if (el) el.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(String(e))}</span>`;
         }
+      }
+
+      // ==========================================================
+      // Strategy Lab
+      // ==========================================================
+      let _strategyProposals = [];
+
+      function loadStrategyLab() {
+        loadStrategyProposals();
+      }
+
+      async function loadStrategyProposals() {
+        try {
+          const data = await fetchJSON("/api/strategy_generator/proposals?limit=15");
+          const el = document.getElementById("strategy-history");
+          if (!el) return;
+          if (!Array.isArray(data) || data.length === 0) {
+            el.innerHTML = `<div style="color:var(--muted);font-size:12px">No proposals yet. Click Generate to create the first batch.</div>`;
+            return;
+          }
+          let html = "";
+          data.forEach((entry, i) => {
+            const ts = (entry.ts || "").slice(0, 16).replace("T", " ");
+            const sharpe = entry.context_sharpe != null ? entry.context_sharpe.toFixed(3) : "—";
+            const insight = entry.key_insight || "";
+            const proposals = entry.proposals || [];
+            html += `<div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span style="font-size:11px;color:var(--muted)">${ts} UTC</span>
+                <span class="chip" style="font-size:10px">Sharpe: ${sharpe} · ${proposals.length} proposals</span>
+              </div>
+              ${insight ? `<div style="font-size:12px;color:var(--accent);margin-bottom:4px">💡 ${escapeHtml(insight)}</div>` : ""}
+              ${proposals.map((p, j) => `
+                <div style="background:rgba(255,255,255,0.04);border-radius:4px;padding:6px;margin-top:4px;cursor:pointer"
+                     onclick="previewProposalConfig(${JSON.stringify(JSON.stringify(p))})">
+                  <div style="display:flex;justify-content:space-between">
+                    <span style="font-size:12px;font-weight:600">${j + 1}. ${escapeHtml(p.name || "Proposal")}</span>
+                    <span style="font-size:10px;color:${p.risk_assessment === 'high' ? 'var(--red)' : p.risk_assessment === 'low' ? 'var(--green)' : 'var(--yellow)'}">⚠ ${p.risk_assessment || "medium"}</span>
+                  </div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:2px">${escapeHtml((p.hypothesis || "").slice(0, 100))}</div>
+                </div>`).join("")}
+            </div>`;
+          });
+          el.innerHTML = html;
+        } catch(e) {
+          const el = document.getElementById("strategy-history");
+          if (el) el.innerHTML = `<div style="color:var(--red)">${escapeHtml(String(e))}</div>`;
+        }
+      }
+
+      function previewProposalConfig(jsonStr) {
+        const el = document.getElementById("strategy-config-preview");
+        if (!el) return;
+        try {
+          const p = JSON.parse(jsonStr);
+          el.textContent = JSON.stringify({
+            name: p.name,
+            hypothesis: p.hypothesis,
+            config_overrides: p.config_overrides || {},
+            expected_sharpe_delta: p.expected_sharpe_delta,
+            risk_assessment: p.risk_assessment,
+            priority: p.priority,
+          }, null, 2);
+        } catch(e) {
+          el.textContent = jsonStr;
+        }
+      }
+
+      async function runStrategyGenerator() {
+        const btn = document.getElementById("strategy-run-btn");
+        const status = document.getElementById("strategy-status");
+        const el = document.getElementById("strategy-proposals");
+        if (btn) { btn.textContent = "⏳ Generating…"; btn.disabled = true; }
+        if (status) status.textContent = "Calling GLM-5/Claude to generate strategy proposals…";
+        try {
+          const r = await fetch("/api/strategy_generator/run", { method: "POST" });
+          const data = await r.json();
+          if (data.error) {
+            if (status) status.innerHTML = `<span style="color:var(--red)">Error: ${escapeHtml(data.error)}</span>`;
+          } else {
+            const count = data.count || 0;
+            const tasks = (data.tasks_created || []).length;
+            if (status) status.innerHTML = `<span style="color:var(--green)">✓ Generated ${count} proposals → ${tasks} Kanban tasks created</span>`;
+            const proposals = data.proposals || [];
+            if (el) {
+              el.innerHTML = proposals.map((p, i) => `
+                <div style="border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;cursor:pointer;transition:background 0.2s"
+                     onmouseenter="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background=''"
+                     onclick="previewProposalConfig(${JSON.stringify(JSON.stringify(p))})">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-weight:600;font-size:13px">${i + 1}. ${escapeHtml(p.name || "Proposal")}</span>
+                    <div style="display:flex;gap:6px;align-items:center">
+                      ${p.expected_sharpe_delta != null ? `<span class="chip" style="font-size:10px;color:var(--green)">+${Number(p.expected_sharpe_delta).toFixed(2)} Sharpe</span>` : ""}
+                      <span class="chip" style="font-size:10px;color:${p.risk_assessment === 'high' ? 'var(--red)' : p.risk_assessment === 'low' ? 'var(--green)' : 'var(--yellow)'}">${p.risk_assessment || "medium"} risk</span>
+                    </div>
+                  </div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:4px">${escapeHtml((p.hypothesis || "").slice(0, 150))}</div>
+                </div>`).join("") || `<div style="color:var(--muted)">No proposals returned.</div>`;
+            }
+            await loadStrategyProposals();
+          }
+        } catch(e) {
+          if (status) status.innerHTML = `<span style="color:var(--red)">${escapeHtml(String(e))}</span>`;
+        }
+        if (btn) { btn.textContent = "⚡ Generate"; btn.disabled = false; }
+      }
+
+      // ==========================================================
+      // Browser Agent
+      // ==========================================================
+      function loadBrowserTab() {
+        loadBrowserHistory();
+        // Set mode chip
+        fetch("/api/browser/history?limit=1").then(r => r.json()).then(data => {
+          const chip = document.getElementById("browser-mode-chip");
+          if (chip && Array.isArray(data) && data.length > 0) {
+            const mode = data[0].mode || "urllib";
+            chip.textContent = mode === "playwright" ? "🎭 Playwright" : "🔗 urllib";
+            chip.style.color = mode === "playwright" ? "var(--green)" : "var(--yellow)";
+          }
+        }).catch(() => {});
+      }
+
+      async function loadBrowserHistory() {
+        try {
+          const data = await fetchJSON("/api/browser/history?limit=15");
+          const el = document.getElementById("browser-history");
+          if (!el) return;
+          if (!Array.isArray(data) || data.length === 0) {
+            el.innerHTML = `<div style="color:var(--muted);font-size:12px">No browser runs yet. Use the Quick Research buttons or enter a URL above.</div>`;
+            return;
+          }
+          el.innerHTML = data.map(r => {
+            const ts = (r.ts || "").slice(0, 16).replace("T", " ");
+            const ok = r.ok ? "✓" : "✗";
+            const color = r.ok ? "var(--green)" : "var(--red)";
+            const dur = r.duration_sec != null ? `${r.duration_sec}s` : "";
+            const analysis = (r.analysis || "").slice(0, 200);
+            return `<div style="border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:11px;color:var(--muted)">${ts} · ${dur}</span>
+                <span style="color:${color};font-size:12px">${ok} ${r.mode || ""}</span>
+              </div>
+              <div style="font-size:12px;font-family:monospace;margin-top:2px;color:var(--fg);word-break:break-all">${escapeHtml((r.url || "").slice(0, 80))}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">${escapeHtml((r.task || "").slice(0, 80))}</div>
+              ${analysis ? `<div style="font-size:11px;color:var(--accent);margin-top:4px;border-left:2px solid var(--accent);padding-left:6px">${escapeHtml(analysis)}</div>` : ""}
+              ${r.error ? `<div style="font-size:11px;color:var(--red);margin-top:2px">Error: ${escapeHtml(r.error)}</div>` : ""}
+            </div>`;
+          }).join("");
+        } catch(e) {
+          const el = document.getElementById("browser-history");
+          if (el) el.innerHTML = `<div style="color:var(--red)">${escapeHtml(String(e))}</div>`;
+        }
+      }
+
+      function browserFetch(url, task) {
+        const urlInput = document.getElementById("browser-url-input");
+        const taskInput = document.getElementById("browser-task-input");
+        if (urlInput) urlInput.value = url;
+        if (taskInput) taskInput.value = task;
+        runBrowserTask();
+      }
+
+      async function runBrowserTask() {
+        const url = (document.getElementById("browser-url-input") || {}).value || "";
+        const task = (document.getElementById("browser-task-input") || {}).value || "extract key data";
+        if (!url) { alert("Please enter a URL"); return; }
+        const btn = document.getElementById("browser-run-btn");
+        const status = document.getElementById("browser-status");
+        const result = document.getElementById("browser-result");
+        if (btn) { btn.textContent = "⏳ Running…"; btn.disabled = true; }
+        if (status) status.textContent = "Fetching URL and analyzing with GLM-5…";
+        if (result) result.textContent = "";
+        try {
+          const r = await fetch("/api/browser/run", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url, task }),
+          });
+          const data = await r.json();
+          if (status) {
+            const dur = data.duration_sec != null ? ` (${data.duration_sec}s)` : "";
+            const mode = data.mode || "urllib";
+            status.innerHTML = data.ok
+              ? `<span style="color:var(--green)">✓ ${data.content_length || 0} chars fetched via ${mode}${dur}</span>`
+              : `<span style="color:var(--red)">✗ ${escapeHtml(data.error || "failed")}</span>`;
+          }
+          if (result) {
+            let out = "";
+            if (data.analysis) {
+              out += "=== LLM Analysis ===\n" + data.analysis + "\n\n";
+            }
+            if (data.content_preview) {
+              out += "=== Page Content Preview ===\n" + data.content_preview.slice(0, 1000);
+            }
+            result.textContent = out || JSON.stringify(data, null, 2);
+          }
+          // Set mode chip
+          const chip = document.getElementById("browser-mode-chip");
+          if (chip) {
+            chip.textContent = data.mode === "playwright" ? "🎭 Playwright" : "🔗 urllib";
+            chip.style.color = data.mode === "playwright" ? "var(--green)" : "var(--yellow)";
+          }
+          await loadBrowserHistory();
+        } catch(e) {
+          if (status) status.innerHTML = `<span style="color:var(--red)">${escapeHtml(String(e))}</span>`;
+        }
+        if (btn) { btn.textContent = "▶ Run"; btn.disabled = false; }
       }
 
       // ==========================================================

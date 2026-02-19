@@ -1108,6 +1108,71 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         except Exception as e:
             return JSONResponse({"ok": False, "error": str(e)})
 
+    # ── Strategy Generator endpoints ───────────────────────────────────────
+
+    @app.get("/api/strategy_generator/proposals")
+    def api_strategy_proposals(limit: int = 10) -> JSONResponse:
+        """Get recent LLM-generated strategy proposals."""
+        try:
+            from ..self_learn.strategy_generator import StrategyGenerator
+            sg = StrategyGenerator(artifacts_dir)
+            return JSONResponse(sg.recent_proposals(limit=limit))
+        except Exception as e:
+            return JSONResponse({"error": str(e)})
+
+    @app.post("/api/strategy_generator/run")
+    async def api_strategy_generator_run() -> JSONResponse:
+        """Generate new strategy proposals via LLM and queue to Kanban."""
+        import asyncio
+        try:
+            from ..self_learn.strategy_generator import StrategyGenerator
+            sg = StrategyGenerator(artifacts_dir)
+            proposals = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: sg.generate_improvement_proposals(),
+            )
+            task_ids = sg.queue_proposals_to_kanban(proposals, source="dashboard")
+            return JSONResponse({
+                "proposals": proposals,
+                "tasks_created": task_ids,
+                "count": len(proposals),
+            })
+        except Exception as e:
+            return JSONResponse({"error": str(e)})
+
+    # ── Browser Agent endpoints ─────────────────────────────────────────────
+
+    @app.post("/api/browser/run")
+    async def api_browser_run(request: Request) -> JSONResponse:
+        """Run a browser task using Playwright agent."""
+        import asyncio
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        url = body.get("url") or "https://fapi.binance.com/fapi/v1/ticker/24hr"
+        task = body.get("task") or "fetch page content"
+        try:
+            from ..tools.playwright_agent import PlaywrightAgent
+            agent = PlaywrightAgent(artifacts_dir)
+            result = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: agent.run(url=url, task=task),
+            )
+            return JSONResponse(result)
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e), "url": url})
+
+    @app.get("/api/browser/history")
+    def api_browser_history(limit: int = 10) -> JSONResponse:
+        """Get recent browser agent runs."""
+        try:
+            from ..tools.playwright_agent import PlaywrightAgent
+            agent = PlaywrightAgent(artifacts_dir)
+            return JSONResponse(agent.recent_runs(limit=limit))
+        except Exception as e:
+            return JSONResponse([])
+
     # ── Serve static dashboard ─────────────────────────────────────────────
 
     @app.get("/", response_class=HTMLResponse)

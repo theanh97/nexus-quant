@@ -453,6 +453,17 @@ class ResearchCycle:
         except Exception:
             pass
 
+        # Phase H: Autonomous strategy proposal generation
+        try:
+            from ..self_learn.strategy_generator import StrategyGenerator
+            sg = StrategyGenerator(self.artifacts_dir)
+            proposals = sg.generate_improvement_proposals(config_path=self.config_path)
+            task_ids = sg.queue_proposals_to_kanban(proposals, source="research_cycle")
+            self._report["strategy_proposals"] = len(proposals)
+            self._report["strategy_task_ids"] = task_ids
+        except Exception as e:
+            self._report["errors"].append(f"strategy_generator: {e}")
+
         # Notify
         n_papers = len(arxiv_papers)
         n_tasks = len(tasks_created)
