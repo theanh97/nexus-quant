@@ -179,6 +179,7 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
     <span class="logo-sub">Autonomous Quant Workforce</span>
   </div>
   <div style="flex:1"></div>
+  <span id="hdr-live" class="bdg bg-gray" style="font-size:11px;margin-right:4px">● LIVE</span>
   <span id="hdr-badge" class="bdg bg-gray" style="font-size:12px">Connecting...</span>
   <span id="hdr-clock" class="text-sm text-muted"></span>
 </header>
@@ -245,6 +246,13 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
       <button class="btn btn-s btn-sm" onclick="loadOv()">↻</button>
     </div>
     <div id="ov-ledger"><div class="empty">Loading...</div></div>
+  </div>
+  <div class="card mt2">
+    <div class="ctitle">📈 Learning Progress — Champion Sharpe Over Time
+      <span id="live-lv" style="font-size:11px;color:var(--accent);margin-left:8px">—</span>
+    </div>
+    <div style="height:180px"><canvas id="progress-chart"></canvas></div>
+    <div id="progress-stats" class="text-sm text-muted" style="margin-top:6px"></div>
   </div>
 </div>
 
@@ -648,7 +656,9 @@ let _eq=null,_ret=null;
 let _sharpe=null;
 function loadKPI(){
   jx('/api/metrics').then(d=>{
-    const m=d.metrics||d||{};
+    // metrics.json has nested structure: d.summary.sharpe, d.meta.*, d.verdict.*
+    const m=d.summary||d.metrics||d||{};
+    const meta=d.meta||{};
     _sharpe=+(m.sharpe_ratio||m.sharpe||0);
     const se=$('k-sharpe');
     se.textContent=n2(_sharpe);
@@ -660,10 +670,13 @@ function loadKPI(){
     const tot=+(m.total_return||0);
     const te=$('k-tot');te.textContent=pct(tot);te.className='kpi-v '+(tot>=0?'pos':'neg');
     set('k-wr',pct(m.win_rate));
-    set('k-strat',m.strategy_name||m.run_name||'—');
+    set('k-strat',meta.strategy_name||m.strategy_name||m.run_name||d.run_name||'—');
     set('kpi-updated','Updated '+now());
     // Header badge
-    const v=m.strategy_verdict||(m.sharpe_ratio>=1.5?'GOOD':m.sharpe_ratio>=0.6?'OK':'WEAK');
+    // verdict: check d.verdict.pass (nested), or derive from Sharpe
+    const vObj=d.verdict||{};
+    const vPass=vObj.pass;
+    const v=m.strategy_verdict||(vPass===true?'PASS':vPass===false?'FAIL':(_sharpe>=1.5?'GOOD':_sharpe>=0.6?'OK':'WEAK'));
     const b=$('hdr-badge');b.textContent=v;
     b.className='bdg '+(v==='GOOD'||v==='PASS'?'bg-g':v==='OK'||v==='WARN'?'bg-y':'bg-r');
     // Update targets
@@ -674,7 +687,7 @@ function loadKPI(){
 // ─── Equity chart ───
 function loadEq(){
   jx('/api/equity').then(d=>{
-    const eq=d.equity||[];if(!eq.length)return;
+    const eq=d.equity_curve||d.equity||[];if(!eq.length)return;
     const vals=eq.map(e=>typeof e==='object'?(e.value||e.equity||e[1]||1):+e);
     const ctx=$('eq-chart');if(!ctx)return;
     if(_eq){_eq.destroy();}
@@ -686,9 +699,36 @@ function loadEq(){
   }).catch(()=>{});
 }
 
+// ─── Learning Progress Chart ───
+let _prog=null;
+function loadProgress(){
+  jx('/api/progress').then(d=>{
+    const days=d.daily||[];
+    if(!days.length){html('progress-stats','No runs yet');return;}
+    const labels=days.map(e=>e.date);
+    const champ=days.map(e=>e.champion_sharpe||null);
+    const daily=days.map(e=>e.max_sharpe||null);
+    const ctx=$('progress-chart');if(!ctx)return;
+    if(_prog){_prog.destroy();}
+    _prog=new Chart(ctx,{
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          {label:'Champion Sharpe',data:champ,borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.08)',fill:true,pointRadius:3,tension:.3,borderWidth:2},
+          {label:'Daily Best',data:daily,borderColor:'#10B981',backgroundColor:'transparent',pointRadius:2,tension:.3,borderWidth:1.5,borderDash:[4,2]},
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{x:{ticks:{font:{size:9},maxTicksLimit:10}},y:{grid:{color:'rgba(0,0,0,.05)'}}}}
+    });
+    const best=d.best_ever_sharpe;
+    html('progress-stats',`Total runs: <b>${d.total_runs}</b> · Best ever Sharpe: <b class="${best>=1.5?'pos':best>=0.6?'neu':'neg'}">${(best||0).toFixed(3)}</b> · Days tracked: <b>${days.length}</b>`);
+  }).catch(()=>{});
+}
+
 // ─── Overview ───
 function loadOv(){
-  loadEq();loadKPI();
+  loadEq();loadKPI();loadProgress();
   jx('/api/runs').then(d=>{
     const r=(d.runs||d||[])[0];if(!r){html('ov-run','<div class="empty">No runs</div>');return;}
     const m=r.metrics||{};
@@ -1178,15 +1218,86 @@ const LOADERS={
   risk:loadRisk,research:loadResearch,tasks:loadTasks,files:loadFiles,market:loadMarket,pitch:loadPitch
 };
 
-// ─── Auto refresh ───
+// ─── Auto refresh (fallback polling if SSE fails) ───
 function refresh(){loadKPI();LOADERS[_tab]&&LOADERS[_tab]();}
-setInterval(()=>{loadKPI();if(_tab==='market')loadMarket();},30000);
-setInterval(()=>{if(LOADERS[_tab]&&_tab!=='chat')LOADERS[_tab]();},90000);
+setInterval(()=>{if(_tab==='market')loadMarket();},30000);
+setInterval(()=>{if(LOADERS[_tab]&&_tab!=='chat'&&_tab!=='overview')LOADERS[_tab]();},90000);
+
+// ─── SSE live stream ───
+let _sseRetry=0;
+function _connectSSE(){
+  const liveEl=$('hdr-live');
+  const src=new EventSource('/api/stream');
+  src.onopen=()=>{
+    _sseRetry=0;
+    if(liveEl){liveEl.textContent='● LIVE';liveEl.className='bdg bg-g';}
+  };
+  src.onmessage=(ev)=>{
+    try{
+      const d=JSON.parse(ev.data);
+      if(d.error)return;
+      // Update header KPIs immediately
+      if(d.sharpe!=null){
+        const se=$('k-sharpe');
+        if(se){se.textContent=n2(d.sharpe);se.className='kpi-v '+(d.sharpe>=1.5?'pos':d.sharpe>=0.6?'neu':'neg');}
+      }
+      if(d.mdd!=null){const me=$('k-mdd');if(me)me.textContent=pct(d.mdd);}
+      if(d.latest_equity!=null){const le=$('k-tot');if(le){const r=d.latest_equity-1;le.textContent=pct(r);le.className='kpi-v '+(r>=0?'pos':'neg');}}
+      // Update header badge
+      if(d.verdict!=null){
+        const v=d.verdict?'PASS':'FAIL';
+        const b=$('hdr-badge');if(b){b.textContent=v;b.className='bdg '+(v==='PASS'?'bg-g':'bg-r');}
+      }
+      // Live progress indicator
+      if(d.active_run){
+        if(liveEl){liveEl.textContent=`● ${d.active_run}`;liveEl.className='bdg bg-y';}
+      }
+      // Update overview ledger if on overview tab
+      if(_tab==='overview'&&d.ledger_tail&&d.ledger_tail.length){
+        _updateLiveLedger(d.ledger_tail);
+      }
+      // Update equity tail chart
+      if(_tab==='overview'&&d.equity_tail&&d.equity_tail.length&&_eq){
+        _updateEquityTail(d.equity_tail);
+      }
+      // Learning progress update
+      if(d.learning_velocity!=null){
+        const lv=$('live-lv');if(lv)lv.textContent=(d.learning_velocity*100).toFixed(1)+'%';
+      }
+      set('kpi-updated','Live · '+now());
+    }catch(e){}
+  };
+  src.onerror=()=>{
+    if(liveEl){liveEl.textContent='● RECONNECTING';liveEl.className='bdg bg-y';}
+    src.close();
+    _sseRetry=Math.min(_sseRetry+1,5);
+    setTimeout(_connectSSE,Math.pow(2,_sseRetry)*1000);
+  };
+}
+
+function _updateLiveLedger(events){
+  const el=$('ov-ledger');if(!el)return;
+  const rows=events.slice(0,8).map(e=>{
+    const v=e.verdict;
+    const badge=v===true?'<span class="bdg bg-g">PASS</span>':v===false?'<span class="bdg bg-r">FAIL</span>':'';
+    return `<tr><td class="text-sm text-muted">${esc(e.ts||'').slice(11,19)}</td><td>${esc(e.kind||'')}</td><td class="text-sm">${esc((e.run_name||'').slice(0,20))}</td><td>${badge}</td></tr>`;
+  }).join('');
+  el.innerHTML=`<table><thead><tr><th>Time</th><th>Kind</th><th>Run</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function _updateEquityTail(tail){
+  if(!_eq||!tail.length)return;
+  const vals=tail.map(e=>typeof e==='number'?e:+e);
+  _eq.data.datasets[0].data=vals;
+  _eq.data.labels=vals.map((_,i)=>i);
+  _eq.update('none');
+}
 
 // ─── Clock ───
 setInterval(()=>set('hdr-clock',new Date().toLocaleTimeString()),1000);
 
 // ─── Init ───
+_connectSSE();
 loadKPI();
 loadOv();
 </script>

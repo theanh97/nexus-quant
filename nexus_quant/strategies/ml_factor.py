@@ -149,6 +149,10 @@ class MLFactorCrossSectionV1Strategy(Strategy):
                 self._get_model(symbol).update(feats, realized_rets[symbol])
 
     def should_rebalance(self, dataset: MarketDataset, idx: int) -> bool:
+        # Always update models every bar so OLS accumulates training data continuously
+        # (not just during rebalances — critical for model readiness)
+        self._update_models(dataset, idx)
+
         min_warmup = int(self.params.get("min_warmup_bars") or 600)
         if idx < min_warmup:
             return False
@@ -156,8 +160,7 @@ class MLFactorCrossSectionV1Strategy(Strategy):
         return idx % max(1, interval) == 0
 
     def target_weights(self, dataset: MarketDataset, idx: int, current: Weights) -> Weights:
-        # Feed realized returns into models
-        self._update_models(dataset, idx)
+        # _update_models already called from should_rebalance (idempotent guard inside)
 
         k = int(self.params.get("k_per_side") or 2)
         k = max(1, min(k, max(1, len(dataset.symbols) // 2)))

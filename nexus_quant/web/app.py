@@ -320,6 +320,52 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             "last_verdict": ((last_run.get("payload") or {}).get("verdict") or {}).get("pass"),
         })
 
+    # ── Daily learning progress ───────────────────────────────────────────
+
+    @app.get("/api/progress")
+    def api_progress() -> JSONResponse:
+        """Daily learning progress: champion Sharpe improvement over time."""
+        runs_dir = artifacts_dir / "runs"
+        if not runs_dir.exists():
+            return JSONResponse({"daily": [], "best_ever_sharpe": None, "total_runs": 0})
+        # Collect all run metrics grouped by day
+        daily: dict = {}
+        total = 0
+        best_sharpe = None
+        for d in runs_dir.iterdir():
+            if not d.is_dir():
+                continue
+            m = _read_json(d / "metrics.json")
+            if not m:
+                continue
+            sharpe = m.get("sharpe")
+            if sharpe is None:
+                continue
+            total += 1
+            # Get date from directory mtime
+            import datetime as _dt
+            day = _dt.datetime.fromtimestamp(d.stat().st_mtime).strftime("%Y-%m-%d")
+            if day not in daily:
+                daily[day] = {"date": day, "max_sharpe": sharpe, "runs": 1}
+            else:
+                daily[day]["max_sharpe"] = max(daily[day]["max_sharpe"], sharpe)
+                daily[day]["runs"] += 1
+            if best_sharpe is None or sharpe > best_sharpe:
+                best_sharpe = sharpe
+        # Sort by date ascending
+        sorted_days = sorted(daily.values(), key=lambda x: x["date"])
+        # Running best (champion over time)
+        running_best = None
+        for entry in sorted_days:
+            if running_best is None or entry["max_sharpe"] > running_best:
+                running_best = entry["max_sharpe"]
+            entry["champion_sharpe"] = running_best
+        return JSONResponse({
+            "daily": sorted_days,
+            "best_ever_sharpe": best_sharpe,
+            "total_runs": total,
+        })
+
     # ── SSE live-update stream ─────────────────────────────────────────────
 
     @app.get("/api/stream")
@@ -331,13 +377,15 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             result = _latest_run_result(artifacts_dir)
             metrics = _latest_metrics(artifacts_dir)
             eq = (result or {}).get("equity_curve") or []
-            ret = (result or {}).get("returns") or []
             # Latest equity point
             latest_eq = eq[-1] if eq else None
             equity_tail = eq[-20:] if eq else []
-            # Latest metrics
-            sharpe = (metrics or {}).get("sharpe")
-            mdd = (metrics or {}).get("max_drawdown")
+            # Latest metrics — metrics.json uses nested "summary" section
+            summary = (metrics or {}).get("summary") or metrics or {}
+            sharpe = summary.get("sharpe")
+            mdd = summary.get("max_drawdown")
+            verdict_obj = (metrics or {}).get("verdict") or {}
+            verdict = verdict_obj.get("pass") if isinstance(verdict_obj, dict) else None
             # Recent ledger events (last 20)
             ledger_events = _read_jsonl_tail(
                 artifacts_dir / "ledger" / "ledger.jsonl", n=20
@@ -351,13 +399,39 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                     "run_name": e.get("run_name"),
                     "verdict": (p.get("verdict") or {}).get("pass"),
                 })
+            # Active run detection: check if a process is writing to runs dir recently
+            active_run = None
+            runs_dir = artifacts_dir / "runs"
+            if runs_dir.exists():
+                recent = sorted(
+                    [d for d in runs_dir.iterdir() if d.is_dir()],
+                    key=lambda d: d.stat().st_mtime, reverse=True
+                )
+                if recent and (time.time() - recent[0].stat().st_mtime) < 60:
+                    active_run = recent[0].name.split(".")[0]
+            # Learning velocity from accelerated engine
+            learning_velocity = None
+            try:
+                from ..research.accelerated_learning import AcceleratedLearningEngine
+                engine = AcceleratedLearningEngine(artifacts_dir / "research")
+                stats = engine.summary_stats()
+                learning_velocity = stats.get("learning_velocity")
+            except Exception:
+                pass
+            # Champion strategy
+            champion = _read_json(artifacts_dir / "champion.json") or {}
             return {
                 "ts": time.time(),
                 "latest_equity": latest_eq,
                 "equity_tail": equity_tail,
                 "sharpe": sharpe,
                 "mdd": mdd,
+                "verdict": verdict,
                 "ledger_tail": slim_events,
+                "active_run": active_run,
+                "learning_velocity": learning_velocity,
+                "champion_strategy": champion.get("strategy"),
+                "champion_sharpe": champion.get("sharpe"),
             }
 
         def _generator():
@@ -403,14 +477,27 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 r = {}
             verdict_obj = m.get("verdict") or r.get("verdict") or {}
             verdict_pass = verdict_obj.get("pass") if isinstance(verdict_obj, dict) else None
+            # metrics.json uses nested summary section
+            summary = m.get("summary") or {}
+            strat_obj = r.get("strategy") or {}
+            strat_name = (strat_obj.get("name") if isinstance(strat_obj, dict) else None) or d.name.split(".")[0]
             results.append({
                 "run_name": d.name,
-                "strategy": m.get("strategy") or r.get("strategy"),
-                "sharpe": m.get("sharpe"),
-                "calmar": m.get("calmar"),
-                "mdd": m.get("max_drawdown"),
-                "cagr": m.get("cagr"),
-                "win_rate": m.get("win_rate"),
+                "strategy": strat_name,
+                "metrics": {
+                    "sharpe": summary.get("sharpe"),
+                    "calmar": summary.get("calmar"),
+                    "max_drawdown": summary.get("max_drawdown"),
+                    "cagr": summary.get("cagr"),
+                    "win_rate": summary.get("win_rate"),
+                    "total_return": summary.get("total_return"),
+                    "volatility": summary.get("volatility"),
+                },
+                "sharpe": summary.get("sharpe"),
+                "calmar": summary.get("calmar"),
+                "mdd": summary.get("max_drawdown"),
+                "cagr": summary.get("cagr"),
+                "win_rate": summary.get("win_rate"),
                 "verdict": verdict_pass,
                 "ts": d.stat().st_mtime,
             })
