@@ -416,6 +416,108 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             })
         return JSONResponse(results)
 
+    @app.get("/api/files")
+    def api_files() -> JSONResponse:
+        """List all artifacts, runs, reports, configs, cache files for the file explorer."""
+        import os, time as _time
+        result: Dict[str, Any] = {"sections": []}
+
+        def scan_dir(path: Path, max_files: int = 50):
+            items = []
+            if not path.exists():
+                return items
+            for root, dirs, files in os.walk(path):
+                dirs[:] = sorted(d for d in dirs if not d.startswith('.'))[:10]
+                for f in sorted(files)[:max_files]:
+                    fp = Path(root) / f
+                    try:
+                        st = fp.stat()
+                        rel = str(fp.relative_to(artifacts_dir))
+                        items.append({
+                            "name": f,
+                            "path": rel,
+                            "size": st.st_size,
+                            "mtime": _time.strftime('%Y-%m-%d %H:%M', _time.localtime(st.st_mtime)),
+                            "ext": fp.suffix,
+                        })
+                    except Exception:
+                        pass
+                if len(items) >= max_files:
+                    break
+            return items
+
+        # Runs section
+        runs_dir = artifacts_dir / "runs"
+        run_items = []
+        if runs_dir.exists():
+            for d in sorted(runs_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True)[:10]:
+                if d.is_dir():
+                    m = _read_json(d / "metrics.json") or {}
+                    run_items.append({
+                        "name": d.name,
+                        "path": str(d.relative_to(artifacts_dir)),
+                        "sharpe": m.get("sharpe"), "cagr": m.get("cagr"),
+                        "mdd": m.get("max_drawdown"),
+                        "mtime": _time.strftime('%Y-%m-%d %H:%M', _time.localtime(d.stat().st_mtime)),
+                        "files": [f.name for f in d.iterdir() if f.is_file()],
+                    })
+        result["sections"].append({"title": "Backtest Runs", "icon": "📊", "items": run_items, "type": "runs"})
+
+        # Memory section
+        result["sections"].append({"title": "Memory & Knowledge", "icon": "🧠", "items": scan_dir(artifacts_dir / "memory", 20), "type": "files"})
+
+        # Brain section
+        result["sections"].append({"title": "Brain State", "icon": "💡", "items": scan_dir(artifacts_dir / "brain", 20), "type": "files"})
+
+        # Validation section
+        result["sections"].append({"title": "Validation Results", "icon": "✅", "items": scan_dir(artifacts_dir / "validation", 20), "type": "files"})
+
+        # Handoffs/Reports section
+        result["sections"].append({"title": "Handoff Reports", "icon": "📄", "items": scan_dir(artifacts_dir / "handoff", 20), "type": "files"})
+
+        # Configs section
+        configs_dir = artifacts_dir.parent / "configs"
+        cfg_items = []
+        if configs_dir.exists():
+            for f in sorted(configs_dir.glob("*.json")):
+                st = f.stat()
+                cfg_items.append({"name": f.name, "path": f"configs/{f.name}", "size": st.st_size, "mtime": _time.strftime('%Y-%m-%d %H:%M', _time.localtime(st.st_mtime)), "ext": ".json"})
+        result["sections"].append({"title": "Configs", "icon": "⚙️", "items": cfg_items, "type": "files"})
+
+        # Cache section
+        cache_dir = artifacts_dir.parent / ".cache"
+        cache_items = []
+        if cache_dir.exists():
+            total_size = 0
+            count = 0
+            for f in cache_dir.rglob("*"):
+                if f.is_file():
+                    total_size += f.stat().st_size
+                    count += 1
+            cache_items.append({"name": f"{count} files", "path": ".cache/", "size": total_size, "mtime": "—", "ext": ""})
+        result["sections"].append({"title": "Data Cache", "icon": "💾", "items": cache_items, "type": "files"})
+
+        # Monitoring
+        result["sections"].append({"title": "Monitoring & Alerts", "icon": "⚠️", "items": scan_dir(artifacts_dir / "monitoring", 10), "type": "files"})
+
+        return JSONResponse(result)
+
+    @app.get("/api/files/content")
+    def api_file_content(path: str) -> JSONResponse:
+        """Read content of a small text file (max 50KB)."""
+        try:
+            safe = (artifacts_dir / path).resolve()
+            if not str(safe).startswith(str(artifacts_dir.resolve())):
+                return JSONResponse({"error": "forbidden"}, status_code=403)
+            if not safe.exists():
+                return JSONResponse({"error": "not found"}, status_code=404)
+            if safe.stat().st_size > 51200:
+                return JSONResponse({"content": "[File too large to display — use CLI]", "truncated": True})
+            text = safe.read_text("utf-8", errors="replace")
+            return JSONResponse({"content": text, "path": path, "size": safe.stat().st_size})
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
     # ── Anomaly events from ledger ─────────────────────────────────────────
 
     @app.get("/api/anomalies")
