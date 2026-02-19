@@ -1218,6 +1218,8 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             tags: List[str] = []
             due_date: str = ""
             created_by: str = "user"
+            category: str = "practice"
+            delegated_by: str = "nexus"
         class TaskUpdateRequest(_BM):
             status: str = ""
             priority: str = ""
@@ -1238,12 +1240,20 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
 
     @app.get("/api/tasks")
     def api_tasks_list() -> JSONResponse:
-        """Kanban board: all tasks grouped by status."""
+        """Kanban board: all tasks flat list + grouped by status + grouped by category."""
         try:
             tm = _get_task_manager()
             cols = tm.by_status()
+            cats = tm.kanban_by_category()
+            all_tasks = [t.to_dict() for t in tm.all_tasks()]
             return JSONResponse({
+                "tasks": all_tasks,
                 "columns": {k: [t.to_dict() for t in v] for k, v in cols.items()},
+                "categories": {k: {
+                    "meta": v["meta"],
+                    "tasks": [t for col in v["columns"].values() for t in col],
+                    "counts": v["counts"],
+                } for k, v in cats.items()},
                 "summary": tm.kanban_summary(),
             })
         except Exception as e:
@@ -1262,7 +1272,22 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 tags=[str(x) for x in (body.tags or [])],
                 due_date=str(body.due_date) if body.due_date else None,
                 created_by=str(body.created_by or "user"),
+                category=str(getattr(body, "category", None) or "practice"),
+                delegated_by=str(getattr(body, "delegated_by", None) or "nexus"),
             )
+            return JSONResponse({"ok": True, "task": t.to_dict()})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)})
+
+    @app.patch("/api/tasks/{task_id}/status")
+    async def api_tasks_update_status(task_id: str, request: Request) -> JSONResponse:
+        """Quick status update endpoint (used by frontend done button)."""
+        try:
+            body = await request.json()
+            tm = _get_task_manager()
+            t = tm.update(task_id, status=str(body.get("status", "done")))
+            if not t:
+                return JSONResponse({"ok": False, "error": "Not found"}, status_code=404)
             return JSONResponse({"ok": True, "task": t.to_dict()})
         except Exception as e:
             return JSONResponse({"ok": False, "error": str(e)})

@@ -3,9 +3,14 @@ from __future__ import annotations
 """
 NEXUS Task Manager — Kanban-style task tracking.
 Persists to artifacts/tasks/tasks.json.
-Supports: TODO / IN_PROGRESS / REVIEW / DONE columns.
-Priority: critical / high / medium / low.
-Assignee: NEXUS agent name or human team member.
+
+Columns: TODO / IN_PROGRESS / REVIEW / DONE
+Priority: critical / high / medium / low
+Category: research / practice / procedure
+  - research   : Literature review, hypothesis generation, data analysis
+  - practice   : Backtest runs, strategy implementation, experiments
+  - procedure  : Automated workflows, brain loops, alpha loops (AI-driven)
+Delegated by: human / nexus / atlas / cipher / echo / flux
 """
 
 import json
@@ -16,7 +21,15 @@ from typing import Any, Dict, List, Optional
 
 VALID_STATUSES = {"todo", "in_progress", "review", "done"}
 VALID_PRIORITIES = {"critical", "high", "medium", "low"}
+VALID_CATEGORIES = {"research", "practice", "procedure"}
 PRIORITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+
+# Human-readable category labels & icons
+CATEGORY_META = {
+    "research": {"label": "Research", "icon": "🔬", "color": "#6366F1"},
+    "practice": {"label": "Practice", "icon": "⚗️", "color": "#10B981"},
+    "procedure": {"label": "Procedures", "icon": "🤖", "color": "#F59E0B"},
+}
 
 
 class Task:
@@ -24,6 +37,7 @@ class Task:
         "id", "title", "description", "status", "priority",
         "assignee", "tags", "progress", "due_date",
         "created_at", "updated_at", "created_by", "result",
+        "category", "delegated_by",
     )
 
     def __init__(
@@ -41,6 +55,8 @@ class Task:
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None,
         result: Optional[str] = None,
+        category: str = "practice",
+        delegated_by: str = "nexus",
     ):
         self.id = task_id or str(uuid.uuid4())[:8]
         self.title = str(title)[:200]
@@ -55,6 +71,8 @@ class Task:
         self.created_at = created_at or datetime.now(timezone.utc).isoformat()
         self.updated_at = updated_at or self.created_at
         self.result = result
+        self.category = category if category in VALID_CATEGORIES else "practice"
+        self.delegated_by = str(delegated_by)[:50]  # human | nexus | atlas | cipher | echo | flux
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -71,6 +89,8 @@ class Task:
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "result": self.result,
+            "category": self.category,
+            "delegated_by": self.delegated_by,
         }
 
     @classmethod
@@ -89,6 +109,8 @@ class Task:
             created_at=d.get("created_at"),
             updated_at=d.get("updated_at"),
             result=d.get("result"),
+            category=d.get("category", "practice"),
+            delegated_by=d.get("delegated_by", "nexus"),
         )
 
 
@@ -125,10 +147,13 @@ class TaskManager:
         tags: Optional[List[str]] = None,
         due_date: Optional[str] = None,
         created_by: str = "user",
+        category: str = "practice",
+        delegated_by: str = "nexus",
     ) -> Task:
         t = Task(
             title=title, description=description, priority=priority,
             assignee=assignee, tags=tags, due_date=due_date, created_by=created_by,
+            category=category, delegated_by=delegated_by,
         )
         self._tasks[t.id] = t
         self._save()
@@ -156,11 +181,29 @@ class TaskManager:
             columns[col].sort(key=lambda t: PRIORITY_ORDER.get(t.priority, 9))
         return columns
 
+    def by_category(self) -> Dict[str, List[Task]]:
+        """Group active (non-done) tasks by category: research / practice / procedure."""
+        cats: Dict[str, List[Task]] = {"research": [], "practice": [], "procedure": []}
+        for t in self.all_tasks():
+            if t.status == "done":
+                continue
+            cat = t.category if t.category in cats else "practice"
+            cats[cat].append(t)
+        return cats
+
+    def by_category_all(self) -> Dict[str, List[Task]]:
+        """Group ALL tasks (including done) by category."""
+        cats: Dict[str, List[Task]] = {"research": [], "practice": [], "procedure": []}
+        for t in self.all_tasks():
+            cat = t.category if t.category in cats else "practice"
+            cats[cat].append(t)
+        return cats
+
     def update(self, task_id: str, **kwargs) -> Optional[Task]:
         t = self._tasks.get(task_id)
         if not t:
             return None
-        allowed = {"title", "description", "status", "priority", "assignee", "tags", "progress", "due_date", "result"}
+        allowed = {"title", "description", "status", "priority", "assignee", "tags", "progress", "due_date", "result", "category", "delegated_by"}
         for k, v in kwargs.items():
             if k not in allowed:
                 continue
@@ -195,16 +238,38 @@ class TaskManager:
             "critical": sum(1 for t in self._tasks.values() if t.priority == "critical" and t.status != "done"),
         }
 
+    def kanban_by_category(self) -> Dict[str, Any]:
+        """Returns tasks grouped by category AND status for the 3-lane view."""
+        result = {}
+        for cat in ("research", "practice", "procedure"):
+            cols: Dict[str, List[Dict]] = {"todo": [], "in_progress": [], "review": [], "done": []}
+            for t in self.all_tasks():
+                if t.category == cat or (cat == "practice" and t.category not in VALID_CATEGORIES):
+                    status = t.status if t.status in cols else "todo"
+                    cols[status].append(t.to_dict())
+            result[cat] = {
+                "meta": CATEGORY_META[cat],
+                "columns": cols,
+                "counts": {k: len(v) for k, v in cols.items()},
+            }
+        return result
+
     def seed_defaults(self) -> None:
         """Add default NEXUS tasks if none exist."""
         if self._tasks:
             return
         defaults = [
-            {"title": "Run Funding Carry OOS Backtest", "description": "Validate strategy on Binance live data", "priority": "high", "assignee": "ATLAS", "tags": ["backtest", "funding"]},
-            {"title": "ML Factor Sharpe > 2 Target", "description": "Improve ML factor OLS model to reach Sharpe 2+", "priority": "high", "assignee": "CIPHER", "tags": ["ml", "factor"]},
-            {"title": "Bias Check All Strategies", "description": "Run full bias checker on all strategy runs", "priority": "medium", "assignee": "ECHO", "tags": ["validation", "bias"]},
-            {"title": "Research Optimal Model Routing", "description": "Deep research GLM-5 vs Claude vs GPT for each task type", "priority": "medium", "assignee": "NEXUS", "tags": ["research", "llm"]},
-            {"title": "Integrate Computer Use Tools", "description": "Research + integrate OpenClaw/Playwright for computer control", "priority": "low", "assignee": "FLUX", "tags": ["computer-use", "automation"]},
+            # Research lane — delegated by human
+            {"title": "Research Optimal Factor Combinations", "description": "Identify best-performing factor combinations from academic literature", "priority": "high", "assignee": "ATLAS", "tags": ["factors", "research"], "category": "research", "delegated_by": "human"},
+            {"title": "Study Walk-Forward Validation Methods", "description": "Review best practices for out-of-sample validation in crypto strategies", "priority": "medium", "assignee": "ECHO", "tags": ["validation", "methodology"], "category": "research", "delegated_by": "human"},
+            {"title": "Research Crypto Regime Detection", "description": "Survey machine learning approaches for market regime classification", "priority": "medium", "assignee": "NEXUS", "tags": ["regime", "ml"], "category": "research", "delegated_by": "human"},
+            # Practice lane — human-assigned experiments
+            {"title": "ML Factor Sharpe > 2 Target", "description": "Improve ML factor Ridge model to reach Sharpe > 2 using new features", "priority": "high", "assignee": "CIPHER", "tags": ["ml", "factor"], "category": "practice", "delegated_by": "human"},
+            {"title": "Bias Check All Strategies", "description": "Run full bias checker on all Binance strategy runs", "priority": "medium", "assignee": "ECHO", "tags": ["validation", "bias"], "category": "practice", "delegated_by": "human"},
+            # Procedure lane — AI-autonomous tasks
+            {"title": "Daily Research Cycle (56 sources)", "description": "Automated: fetch arXiv, Reddit, quant blogs daily — AEA loop", "priority": "high", "assignee": "NEXUS", "tags": ["research", "automation"], "category": "procedure", "delegated_by": "nexus"},
+            {"title": "AlphaLoop — Champion Strategy Tracking", "description": "Automated: run all configs hourly, promote new champion if Sharpe improves", "priority": "high", "assignee": "FLUX", "tags": ["alpha", "automation"], "category": "procedure", "delegated_by": "nexus"},
+            {"title": "Brain Loop — 24h Autonomous Operation", "description": "Automated: NEXUS brain runs research/backtest/reflect cycle continuously", "priority": "medium", "assignee": "NEXUS", "tags": ["brain", "loop"], "category": "procedure", "delegated_by": "nexus"},
         ]
         for d in defaults:
             self.create(**d, created_by="NEXUS")

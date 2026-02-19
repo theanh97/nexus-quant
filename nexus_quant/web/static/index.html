@@ -444,14 +444,36 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
     <div class="ctitle">Create Task</div>
     <div class="fr">
       <div><label>Title</label><input type="text" id="t-title" placeholder="Task title..."></div>
+      <div><label>Category</label><select id="t-cat"><option value="research">🔬 Research</option><option value="practice" selected>⚗️ Practice</option><option value="procedure">🤖 Procedure</option></select></div>
       <div><label>Priority</label><select id="t-pri"><option value="high">🔴 High</option><option value="medium" selected>🟡 Medium</option><option value="low">🟢 Low</option></select></div>
     </div>
     <div class="fr">
       <div><label>Assignee</label><select id="t-who"><option>ATLAS</option><option>CIPHER</option><option>ECHO</option><option>FLUX</option><option value="Human">Human</option></select></div>
+      <div><label>Delegated by</label><select id="t-delegated"><option value="human">👤 Human</option><option value="nexus">🤖 NEXUS</option><option value="atlas">⚡ ATLAS</option><option value="cipher">🛡 CIPHER</option></select></div>
       <div><label>Description</label><input type="text" id="t-desc" placeholder="Optional..."></div>
     </div>
     <button class="btn btn-p btn-sm" onclick="createTask()">+ Create Task</button>
   </div>
+  <!-- 3-lane category view -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px" id="tasks-lanes">
+    <div class="card" style="border-top:3px solid #6366F1">
+      <div class="ctitle">🔬 Research <span class="kcount" id="kc-research">0</span></div>
+      <div class="text-sm text-muted mb1" style="font-size:11px">Literature · Hypotheses · Analysis</div>
+      <div id="kl-research"><div class="empty">No tasks</div></div>
+    </div>
+    <div class="card" style="border-top:3px solid #10B981">
+      <div class="ctitle">⚗️ Practice <span class="kcount" id="kc-practice">0</span></div>
+      <div class="text-sm text-muted mb1" style="font-size:11px">Backtests · Experiments · Implementation</div>
+      <div id="kl-practice"><div class="empty">No tasks</div></div>
+    </div>
+    <div class="card" style="border-top:3px solid #F59E0B">
+      <div class="ctitle">🤖 Procedures <span class="kcount" id="kc-procedure">0</span></div>
+      <div class="text-sm text-muted mb1" style="font-size:11px">Automated AI workflows · Loops</div>
+      <div id="kl-procedure"><div class="empty">No tasks</div></div>
+    </div>
+  </div>
+  <!-- Classic Kanban (by status) below -->
+  <div class="ctitle mt2" style="margin-bottom:8px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px">All Tasks by Status</div>
   <div class="kanban" id="kanban">
     <div class="kcol"><div class="kh">TODO <span class="kcount" id="kc-todo">0</span></div><div id="kl-todo"></div></div>
     <div class="kcol"><div class="kh">IN PROGRESS <span class="kcount" id="kc-inprogress">0</span></div><div id="kl-inprogress"></div></div>
@@ -999,32 +1021,64 @@ function runAgent(name){
 }
 
 // ─── Tasks ───
+const _catIcon={research:'🔬',practice:'⚗️',procedure:'🤖'};
+const _delIcon={human:'👤',nexus:'🤖',atlas:'⚡',cipher:'🛡',echo:'🔊',flux:'🌊'};
+function _taskCard(t,mini=false){
+  const pc={high:'bg-r',medium:'bg-y',low:'bg-g'};
+  const statusDot={todo:'#94A3B8',in_progress:'#3B82F6',review:'#F59E0B',done:'#10B981'};
+  const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${statusDot[t.status]||'#94A3B8'};margin-right:4px"></span>`;
+  return `<div class="tsk" title="Click to mark done" onclick="doneTask('${esc(t.id)}')">
+    <div class="tsk-title">${dot}${esc(t.title||'Untitled')}</div>
+    <div class="tsk-meta">
+      <span class="bdg ${pc[t.priority||'medium']||'bg-gray'}">${esc(t.priority||'med')}</span>
+      ${t.assignee?`<span class="bdg bg-b">${esc(t.assignee)}</span>`:''}
+      ${t.delegated_by?`<span class="text-sm text-muted" style="font-size:10px">${_delIcon[t.delegated_by]||''}${esc(t.delegated_by)}</span>`:''}
+    </div>
+    ${!mini&&t.description?`<div class="text-sm text-muted" style="margin-top:3px;font-size:11px">${esc(t.description.slice(0,80))}</div>`:''}
+  </div>`;
+}
 function loadTasks(){
   jx('/api/tasks').then(d=>{
     const tasks=d.tasks||[];
+    // Category lanes
+    const cats={research:[],practice:[],procedure:[]};
+    tasks.filter(t=>t.status!=='done').forEach(t=>{
+      const c=t.category||'practice';
+      if(cats[c])cats[c].push(t);
+      else cats.practice.push(t);
+    });
+    ['research','practice','procedure'].forEach(cat=>{
+      set('kc-'+cat,cats[cat].length);
+      html('kl-'+cat,cats[cat].map(t=>_taskCard(t)).join('')||'<div class="empty" style="font-size:11px">No active tasks</div>');
+    });
+    // Classic status kanban
     const cols={todo:[],inprogress:[],review:[],done:[]};
     tasks.forEach(t=>{const s=(t.status||'todo').toLowerCase().replace(/[- ]/g,'');(cols[s]||cols.todo).push(t);});
-    const pc={high:'bg-r',medium:'bg-y',low:'bg-g'};
-    const card=t=>`<div class="tsk" title="Click to mark done" onclick="doneTask('${esc(t.id)}')">
-      <div class="tsk-title">${esc(t.title||t.name||'Untitled')}</div>
-      <div class="tsk-meta">
-        <span class="bdg ${pc[t.priority||'medium']||'bg-gray'}">${esc(t.priority||'med')}</span>
-        ${t.assignee?`<span class="bdg bg-b">${esc(t.assignee)}</span>`:''}
-      </div>
-      ${t.description?`<div class="text-sm text-muted" style="margin-top:3px">${esc(t.description.slice(0,70))}</div>`:''}
-    </div>`;
     Object.entries(cols).forEach(([k,list])=>{
       set('kc-'+k,list.length);
-      html('kl-'+k,list.map(card).join('')||'<div style="padding:8px;font-size:12px;color:var(--fg-light);text-align:center">Empty</div>');
+      html('kl-'+k,list.map(t=>_taskCard(t,true)).join('')||'<div style="padding:8px;font-size:12px;color:var(--fg-light);text-align:center">Empty</div>');
     });
   }).catch(()=>html('kanban','<div class="empty">Could not load tasks</div>'));
 }
 function createTask(){
   const title=$('t-title').value.trim();if(!title){toast('Title required');return;}
-  jx('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,priority:$('t-pri').value,assignee:$('t-who').value,description:$('t-desc').value.trim(),status:'todo'})}).then(()=>{$('t-title').value='';$('t-desc').value='';loadTasks();toast('Task created');}).catch(()=>toast('Error'));
+  const body={
+    title,
+    priority:$('t-pri').value,
+    assignee:$('t-who').value,
+    description:$('t-desc').value.trim(),
+    status:'todo',
+    category:$('t-cat').value,
+    delegated_by:$('t-delegated').value,
+  };
+  jx('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(()=>{$('t-title').value='';$('t-desc').value='';loadTasks();toast('Task created');})
+    .catch(()=>toast('Error creating task'));
 }
 function doneTask(id){
-  jx('/api/tasks/'+id,{method:'DELETE'}).then(()=>{loadTasks();toast('Task removed');}).catch(()=>{});
+  jx('/api/tasks/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'done'})})
+    .then(()=>{loadTasks();toast('Task marked done');})
+    .catch(()=>jx('/api/tasks/'+id,{method:'DELETE'}).then(()=>{loadTasks();toast('Task removed');}));
 }
 
 // ─── Files ───
