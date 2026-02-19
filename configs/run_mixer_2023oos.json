@@ -21,12 +21,12 @@
       "bear_threshold": 0.02,
       "vol_spike_threshold": 1.5,
       "smoothing_alpha": 0.15,
-      "rebalance_interval_bars": 24,
+      "rebalance_interval_bars": 60,
       "target_gross_leverage": 0.35,
       "weight_matrix": {
         "bull":     {"v1": 1.00, "lv": 0.00},
-        "bear":     {"v1": 0.00, "lv": 1.00},
-        "sideways": {"v1": 0.30, "lv": 0.70},
+        "bear":     {"v1": 0.70, "lv": 0.30},
+        "sideways": {"v1": 0.70, "lv": 0.30},
         "unknown":  {"v1": 0.50, "lv": 0.50}
       },
       "v1_params": {

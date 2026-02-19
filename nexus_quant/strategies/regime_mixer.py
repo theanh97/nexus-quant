@@ -1,5 +1,5 @@
 """
-Regime Mixer — Multi-strategy allocator with per-regime on/off switches.
+Regime Mixer — Multi-strategy allocator with adaptive performance blending.
 
 Economic Foundation:
   Different strategies exploit different market microstructure regimes:
@@ -19,27 +19,16 @@ Regime Detection:
   - BEAR:     BTC return < -bear_threshold OR vol_ratio > vol_spike_threshold
   - SIDEWAYS: neither bull nor bear (low conviction environment)
 
-  The regime feeds into a weight matrix that determines how much
-  capital each sub-strategy receives. Transitions use exponential
-  smoothing to avoid whipsaw trades.
-
-Weight Matrix (default):
-  | Regime   | V1     | Low-Vol | Notes                    |
-  |----------|--------|---------|--------------------------|
-  | BULL     | 1.00   | 0.00    | V1 dominates uptrends    |
-  | BEAR     | 0.00   | 1.00    | Low-Vol = quality flight |
-  | SIDEWAYS | 0.30   | 0.70    | Low-Vol + small V1 edge  |
-  | UNKNOWN  | 0.50   | 0.50    | Equal (hedge ignorance)  |
-
-Smooth Blending:
-  Instead of hard regime switches, the mixer uses exponential
-  smoothing on the regime allocation weights:
-    w_t = alpha * w_target + (1 - alpha) * w_{t-1}
-  where alpha = smoothing_alpha (default 0.15 = ~7-bar half-life).
-  This prevents whipsaw from regime oscillation.
+Adaptive Performance Blending (NEW):
+  Tracks rolling returns of each sub-strategy's recommended portfolio.
+  When performance_blend_weight > 0, the final allocation is a weighted
+  average of regime-based weights and performance-based weights.
+  This solves the 2023 problem: in trending years where V1 outperforms,
+  the adaptive blend automatically tilts toward V1 without changing
+  regime detection thresholds.
 
 Parameters:
-  regime_lookback_bars    int   = 336    (14 days for BTC return)
+  regime_lookback_bars    int   = 168    (7 days for BTC return)
   vol_lookback_bars       int   = 168    (for vol_ratio computation)
   bull_threshold          float = 0.02   (BTC 168h return > +2% = bull)
   bear_threshold          float = 0.02   (BTC 168h return < -2% = bear)
@@ -50,6 +39,9 @@ Parameters:
   weight_matrix           dict           (per-regime weights per strategy)
   v1_params               dict           (NexusAlpha V1 params)
   lv_params               dict           (Low-Vol params)
+  performance_blend_weight float = 0.0   (0=pure regime, 1=pure adaptive)
+  performance_sensitivity  float = 20.0  (softmax temperature for perf blend)
+  performance_min_observations int = 5   (min rebalances before adaptive kicks in)
 """
 from __future__ import annotations
 
@@ -73,7 +65,7 @@ _DEFAULT_WEIGHTS = {
 
 
 class RegimeMixerStrategy(Strategy):
-    """Multi-strategy regime mixer with smooth blending and per-regime on/off."""
+    """Multi-strategy regime mixer with smooth blending and adaptive performance tracking."""
 
     def __init__(self, params: Dict[str, Any]) -> None:
         super().__init__(name="regime_mixer", params=params)
@@ -85,11 +77,13 @@ class RegimeMixerStrategy(Strategy):
         self._lv = LowVolAlphaStrategy(lv_p)
 
         # Regime detection params
-        self._regime_lb = int(params.get("regime_lookback_bars") or 336)
+        self._regime_lb = int(params.get("regime_lookback_bars") or 168)
+        self._regime_lb_long = int(params.get("regime_lookback_long_bars") or 720)
         self._vol_lb = int(params.get("vol_lookback_bars") or 168)
         self._bull_thr = float(params.get("bull_threshold") or 0.02)
         self._bear_thr = float(params.get("bear_threshold") or 0.02)
         self._vol_spike = float(params.get("vol_spike_threshold") or 1.5)
+        self._dual_horizon = bool(params.get("dual_horizon_regime", False))
 
         # Smoothing
         self._alpha = float(params.get("smoothing_alpha") or 0.15)
@@ -110,6 +104,16 @@ class RegimeMixerStrategy(Strategy):
         else:
             self._wm = {k: dict(v) for k, v in _DEFAULT_WEIGHTS.items()}
 
+        # Adaptive performance tracking (strategy momentum)
+        self._perf_blend = float(params.get("performance_blend_weight") or 0.0)
+        self._perf_sensitivity = float(params.get("performance_sensitivity") or 20.0)
+        self._perf_min_obs = int(params.get("performance_min_observations") or 5)
+        self._prev_v1_w: Optional[Weights] = None
+        self._prev_lv_w: Optional[Weights] = None
+        self._prev_rebal_idx: int = -1
+        self._v1_rets: List[float] = []
+        self._lv_rets: List[float] = []
+
         # State for smooth blending
         self._smooth_v1: float = 0.5
         self._smooth_lv: float = 0.5
@@ -129,14 +133,15 @@ class RegimeMixerStrategy(Strategy):
             pass
         return v
 
-    def _compute_btc_return(self, dataset: MarketDataset, idx: int) -> Optional[float]:
-        """BTC trailing return over regime_lookback_bars."""
+    def _compute_btc_return(self, dataset: MarketDataset, idx: int, lookback: Optional[int] = None) -> Optional[float]:
+        """BTC trailing return over given lookback (default: regime_lookback_bars)."""
+        lb = lookback or self._regime_lb
         btc_sym = dataset.symbols[0]  # BTC expected first
         closes = dataset.perp_close[btc_sym]
-        if idx < self._regime_lb + 1 or idx >= len(closes):
+        if idx < lb + 1 or idx >= len(closes):
             return None
         c_now = float(closes[min(idx - 1, len(closes) - 1)])
-        c_back = float(closes[max(0, idx - 1 - self._regime_lb)])
+        c_back = float(closes[max(0, idx - 1 - lb)])
         if c_back <= 0:
             return None
         return (c_now / c_back) - 1.0
@@ -212,6 +217,57 @@ class RegimeMixerStrategy(Strategy):
             self._smooth_v1 /= total
             self._smooth_lv /= total
 
+    def _compute_portfolio_return(
+        self, dataset: MarketDataset, weights: Weights, start_idx: int, end_idx: int
+    ) -> float:
+        """Compute realized return of a portfolio held from start_idx to end_idx."""
+        port_ret = 0.0
+        for s, w in weights.items():
+            if abs(w) < 1e-10:
+                continue
+            c = dataset.perp_close.get(s)
+            if c is None:
+                continue
+            i0 = max(0, min(start_idx, len(c) - 1))
+            i1 = max(0, min(end_idx - 1, len(c) - 1))
+            c0 = float(c[i0])
+            c1 = float(c[i1])
+            if c0 > 0:
+                port_ret += w * (c1 / c0 - 1.0)
+        return port_ret
+
+    def _adaptive_blend_weights(self) -> tuple:
+        """Compute adaptive V1/LV weights from rolling performance history."""
+        if len(self._v1_rets) < self._perf_min_obs:
+            return self._smooth_v1, self._smooth_lv
+
+        # Use last 30 observations (~30 rebalances = 30 days at 24h interval)
+        n = min(30, len(self._v1_rets))
+        v1_cum = sum(self._v1_rets[-n:])
+        lv_cum = sum(self._lv_rets[-n:])
+
+        # Softmax: tilt toward better-performing strategy
+        sens = self._perf_sensitivity
+        # Clamp to prevent overflow
+        v1_exp = math.exp(min(50, max(-50, v1_cum * sens)))
+        lv_exp = math.exp(min(50, max(-50, lv_cum * sens)))
+        total = v1_exp + lv_exp
+        adaptive_v1 = v1_exp / total
+        adaptive_lv = lv_exp / total
+
+        # Blend regime-based with adaptive
+        blend = self._perf_blend
+        final_v1 = (1 - blend) * self._smooth_v1 + blend * adaptive_v1
+        final_lv = (1 - blend) * self._smooth_lv + blend * adaptive_lv
+
+        # Normalize
+        t = final_v1 + final_lv
+        if t > 0:
+            final_v1 /= t
+            final_lv /= t
+
+        return final_v1, final_lv
+
     def should_rebalance(self, dataset: MarketDataset, idx: int) -> bool:
         warmup = max(self._regime_lb, self._vol_lb) * 2 + 10
         if idx <= warmup:
@@ -226,21 +282,43 @@ class RegimeMixerStrategy(Strategy):
         self._last_regime = regime
         self._regime_history.append(regime)
 
-        # Update smooth allocation weights
+        # Update smooth allocation weights from regime
         self._update_smooth_weights(regime)
 
-        # Get fresh weights from each sub-strategy every mixer rebalance.
-        # Even though V1 rebalances every 168h, getting fresh signal estimates
-        # at every mixer rebalance (24h) allows the regime blend to respond
-        # to intra-cycle changes.
+        # Always get fresh signals — caching proven to degrade Sharpe ~50%
+        # (V1's target_weights returns desired portfolio, not trade instructions;
+        # fresh calls give current signal, not stale estimates)
         v1_w = self._v1.target_weights(dataset, idx, current)
         lv_w = self._lv.target_weights(dataset, idx, current)
 
-        # Blend according to smoothed regime weights
+        # Track performance of previous weights for adaptive blending
+        if self._prev_v1_w is not None and self._prev_rebal_idx > 0:
+            v1_r = self._compute_portfolio_return(
+                dataset, self._prev_v1_w, self._prev_rebal_idx, idx
+            )
+            lv_r = self._compute_portfolio_return(
+                dataset, self._prev_lv_w, self._prev_rebal_idx, idx
+            )
+            self._v1_rets.append(v1_r)
+            self._lv_rets.append(lv_r)
+
+        # Store for next rebalance's performance tracking
+        self._prev_v1_w = dict(v1_w)
+        self._prev_lv_w = dict(lv_w)
+        self._prev_rebal_idx = idx
+
+        # Determine final blend weights (regime + adaptive)
+        if self._perf_blend > 0:
+            final_v1, final_lv = self._adaptive_blend_weights()
+        else:
+            final_v1 = self._smooth_v1
+            final_lv = self._smooth_lv
+
+        # Blend sub-strategy portfolios
         out: Dict[str, float] = {}
         for s in dataset.symbols:
             w_v1 = float(v1_w.get(s, 0.0))
             w_lv = float(lv_w.get(s, 0.0))
-            out[s] = self._smooth_v1 * w_v1 + self._smooth_lv * w_lv
+            out[s] = final_v1 * w_v1 + final_lv * w_lv
 
         return out
