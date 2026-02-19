@@ -66,6 +66,38 @@ def guardian_main(*, artifacts_dir: Path, stale_seconds: int) -> int:
     if verdict == "STALE":
         print("")
         print("Action: restart autopilot (or investigate why it stopped).")
+
+    # Anomaly detection on latest run result
+    try:
+        from .monitoring.anomaly import run_all_checks
+        runs_dir = artifacts_dir / "runs"
+        if runs_dir.exists():
+            run_dirs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime)
+            if run_dirs:
+                import json as _json
+                rp = run_dirs[-1] / "result.json"
+                if rp.exists():
+                    result = _json.loads(rp.read_text())
+                    returns = result.get("returns") or []
+                    equity = result.get("equity_curve") or []
+                    if returns:
+                        anomaly_result = run_all_checks(
+                            equity_curve=equity,
+                            returns=returns,
+                            funding_rates={},
+                            actual_cost_rate=0.0,
+                            expected_cost_rate=0.001,
+                        )
+                        if anomaly_result.get("anomalies"):
+                            print(f"[GUARDIAN] Anomalies: {anomaly_result['summary']}")
+                            for a in anomaly_result["anomalies"]:
+                                sev = a.get("severity","?").upper()
+                                print(f"  [{sev}] {a.get('kind')}: {a.get('message')}")
+                        else:
+                            print("[GUARDIAN] No anomalies detected in latest run.")
+    except Exception as e:
+        print(f"[GUARDIAN] Anomaly check failed: {e}")
+
     return 0
 
 
@@ -74,4 +106,3 @@ def _print_counts(counts: Dict[str, Any]) -> None:
         print("- tasks: (none)")
         return
     print(f"- tasks: {json.dumps(counts, sort_keys=True)}")
-

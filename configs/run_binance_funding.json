@@ -1,0 +1,41 @@
+{
+  "run_name": "binance_funding_carry_live",
+  "seed": 42,
+  "venue": {"name": "binance_usdm", "kind": "crypto_perp", "vip_tier": 0},
+  "data": {
+    "provider": "binance_rest_v1",
+    "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT"],
+    "start": "2024-01-01T00:00:00Z",
+    "end": "2025-01-01T00:00:00Z",
+    "bar_interval": "1h",
+    "cache_dir": ".cache/binance_rest"
+  },
+  "execution": {"style": "taker", "slippage_bps": 3.0},
+  "strategy": {
+    "name": "funding_carry_perp_v1",
+    "params": {
+      "k_per_side": 2,
+      "rebalance_on_funding": true,
+      "use_basis_proxy": true,
+      "basis_weight": 0.5,
+      "risk_weighting": "inverse_vol",
+      "vol_lookback_bars": 72,
+      "target_gross_leverage": 1.0
+    }
+  },
+  "costs": {"fee_rate": 0.0005, "slippage_rate": 0.0003, "cost_multiplier": 1.0},
+  "benchmark": {"version": "v1", "walk_forward": {"enabled": true}},
+  "risk": {
+    "max_drawdown": 0.35,
+    "max_turnover_per_rebalance": 1.5,
+    "max_gross_leverage": 2.0,
+    "max_position_per_symbol": 0.5
+  },
+  "self_learn": {
+    "enabled": true,
+    "mode": "standard",
+    "objective": "median_calmar",
+    "min_uplift": 0.05,
+    "holdout_fraction": 0.2
+  }
+}

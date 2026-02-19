@@ -5,6 +5,7 @@ from typing import Any, Dict
 from .base import DataProvider
 from .synthetic import SyntheticPerpV1Provider
 from .local_csv import LocalCSVProvider
+from .binance_rest import BinanceRestProvider
 
 
 def make_provider(data_cfg: Dict[str, Any], seed: int) -> DataProvider:
@@ -13,5 +14,6 @@ def make_provider(data_cfg: Dict[str, Any], seed: int) -> DataProvider:
         return SyntheticPerpV1Provider(data_cfg, seed=seed)
     if name == "local_csv_v1":
         return LocalCSVProvider(data_cfg, seed=seed)
+    if name == "binance_rest_v1":
+        return BinanceRestProvider(data_cfg, seed=seed)
     raise ValueError(f"Unknown data provider: {name}")
-

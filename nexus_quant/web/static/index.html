@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NEXUS Quant Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922;--text:#e6edf3;--muted:#8b949e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:16px}
+header h1{font-size:18px;font-weight:600;color:var(--accent)}
+header .subtitle{color:var(--muted);font-size:12px}
+nav{display:flex;gap:4px;margin-left:auto}
+nav button{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;transition:all .15s}
+nav button.active,nav button:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+main{padding:20px 24px;max-width:1400px;margin:0 auto}
+.grid{display:grid;gap:16px}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:900px){.grid-4,.grid-2,.grid-3{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.card h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.stat-val{font-size:28px;font-weight:700;line-height:1}
+.stat-label{font-size:11px;color:var(--muted);margin-top:4px}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.badge-green{background:rgba(63,185,80,.15);color:var(--green)}
+.badge-red{background:rgba(248,81,73,.15);color:var(--red)}
+.badge-yellow{background:rgba(210,153,34,.15);color:var(--yellow)}
+.badge-blue{background:rgba(88,166,255,.15);color:var(--accent)}
+.chart-wrap{position:relative;height:260px}
+.chart-wrap-tall{position:relative;height:340px}
+.page{display:none}
+.page.active{display:block}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-weight:500}
+td{padding:6px 8px;border-bottom:1px solid rgba(48,54,61,.5)}
+tr:hover td{background:rgba(88,166,255,.04)}
+.loading{color:var(--muted);font-size:12px;text-align:center;padding:32px}
+input[type=text]{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:260px}
+input[type=text]:focus{outline:none;border-color:var(--accent)}
+.tag{display:inline-block;background:rgba(88,166,255,.1);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;margin:1px}
+.refresh-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;margin-left:auto}
+.refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
+.row-flex{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⬡ NEXUS Quant</h1>
+  <span class="subtitle">Research &amp; Backtesting Platform</span>
+  <nav>
+    <button class="active" onclick="showPage('overview')">Overview</button>
+    <button onclick="showPage('walkforward')">Walk-Forward</button>
+    <button onclick="showPage('risk')">Risk</button>
+    <button onclick="showPage('ledger')">Ledger</button>
+    <button onclick="showPage('memory')">Memory</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ── OVERVIEW ─────────────────────────────────── -->
+<div id="page-overview" class="page active">
+  <div class="grid grid-4" style="margin-bottom:16px" id="kpi-cards">
+    <div class="card"><div class="loading">Loading…</div></div>
+    <div class="card"><div class="loading">Loading…</div></div>
+    <div class="card"><div class="loading">Loading…</div></div>
+    <div class="card"><div class="loading">Loading…</div></div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h2>Equity Curve</h2>
+      <div class="chart-wrap-tall"><canvas id="equityChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Return Distribution</h2>
+      <div class="chart-wrap-tall"><canvas id="returnChart"></canvas></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>Self-Learning Activity</h2>
+    <div id="sl-stats" class="grid grid-3" style="gap:12px;padding:4px 0">
+      <div class="loading">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── WALK-FORWARD ──────────────────────────────── -->
+<div id="page-walkforward" class="page">
+  <div class="card" style="margin-bottom:16px" id="wf-stability">
+    <div class="loading">Loading…</div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h2>Sharpe per Window</h2>
+      <div class="chart-wrap-tall"><canvas id="wfSharpeChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Calmar per Window</h2>
+      <div class="chart-wrap-tall"><canvas id="wfCalmarChart"></canvas></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>Windows Detail</h2>
+    <div style="overflow-x:auto"><table id="wf-table">
+      <thead><tr><th>#</th><th>CAGR</th><th>Sharpe</th><th>Calmar</th><th>MDD</th><th>Win Rate</th></tr></thead>
+      <tbody><tr><td colspan="6" class="loading">Loading…</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ── RISK ──────────────────────────────────────── -->
+<div id="page-risk" class="page">
+  <div class="grid grid-4" id="risk-kpi" style="margin-bottom:16px">
+    <div class="card"><div class="loading">Loading…</div></div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h2>Regime Detection</h2>
+      <div id="regime-detail" style="padding:8px 0"><div class="loading">Loading…</div></div>
+    </div>
+    <div class="card">
+      <h2>Tail Risk Stats</h2>
+      <div id="tail-stats" style="padding:8px 0"><div class="loading">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LEDGER ─────────────────────────────────────── -->
+<div id="page-ledger" class="page">
+  <div class="card">
+    <div class="row-flex">
+      <h2 style="margin:0">Recent Ledger Events</h2>
+      <button class="refresh-btn" onclick="loadLedger()">↻ Refresh</button>
+    </div>
+    <div style="overflow-x:auto"><table id="ledger-table">
+      <thead><tr><th>Time</th><th>Kind</th><th>Run</th><th>Verdict</th><th>Sharpe</th><th>MDD</th><th>Accepted</th></tr></thead>
+      <tbody><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ── MEMORY ────────────────────────────────────── -->
+<div id="page-memory" class="page">
+  <div class="card">
+    <div class="row-flex" style="margin-bottom:12px">
+      <input type="text" id="mem-search" placeholder="Search memory…" oninput="debounceMemSearch()"/>
+      <button class="refresh-btn" onclick="loadMemory()">↻ Refresh</button>
+    </div>
+    <div id="memory-list"><div class="loading">Loading…</div></div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ── State ──────────────────────────────────────────
+let charts = {};
+let memTimer = null;
+
+// ── Navigation ─────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'overview') loadOverview();
+  if (name === 'walkforward') loadWalkForward();
+  if (name === 'risk') loadRisk();
+  if (name === 'ledger') loadLedger();
+  if (name === 'memory') loadMemory();
+}
+
+// ── Helpers ────────────────────────────────────────
+function fmt(v, dec=2) {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toFixed(dec);
+}
+function pct(v, dec=1) {
+  if (v == null || isNaN(v)) return '—';
+  return (Number(v)*100).toFixed(dec) + '%';
+}
+function badge(val, good='green') {
+  if (val == null) return '<span class="badge badge-yellow">?</span>';
+  if (val === true || val === 'pass') return '<span class="badge badge-green">PASS</span>';
+  if (val === false || val === 'fail') return '<span class="badge badge-red">FAIL</span>';
+  return '<span class="badge badge-yellow">' + val + '</span>';
+}
+function kpiCard(label, value, sub='', color='') {
+  return `<div class="card">
+    <h2>${label}</h2>
+    <div class="stat-val" style="color:${color||'var(--text)'}">${value}</div>
+    ${sub ? `<div class="stat-label">${sub}</div>` : ''}
+  </div>`;
+}
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+function sparkLine(id, labels, data, color='#58a6ff', fill=false) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ data, borderColor: color, backgroundColor: fill ? color+'22' : 'transparent',
+      borderWidth: 1.5, pointRadius: 0, fill }] },
+    options: { animation:false, plugins:{legend:{display:false}},
+      scales:{ x:{display:false}, y:{grid:{color:'#30363d'},ticks:{color:'#8b949e',font:{size:10}}} } }
+  });
+}
+function barChart(id, labels, data, color='#58a6ff') {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: data.map(v=>v>=0?'#3fb95066':'#f8514966'), borderWidth:0 }] },
+    options: { animation:false, plugins:{legend:{display:false}},
+      scales:{ x:{display:false}, y:{grid:{color:'#30363d'},ticks:{color:'#8b949e',font:{size:10}}} } }
+  });
+}
+
+// ── Overview ────────────────────────────────────────
+async function loadOverview() {
+  const [status, equity, wisdom] = await Promise.all([
+    fetch('/api/status').then(r=>r.json()).catch(()=>({})),
+    fetch('/api/equity').then(r=>r.json()).catch(()=>({})),
+    fetch('/api/wisdom').then(r=>r.json()).catch(()=>({})),
+  ]);
+
+  const sl = wisdom.self_learn || {};
+  const metrics = (wisdom.recent || {}).metrics || {};
+  const verdict = (wisdom.recent || {}).verdict || {};
+
+  // KPI cards
+  document.getElementById('kpi-cards').innerHTML = [
+    kpiCard('Sharpe Ratio', fmt(metrics.sharpe||status.last_sharpe), 'annualised', Number(metrics.sharpe)>1?'var(--green)':Number(metrics.sharpe)>0?'var(--yellow)':'var(--red)'),
+    kpiCard('Calmar Ratio', fmt(metrics.calmar||status.last_calmar), 'CAGR / Max DD', Number(metrics.calmar)>2?'var(--green)':'var(--text)'),
+    kpiCard('Max Drawdown', pct(metrics.max_drawdown||status.last_mdd), 'peak-to-trough', 'var(--red)'),
+    kpiCard('Total Return', pct(metrics.total_return), metrics.periods ? metrics.periods+' bars' : ''),
+  ].join('');
+
+  // Equity curve
+  const eq = equity.equity_curve || [];
+  if (eq.length > 0) {
+    sparkLine('equityChart', eq.map((_,i)=>i), eq, '#58a6ff', true);
+  }
+
+  // Return distribution histogram (simple bucketing)
+  const ret = equity.returns || [];
+  if (ret.length > 0) {
+    const n = 30;
+    const mn = Math.min(...ret), mx = Math.max(...ret);
+    const bw = (mx - mn) / n || 0.001;
+    const buckets = Array(n).fill(0);
+    const labels = [];
+    for (let i=0;i<n;i++) labels.push(((mn + i*bw)*100).toFixed(2)+'%');
+    ret.forEach(r => {
+      const b = Math.min(n-1, Math.floor((r-mn)/bw));
+      buckets[b]++;
+    });
+    barChart('returnChart', labels, buckets);
+  }
+
+  // Self-learning stats
+  document.getElementById('sl-stats').innerHTML = `
+    <div><div class="stat-val">${sl.events||0}</div><div class="stat-label">Learn Events</div></div>
+    <div><div class="stat-val">${sl.accepted||0}</div><div class="stat-label">Accepted</div></div>
+    <div><div class="stat-val">${pct(sl.accept_rate)}</div><div class="stat-label">Accept Rate</div></div>
+  `;
+}
+
+// ── Walk-Forward ────────────────────────────────────
+async function loadWalkForward() {
+  const data = await fetch('/api/walk_forward').then(r=>r.json()).catch(()=>({}));
+  const windows = data.windows || [];
+  const stability = data.stability || {};
+
+  document.getElementById('wf-stability').innerHTML = `
+    <h2 style="margin-bottom:12px">Stability Summary</h2>
+    <div class="grid grid-4">
+      ${kpiCard('Windows', stability.windows||0, 'rolling windows')}
+      ${kpiCard('% Profitable', pct(stability.fraction_profitable), 'windows with CAGR > 0', Number(stability.fraction_profitable)>=0.6?'var(--green)':'var(--yellow)')}
+      ${kpiCard('% Calmar > 0', pct(stability.fraction_calmar_positive), '', '')}
+      ${kpiCard('% MDD < 35%', pct(stability.fraction_mdd_lt_0_35), '', '')}
+    </div>
+  `;
+
+  if (windows.length > 0) {
+    const sharpes = windows.map(w=>+(w.sharpe||0).toFixed(3));
+    const calmars = windows.map(w=>+(w.calmar||0).toFixed(3));
+    const labels = windows.map((_,i)=>'W'+(i+1));
+    barChart('wfSharpeChart', labels, sharpes);
+    barChart('wfCalmarChart', labels, calmars);
+    const tbody = windows.map((w,i)=>`<tr>
+      <td>${i+1}</td>
+      <td>${pct(w.cagr)}</td>
+      <td>${fmt(w.sharpe)}</td>
+      <td>${fmt(w.calmar)}</td>
+      <td style="color:var(--red)">${pct(w.max_drawdown)}</td>
+      <td>${pct(w.win_rate)}</td>
+    </tr>`).join('');
+    document.querySelector('#wf-table tbody').innerHTML = tbody;
+  }
+}
+
+// ── Risk ────────────────────────────────────────────
+async function loadRisk() {
+  const data = await fetch('/api/risk').then(r=>r.json()).catch(()=>({}));
+  const v = data.var || {};
+  const regime = data.regime || {};
+
+  document.getElementById('risk-kpi').innerHTML = [
+    kpiCard('VaR 95%', pct(v.var_95), 'historical', 'var(--yellow)'),
+    kpiCard('VaR 99%', pct(v.var_99), 'historical', 'var(--red)'),
+    kpiCard('CVaR 95%', pct(v.cvar_95), 'expected shortfall', 'var(--red)'),
+    kpiCard('Ann. Vol', pct(v.annualised_vol), 'hourly × √8760', ''),
+  ].join('');
+
+  const rn = regime.regime || 'unknown';
+  const rcolor = rn==='trending'?'var(--green)':rn==='volatile'?'var(--red)':'var(--yellow)';
+  document.getElementById('regime-detail').innerHTML = `
+    <div class="stat-val" style="color:${rcolor};text-transform:uppercase;font-size:22px">${rn}</div>
+    <div style="margin-top:12px;display:grid;gap:6px;font-size:12px">
+      <div><span style="color:var(--muted)">Trend Strength:</span> ${fmt(regime.trend_strength)}</div>
+      <div><span style="color:var(--muted)">Vol Ratio (recent/long):</span> ${fmt(regime.vol_ratio)}</div>
+      <div><span style="color:var(--muted)">Autocorrelation:</span> ${fmt(regime.autocorr)}</div>
+    </div>
+  `;
+
+  document.getElementById('tail-stats').innerHTML = `
+    <div style="display:grid;gap:6px;font-size:12px">
+      <div><span style="color:var(--muted)">Skewness:</span> ${fmt(v.skewness,3)}</div>
+      <div><span style="color:var(--muted)">Excess Kurtosis:</span> ${fmt(v.kurtosis,3)}</div>
+      <div><span style="color:var(--muted)">Worst Period:</span> <span style="color:var(--red)">${pct(v.max_loss_1d)}</span></div>
+      <div><span style="color:var(--muted)">Mean Return/bar:</span> ${pct(v.mean_return,4)}</div>
+      <div><span style="color:var(--muted)">Approx Sharpe:</span> ${fmt(v.sharpe_approx)}</div>
+    </div>
+  `;
+}
+
+// ── Ledger ──────────────────────────────────────────
+async function loadLedger() {
+  const events = await fetch('/api/ledger').then(r=>r.json()).catch(()=>[]);
+  if (!events.length) {
+    document.querySelector('#ledger-table tbody').innerHTML = '<tr><td colspan="7" class="loading">No ledger events</td></tr>';
+    return;
+  }
+  const rows = events.map(e=>`<tr>
+    <td style="color:var(--muted);font-size:11px">${(e.ts||'').replace('T',' ').slice(0,19)}</td>
+    <td><span class="badge badge-blue">${e.kind||''}</span></td>
+    <td style="font-size:11px">${e.run_name||''}</td>
+    <td>${badge(e.verdict)}</td>
+    <td>${fmt(e.metrics?.sharpe)}</td>
+    <td style="color:var(--red)">${pct(e.metrics?.max_drawdown)}</td>
+    <td>${e.accepted!=null ? badge(e.accepted) : '—'}</td>
+  </tr>`).join('');
+  document.querySelector('#ledger-table tbody').innerHTML = rows;
+}
+
+// ── Memory ──────────────────────────────────────────
+function debounceMemSearch() {
+  clearTimeout(memTimer);
+  memTimer = setTimeout(loadMemory, 400);
+}
+async function loadMemory() {
+  const q = document.getElementById('mem-search').value;
+  const url = q ? `/api/memory?q=${encodeURIComponent(q)}&limit=30` : '/api/memory?limit=30';
+  const items = await fetch(url).then(r=>r.json()).catch(()=>[]);
+  if (!Array.isArray(items) || !items.length) {
+    document.getElementById('memory-list').innerHTML = '<div class="loading">No memory items</div>';
+    return;
+  }
+  const html = items.map(it=>`
+    <div style="border-bottom:1px solid var(--border);padding:10px 0">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span class="badge badge-blue">${it.kind}</span>
+        ${(it.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}
+        <span style="color:var(--muted);font-size:11px;margin-left:auto">${(it.ts||'').slice(0,19)}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text)">${it.content||''}</div>
+    </div>
+  `).join('');
+  document.getElementById('memory-list').innerHTML = html;
+}
+
+// ── Init ────────────────────────────────────────────
+loadOverview();
+</script>
+</body>
+</html>

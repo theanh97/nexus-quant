@@ -14,6 +14,11 @@ from ..learning.reflection import reflect_and_update
 from ..learning.critic import critique_recent
 from .overrides import load_overrides
 from .tasks import TaskStore
+from ..agents.atlas import AtlasAgent
+from ..agents.cipher import CipherAgent
+from ..agents.echo import EchoAgent
+from ..agents.flux import FluxAgent
+from ..agents.base import AgentContext
 
 
 def _utc_iso() -> str:
@@ -114,6 +119,10 @@ class Orion:
                 )
                 self.task_store.mark_done(task.id, {"ok": True, "run_id": run_id})
                 return {"ok": True, "task": task.kind, "run_id": run_id, "why": task.payload.get("why"), "experiment_id": task.payload.get("experiment_id")}
+            if task.kind == "agent_run":
+                out = self.run_agents()
+                self.task_store.mark_done(task.id, {"ok": True, "agents": list(out.keys())})
+                return {"ok": True, "task": task.kind, "agents": out}
             raise ValueError(f"Unknown task kind: {task.kind}")
         except Exception as e:
             self.task_store.mark_failed(task.id, str(e))
@@ -255,3 +264,70 @@ class Orion:
         )
 
         return {"handoff_path": str(out_path)}
+
+    # ── Agent orchestration ──────────────────────────────────────────────────
+
+    def _build_agent_context(self) -> AgentContext:
+        """Load latest wisdom + metrics + regime for agent context."""
+        # Load wisdom from latest.json if exists
+        wisdom_path = self.cfg.artifacts_dir / "wisdom" / "latest.json"
+        wisdom: Dict[str, Any] = {}
+        if wisdom_path.exists():
+            try:
+                wisdom = json.loads(wisdom_path.read_text("utf-8"))
+            except Exception:
+                pass
+
+        # Load recent metrics from wisdom or fall back to empty
+        recent_metrics: Dict[str, Any] = (wisdom.get("recent") or {}).get("metrics") or {}
+
+        # Load market regime if available
+        regime: Dict[str, Any] = {}
+        regime_path = self.cfg.artifacts_dir / "state" / "regime.json"
+        if regime_path.exists():
+            try:
+                regime = json.loads(regime_path.read_text("utf-8"))
+            except Exception:
+                pass
+
+        # Best params
+        best_params: Optional[Dict[str, Any]] = None
+        best_params_path = self.cfg.artifacts_dir / "memory" / "best_params.json"
+        if best_params_path.exists():
+            try:
+                best_params = json.loads(best_params_path.read_text("utf-8"))
+            except Exception:
+                pass
+
+        return AgentContext(
+            wisdom=wisdom,
+            recent_metrics=recent_metrics,
+            regime=regime,
+            best_params=best_params,
+        )
+
+    def run_agents(self) -> Dict[str, Any]:
+        """Run all LLM agents and collect their outputs. Logs results to memory."""
+        context = self._build_agent_context()
+        results: Dict[str, Any] = {}
+        for AgentClass in [AtlasAgent, CipherAgent, EchoAgent, FluxAgent]:
+            agent = AgentClass()
+            try:
+                result = agent.run(context)
+                results[result.agent_name] = result.to_dict()
+                self.memory.add(
+                    created_at=_utc_iso(),
+                    kind="agent_output",
+                    tags=["agent", result.agent_name],
+                    content=result.raw_response[:1000],
+                    meta={
+                        "agent": result.agent_name,
+                        "model": result.model_used,
+                        "parsed": result.parsed,
+                    },
+                    run_id=None,
+                )
+            except Exception as e:
+                results[AgentClass.name] = {"error": str(e), "fallback_used": True}
+        return results
+

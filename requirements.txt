@@ -1,0 +1,13 @@
+# NEXUS Quant - optional dependencies
+# Install ALL: pip install -r requirements.txt
+
+# LLM Agents (required for `nexus_quant agents`)
+anthropic>=0.40.0
+
+# Dashboard (required for `nexus_quant dashboard`)
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+
+# Already installed externally (ZhipuAI + MiniMax):
+# zhipuai>=2.1.0
+# minimax-python>=0.2.0

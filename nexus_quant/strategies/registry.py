@@ -7,6 +7,7 @@ from .funding_carry import FundingCarryPerpV1Strategy
 from .momentum import MomentumCrossSectionV1Strategy
 from .mean_reversion import MeanReversionCrossSectionV1Strategy
 from .multi_factor import MultiFactorCrossSectionV1Strategy
+from .ml_factor import MLFactorCrossSectionV1Strategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -21,5 +22,7 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
         return MeanReversionCrossSectionV1Strategy(params=params)
     if name == "multi_factor_xs_v1":
         return MultiFactorCrossSectionV1Strategy(params=params)
+    if name == "ml_factor_xs_v1":
+        return MLFactorCrossSectionV1Strategy(params=params)
 
     raise ValueError(f"Unknown strategy: {name}")

@@ -75,6 +75,25 @@ def _parse_args() -> argparse.Namespace:
     cr_p.add_argument("--config", required=True, help="Path to JSON config")
     cr_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
     cr_p.add_argument("--tail-events", type=int, default=200, help="How many ledger events to scan (default: 200)")
+
+    dash_p = sub.add_parser("dashboard", help="Serve the web dashboard UI")
+    dash_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    dash_p.add_argument("--port", type=int, default=8080, help="Port to listen on (default: 8080)")
+    dash_p.add_argument("--host", default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)")
+
+    sched_p = sub.add_parser("schedule", help="Critique -> generate experiment specs -> run batch")
+    sched_p.add_argument("--config", required=True, help="Path to JSON config")
+    sched_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    sched_p.add_argument("--workers", type=int, default=4, help="Max parallel workers (default: 4)")
+    sched_p.add_argument("--trials", type=int, default=30, help="Trials per experiment (default: 30)")
+
+    ag_p = sub.add_parser("agents", help="Run Orion agent loop (multi-agent orchestration)")
+    ag_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    ag_p.add_argument("--config", required=True, help="Path to JSON config")
+
+    risk_p = sub.add_parser("risk", help="Run VaR + regime detection on latest backtest result")
+    risk_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+
     return p.parse_args()
 
 
@@ -108,6 +127,62 @@ def main() -> int:
         return reflect_main(config_path=Path(args.config), artifacts_dir=Path(args.artifacts), tail_events=int(args.tail_events))
     if args.cmd == "critique":
         return critique_main(config_path=Path(args.config), artifacts_dir=Path(args.artifacts), tail_events=int(args.tail_events))
+
+    if args.cmd == "dashboard":
+        from .web.app import serve
+        serve(artifacts_dir=Path(args.artifacts), port=int(args.port), host=args.host)
+        return 0
+
+    if args.cmd == "schedule":
+        from .orchestration.scheduler import ExperimentScheduler
+        from .learning.critic import critique_recent
+        critique = critique_recent(config_path=Path(args.config), artifacts_dir=Path(args.artifacts), tail_events=200)
+        next_exps = critique.get("next_experiments") or []
+        from .orchestration.priority import build_experiment_specs
+        specs = build_experiment_specs(next_exps, max_experiments=int(args.workers) * 2)
+        scheduler = ExperimentScheduler(Path(args.config), Path(args.artifacts), max_workers=int(args.workers))
+        results = scheduler.run_batch(specs)
+        report = scheduler.write_batch_report(results)
+        print(f"Batch done: {report}")
+        return 0
+
+    if args.cmd == "agents":
+        from .orchestration.orion import Orion, OrionConfig
+        orion = Orion(OrionConfig(artifacts_dir=Path(args.artifacts), config_path=Path(args.config)))
+        try:
+            out = orion.run_agents()
+            print(json.dumps(out, indent=2, default=str))
+        finally:
+            orion.close()
+        return 0
+
+    if args.cmd == "risk":
+        # Find latest run metrics
+        runs_dir = Path(args.artifacts) / "runs"
+        if not runs_dir.exists():
+            print("No runs found.")
+            return 1
+        run_dirs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime)
+        if not run_dirs:
+            print("No run directories found.")
+            return 1
+        latest = run_dirs[-1]
+        result_path = latest / "result.json"
+        if not result_path.exists():
+            print(f"No result.json in {latest}")
+            return 1
+        result_data = json.loads(result_path.read_text())
+        returns = result_data.get("returns") or []
+        equity = result_data.get("equity_curve") or []
+        from .risk.var import var_report
+        from .risk.regime import detect_regime
+        if returns:
+            var = var_report(returns, equity)
+            regime = detect_regime(returns)
+            print(json.dumps({"var": var, "regime": regime}, indent=2))
+        else:
+            print("No returns data found.")
+        return 0
 
     cfg_path = Path(args.config)
     if not cfg_path.exists():

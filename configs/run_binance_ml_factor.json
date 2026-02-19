@@ -1,0 +1,37 @@
+{
+  "run_name": "binance_ml_factor_live",
+  "seed": 42,
+  "venue": {"name": "binance_usdm", "kind": "crypto_perp", "vip_tier": 0},
+  "data": {
+    "provider": "binance_rest_v1",
+    "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT"],
+    "start": "2024-01-01T00:00:00Z",
+    "end": "2025-01-01T00:00:00Z",
+    "bar_interval": "1h",
+    "cache_dir": ".cache/binance_rest"
+  },
+  "execution": {"style": "taker", "slippage_bps": 3.0},
+  "strategy": {
+    "name": "ml_factor_xs_v1",
+    "params": {
+      "k_per_side": 2,
+      "ols_window": 504,
+      "ols_refit_every": 24,
+      "ols_min_samples": 60,
+      "min_warmup_bars": 600,
+      "risk_weighting": "inverse_vol",
+      "vol_lookback_bars": 72,
+      "target_gross_leverage": 1.0,
+      "rebalance_interval_bars": 24
+    }
+  },
+  "costs": {"fee_rate": 0.0005, "slippage_rate": 0.0003, "cost_multiplier": 1.0},
+  "benchmark": {"version": "v1", "walk_forward": {"enabled": true}},
+  "risk": {"max_drawdown": 0.35, "max_turnover_per_rebalance": 1.5},
+  "self_learn": {
+    "enabled": true,
+    "objective": "median_calmar",
+    "min_uplift": 0.05,
+    "holdout_fraction": 0.2
+  }
+}
