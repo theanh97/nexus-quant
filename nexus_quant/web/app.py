@@ -1745,6 +1745,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             "brain": Path("/tmp/nexus_brain.log"),
             "dashboard": Path("/tmp/nexus_dashboard.log"),
             "research": Path("/tmp/nexus_research.log"),
+            "backtest": Path("/tmp/nexus_backtest.log"),
         }
         lp = log_map.get(target, Path(f"/tmp/nexus_{target}.log"))
         if not lp.exists():

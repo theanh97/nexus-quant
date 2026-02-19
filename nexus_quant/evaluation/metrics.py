@@ -35,7 +35,7 @@ def sharpe(returns: List[float], periods_per_year: float) -> float:
     if not returns:
         return 0.0
     mu = statistics.mean(returns)
-    sd = statistics.pstdev(returns) if len(returns) > 1 else 0.0
+    sd = statistics.stdev(returns) if len(returns) > 1 else 0.0
     if sd == 0.0:
         return 0.0
     return float(mu / sd * math.sqrt(float(periods_per_year)))
@@ -48,7 +48,7 @@ def sortino(returns: List[float], periods_per_year: float) -> float:
     neg = [r for r in returns if r < 0]
     if len(neg) < 2:
         return 0.0
-    sd = statistics.pstdev(neg)
+    sd = statistics.stdev(neg)
     if sd == 0.0:
         return 0.0
     return float(mu / sd * math.sqrt(float(periods_per_year)))
@@ -57,7 +57,7 @@ def sortino(returns: List[float], periods_per_year: float) -> float:
 def volatility(returns: List[float], periods_per_year: float) -> float:
     if len(returns) < 2:
         return 0.0
-    sd = statistics.pstdev(returns)
+    sd = statistics.stdev(returns)
     return float(sd * math.sqrt(float(periods_per_year)))
 
 

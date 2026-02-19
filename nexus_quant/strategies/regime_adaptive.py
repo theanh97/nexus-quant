@@ -11,6 +11,10 @@ lookahead-free manner using three signals:
 Based on detected regime the strategy scales target_gross_leverage by a
 multiplier, reducing exposure during drawdowns.
 
+Also provides NexusAlphaV1VolScaledStrategy: a faster, continuous vol-scaling
+approach that avoids regime-detection lag by computing a rolling realized-vol
+leverage multiplier each bar.
+
 stdlib only -- no numpy/pandas/sklearn.
 """
 from __future__ import annotations
@@ -477,6 +481,262 @@ class NexusAlphaV1RegimeStrategy(Strategy):
         w = normalize_dollar_neutral(long_syms, short_syms, inv_vol, effective_gross)
 
         # -- Optional portfolio vol targeting -------------------------------- #
+        if target_vol > 0:
+            w = _apply_vol_target(
+                weights           = w,
+                closes            = dataset.perp_close,
+                end_idx           = idx,
+                lookback          = vol_lb,
+                target_annual_vol = target_vol,
+                min_gross         = min_lev,
+                max_gross         = max_lev,
+            )
+
+        out = {s: 0.0 for s in syms}
+        out.update(w)
+        return out
+
+
+# --------------------------------------------------------------------------- #
+# NexusAlphaV1VolScaledStrategy
+# --------------------------------------------------------------------------- #
+
+class NexusAlphaV1VolScaledStrategy(Strategy):
+    """
+    Continuous Volatility-Scaled wrapper around NexusAlphaV1.
+
+    Replaces binary regime detection with fast, continuous vol-scaling:
+
+      1. Compute realized_vol_short = stdev of last vol_short_bars hourly returns
+         (annualised: * sqrt(8760))
+      2. Compute realized_vol_long  = stdev of last vol_long_bars hourly returns
+         (annualised)
+      3. vol_ratio = realized_vol_short / realized_vol_long  (regime signal, not
+         used to gate, only informational)
+      4. leverage_scale = vol_target / realized_vol_short
+         -- clipped to [vol_scale_min, vol_scale_max]
+         -- This sizes positions so expected portfolio vol = vol_target
+      5. effective_leverage = target_gross_leverage * leverage_scale
+
+    This is FASTER (48h short window vs 200-bar SMA) and CONTINUOUS (no
+    binary flip), avoiding the whipsaw / lag that hurt the regime strategy.
+
+    Parameters (in addition to all nexus_alpha_v1 params)
+    -------------------------------------------------------
+    vol_target      : float = 0.10   target annual portfolio vol (10%)
+    vol_short_bars  : int   = 48     short vol window (hours)
+    vol_long_bars   : int   = 336    long vol window (14 days)
+    vol_scale_min   : float = 0.3    minimum leverage scale
+    vol_scale_max   : float = 2.0    maximum leverage scale
+    use_vol_scaling : bool  = True   set False to run as plain nexus_alpha_v1
+    """
+
+    def __init__(self, params: Dict[str, Any]) -> None:
+        super().__init__(name="nexus_alpha_v1_vol_scaled", params=params)
+
+    # -- param helper -------------------------------------------------------- #
+
+    def _p(self, key: str, default: Any) -> Any:
+        v = self.params.get(key)
+        if v is None:
+            return default
+        try:
+            if isinstance(default, bool):
+                return bool(v)
+            if isinstance(default, int):
+                return int(v)
+            if isinstance(default, float):
+                return float(v)
+        except (TypeError, ValueError):
+            pass
+        return v
+
+    # -- rebalance gate ------------------------------------------------------ #
+
+    def should_rebalance(self, dataset: "MarketDataset", idx: int) -> bool:
+        mom_lb   = self._p("momentum_lookback_bars", 168)
+        vol_lb   = self._p("vol_lookback_bars",      168)
+        vol_long = self._p("vol_long_bars",          336)
+        interval = self._p("rebalance_interval_bars", 168)
+        warmup   = max(mom_lb, vol_lb, vol_long) + 2
+        if idx <= warmup:
+            return False
+        return idx % max(1, interval) == 0
+
+    # -- continuous vol scaling ---------------------------------------------- #
+
+    def _vol_leverage_scale(
+        self,
+        dataset: "MarketDataset",
+        idx: int,
+    ) -> float:
+        """
+        Compute the continuous leverage scale factor based on realized vol.
+
+        Returns a float in [vol_scale_min, vol_scale_max].
+        """
+        use_scaling  = self._p("use_vol_scaling",  True)
+        if not use_scaling:
+            return 1.0
+
+        vol_target      = self._p("vol_target",      0.10)
+        vol_short_bars  = self._p("vol_short_bars",   48)
+        vol_long_bars   = self._p("vol_long_bars",   336)
+        vol_scale_min   = self._p("vol_scale_min",   0.3)
+        vol_scale_max   = self._p("vol_scale_max",   2.0)
+
+        # Use cross-sectional average of per-symbol realized vols
+        # (aggregate measure of market vol level; more robust than single symbol)
+        short_vols: List[float] = []
+        for sym in dataset.symbols:
+            closes = dataset.perp_close.get(sym, [])
+            # Compute log-returns over vol_short_bars window
+            start = max(1, idx - vol_short_bars)
+            log_rets: List[float] = []
+            for i in range(start, idx):
+                if i < len(closes) and closes[i - 1] > 0 and closes[i] > 0:
+                    log_rets.append(math.log(closes[i] / closes[i - 1]))
+            if len(log_rets) >= 5:
+                short_vols.append(statistics.pstdev(log_rets) * math.sqrt(8760.0))
+
+        if not short_vols:
+            return 1.0
+
+        realized_vol_short = sum(short_vols) / len(short_vols)
+
+        if realized_vol_short <= 1e-8:
+            return vol_scale_max
+
+        # leverage_scale = vol_target / realized_vol_short
+        # (so when vol is high, we scale down; when vol is low, we scale up)
+        raw_scale = vol_target / realized_vol_short
+        return max(vol_scale_min, min(vol_scale_max, raw_scale))
+
+    # -- target_weights (main entry point) ----------------------------------- #
+
+    def target_weights(
+        self,
+        dataset: "MarketDataset",
+        idx: int,
+        current: Weights,
+    ) -> Weights:
+        syms = dataset.symbols
+        k    = max(1, min(self._p("k_per_side", 2), len(syms) // 2))
+
+        mom_lb  = self._p("momentum_lookback_bars",       168)
+        mr_lb   = self._p("mean_reversion_lookback_bars",  48)
+        vol_lb  = self._p("vol_lookback_bars",            168)
+        ft_fast = self._p("funding_trend_fast",             3)
+        ft_slow = self._p("funding_trend_slow",            10)
+
+        target_gross = self._p("target_gross_leverage", 0.35)
+        risk_w       = self._p("risk_weighting",        "inverse_vol")
+        target_vol   = self._p("target_portfolio_vol",   0.0)
+        min_lev      = self._p("min_gross_leverage",    0.05)
+        max_lev      = self._p("max_gross_leverage",    0.65)
+        strict       = self._p("strict_agreement",      False)
+
+        w_carry = self._p("w_carry",          0.35)
+        w_mom   = self._p("w_mom",            0.35)
+        w_conf  = self._p("w_confirm",        0.20)
+        w_mr    = self._p("w_mean_reversion", 0.05)
+        w_vm    = self._p("w_vol_momentum",   0.05)
+        w_ft    = self._p("w_funding_trend",  0.00)
+
+        ts = dataset.timeline[idx]
+
+        # -- Signal 1: Funding carry ----------------------------------------- #
+        f_raw = {s: float(dataset.last_funding_rate_before(s, ts)) for s in syms}
+        fz    = zscores(f_raw)
+        carry = {s: -float(fz.get(s, 0.0)) for s in syms}
+
+        # -- Signal 2: Price momentum ---------------------------------------- #
+        mom_raw: Dict[str, float] = {}
+        for s in syms:
+            c  = dataset.perp_close[s]
+            i1 = min(idx - 1, len(c) - 1)
+            i0 = max(0, idx - 1 - mom_lb)
+            c1 = c[i1] if i1 >= 0 else 0.0
+            c0 = c[i0] if i0 >= 0 and i0 < len(c) else 0.0
+            mom_raw[s] = (c1 / c0 - 1.0) if c0 > 0 else 0.0
+        mz  = zscores(mom_raw)
+        mom = {s: float(mz.get(s, 0.0)) for s in syms}
+
+        # -- Signal 3: Agreement (carry x momentum) -------------------------- #
+        agreement = {s: carry[s] * mom[s] for s in syms}
+
+        # -- Signal 4: Mean reversion (short-term contrarian) ---------------- #
+        mr_raw: Dict[str, float] = {}
+        for s in syms:
+            c  = dataset.perp_close[s]
+            i1 = min(idx - 1, len(c) - 1)
+            i0 = max(0, idx - 1 - mr_lb)
+            c1 = c[i1] if i1 >= 0 else 0.0
+            c0 = c[i0] if i0 >= 0 and i0 < len(c) else 0.0
+            mr_raw[s] = (c1 / c0 - 1.0) if c0 > 0 else 0.0
+        mr_z = zscores(mr_raw)
+        mr   = {s: -float(mr_z.get(s, 0.0)) for s in syms}
+
+        # -- Signal 5: Vol-adjusted momentum --------------------------------- #
+        vol_mom_raw: Dict[str, float] = {}
+        for s in syms:
+            v = trailing_vol(
+                dataset.perp_close[s],
+                end_idx=max(0, idx - 1),
+                lookback_bars=vol_lb,
+            )
+            vol_mom_raw[s] = (mom_raw[s] / v) if v > 0 else mom_raw[s]
+        vm_z    = zscores(vol_mom_raw)
+        vol_mom = {s: float(vm_z.get(s, 0.0)) for s in syms}
+
+        # -- Signal 6: Funding trend ----------------------------------------- #
+        ft_raw = {s: _funding_trend(dataset, s, ts, ft_fast, ft_slow) for s in syms}
+        ft_z   = zscores(ft_raw)
+        ft     = {s: float(ft_z.get(s, 0.0)) for s in syms}
+
+        # -- Composite score ------------------------------------------------- #
+        score: Dict[str, float] = {}
+        for s in syms:
+            score[s] = (
+                w_carry * carry[s]
+                + w_mom  * mom[s]
+                + w_conf * agreement[s]
+                + w_mr   * mr[s]
+                + w_vm   * vol_mom[s]
+                + w_ft   * ft[s]
+            )
+
+        ranked      = sorted(syms, key=lambda s: score[s], reverse=True)
+        long_cands  = ranked[:k]
+        short_cands = ranked[-k:]
+
+        if strict:
+            long_cands  = [s for s in long_cands  if agreement[s] >= 0.0]
+            short_cands = [s for s in short_cands if agreement[s] >= 0.0]
+
+        long_syms  = [s for s in long_cands  if s not in short_cands]
+        short_syms = [s for s in short_cands if s not in long_cands]
+
+        if not long_syms or not short_syms:
+            return {s: 0.0 for s in syms}
+
+        # -- Continuous vol scaling ------------------------------------------ #
+        vol_scale       = self._vol_leverage_scale(dataset, idx)
+        effective_gross = max(min_lev, min(max_lev, target_gross * vol_scale))
+
+        # -- Portfolio construction (inverse-vol, dollar-neutral) ------------ #
+        all_active = list(set(long_syms) | set(short_syms))
+        inv_vol: Dict[str, float] = {}
+        if risk_w == "inverse_vol":
+            for s in all_active:
+                v = trailing_vol(dataset.perp_close[s], end_idx=idx, lookback_bars=vol_lb)
+                inv_vol[s] = (1.0 / v) if v > 0 else 1.0
+        else:
+            inv_vol = {s: 1.0 for s in all_active}
+
+        w = normalize_dollar_neutral(long_syms, short_syms, inv_vol, effective_gross)
+
+        # -- Optional portfolio vol targeting (additional layer) -------------- #
         if target_vol > 0:
             w = _apply_vol_target(
                 weights           = w,

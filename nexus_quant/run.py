@@ -17,6 +17,17 @@ from .ledger.ledger import LedgerEvent, append_ledger_event
 from .self_learn.search import improve_strategy_params
 from .utils.merge import deep_merge
 
+# ── Backtest log helper (Console tab visibility) ──────────────────────────────
+_BT_LOG_FILE = Path("/tmp/nexus_backtest.log")
+
+def _bt_log(msg: str) -> None:
+    """Append a timestamped line to /tmp/nexus_backtest.log for Console tab."""
+    try:
+        with _BT_LOG_FILE.open("a", encoding="utf-8") as _f:
+            _f.write(f"[{datetime.utcnow().strftime('%H:%M:%S')}] {msg}\n")
+    except Exception:
+        pass
+
 
 def _utcnow_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -71,8 +82,10 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
     _ensure_dir(run_root)
     _ensure_dir(out_dir / "ledger")
 
+    _bt_log(f"[BACKTEST] Starting: {run_name} | config={config_path.name}")
     provider = make_provider(cfg["data"], seed=seed)
     dataset = provider.load()
+    _bt_log(f"[BACKTEST] Data loaded: {len(dataset.symbols)} symbols, {len(dataset.timeline)} bars")
     expected_step = None
     if "bar_interval_minutes" in (cfg.get("data") or {}):
         expected_step = int(cfg["data"]["bar_interval_minutes"]) * 60
@@ -88,6 +101,8 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
     engine = BacktestEngine(bt_cfg)
     result = engine.run(dataset=dataset, strategy=strategy, seed=seed)
     result.code_fingerprint = code_fp
+    _bench_summary_tmp = result.to_dict()
+    _bt_log(f"[BACKTEST] Engine done: {run_name}")
 
     # Auto-detect periods_per_year from bar_interval (critical for correct Sharpe/CAGR)
     _bar_iv = str((cfg.get("data") or {}).get("bar_interval") or "1d").lower()
@@ -122,6 +137,8 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
     except Exception as e:
         bench["bias_check"] = {"error": str(e)}
     bench["verdict"] = _compute_verdict(bench, risk_cfg=cfg.get("risk") or {}, data_quality_ok=bool(dq["ok"]))
+    _s = bench.get("summary") or {}
+    _bt_log(f"[BACKTEST] Done: {run_name} | Sharpe={_s.get('sharpe_ratio', _s.get('sharpe', 0)):.3f} | CAGR={float(_s.get('cagr', 0) or 0):.2%} | MDD={float(_s.get('max_drawdown', 0) or 0):.2%}")
 
     (run_root / "config.json").write_text(json.dumps(cfg, indent=2, sort_keys=True), encoding="utf-8")
     (run_root / "data_quality.json").write_text(json.dumps(dq, indent=2, sort_keys=True), encoding="utf-8")
