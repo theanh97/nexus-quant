@@ -579,8 +579,38 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                         }
                     )
 
+            # --- Live market data injection ---
+            live_market: dict = {}
+            market_keywords = ["funding rate", "btc", "eth", "sol", "market", "price", "binance", "funding", "basis", "perp"]
+            if any(kw in low for kw in market_keywords):
+                try:
+                    from ..tools.web_research import fetch_binance_funding_rates, fetch_binance_market_overview
+                    symbol = "ETHUSDT" if "eth" in low else "SOLUSDT" if "sol" in low else "BTCUSDT"
+                    rates = fetch_binance_funding_rates(symbol, limit=5)
+                    if rates:
+                        live_market["funding_rates"] = rates[:3]
+                        live_market["symbol"] = symbol
+                    overview = fetch_binance_market_overview()
+                    if overview.get("tickers"):
+                        live_market["top_tickers"] = overview["tickers"][:5]
+                except Exception:
+                    pass
+
+            # --- Executor: system state queries ---
+            executor_result: dict = {}
+            if any(kw in low for kw in ["status", "system state", "how are you doing", "mood", "nexus state", "current state"]):
+                try:
+                    from ..tools.executor import NexusExecutor
+                    executor_result = NexusExecutor().get_system_state(str(artifacts_dir))
+                except Exception:
+                    pass
+
             # Build context
             ctx: dict = {}
+            if live_market:
+                ctx["live_market"] = live_market
+            if executor_result:
+                ctx["system_state"] = executor_result
             m = _latest_metrics(artifacts_dir)
             if m:
                 ctx["metrics"] = m.get("summary") or {}
@@ -679,9 +709,39 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             }
             if tool_result is not None:
                 payload["tool_result"] = tool_result
+            if live_market:
+                payload["live_market"] = live_market
+            if executor_result:
+                payload["system_state"] = executor_result
             return JSONResponse(payload)
         except Exception as e:
             return JSONResponse({"response": f"Error: {e}"})
+
+    @app.get("/api/market")
+    def api_market() -> JSONResponse:
+        """Live Binance market data: funding rates + top tickers."""
+        try:
+            from ..tools.web_research import fetch_binance_funding_rates, fetch_binance_market_overview
+            import datetime as _dt
+            symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT"]
+            funding = {}
+            for sym in symbols:
+                rates = fetch_binance_funding_rates(sym, limit=1)
+                if rates:
+                    r = rates[0]
+                    funding[sym] = {
+                        "rate": float(r.get("fundingRate", 0)),
+                        "rate_pct": round(float(r.get("fundingRate", 0)) * 100, 6),
+                        "time": r.get("fundingTime", ""),
+                    }
+            overview = fetch_binance_market_overview()
+            return JSONResponse({
+                "funding": funding,
+                "top_tickers": (overview.get("tickers") or [])[:10],
+                "ts": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+            })
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
 
     @app.post("/api/feedback")
     async def api_feedback(body: FeedbackRequest) -> JSONResponse:
@@ -731,6 +791,210 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             except Exception:
                 pass
         return HTMLResponse(content=html_doc)
+
+    # ── Team Report Ingestion ──────────────────────────────────────────────
+
+    @app.post("/api/ingest_report")
+    async def api_ingest_report(request) -> JSONResponse:
+        """
+        Ingest a team report file (text/JSON/CSV/Markdown/PDF text).
+        Analyzes with GLM-5, stores insights in NEXUS memory + RAG index.
+        Multipart: field 'file' + optional 'author' + 'topic'.
+        """
+        import datetime as _dt
+        try:
+            from fastapi import UploadFile, Form
+            form = await request.form()
+            file_obj: UploadFile = form.get("file")
+            author = str(form.get("author") or "team").strip()[:100]
+            topic = str(form.get("topic") or "research").strip()[:200]
+
+            if not file_obj:
+                return JSONResponse({"ok": False, "error": "No file provided"})
+
+            raw_bytes = await file_obj.read(512_000)  # max 500KB
+            filename = str(file_obj.filename or "upload.txt")
+            try:
+                content = raw_bytes.decode("utf-8", errors="replace")
+            except Exception:
+                content = raw_bytes.decode("latin-1", errors="replace")
+
+            # Truncate for LLM context
+            excerpt = content[:8000]
+
+            # Analyze with GLM-5
+            analysis = ""
+            try:
+                from ..brain.reasoning import _call_llm
+                system_prompt = (
+                    "You are NEXUS, an elite quantitative research AI. "
+                    "A team member submitted a research report. "
+                    "Extract: (1) key findings, (2) trading signals or strategy ideas, "
+                    "(3) risk factors, (4) recommended NEXUS experiments to run. "
+                    "Be concise and structured. Reply in JSON with keys: "
+                    "findings, signals, risks, experiments."
+                )
+                user_prompt = f"Author: {author}\nTopic: {topic}\nFilename: {filename}\n\nContent:\n{excerpt}"
+                analysis = _call_llm(system_prompt, user_prompt, max_tokens=1200)
+            except Exception as e:
+                analysis = f"Analysis unavailable: {e}"
+
+            # Store in memory
+            from ..memory.store import MemoryStore
+            db = artifacts_dir / "memory" / "memory.db"
+            ms = MemoryStore(db)
+            now = _dt.datetime.now(_dt.timezone.utc).isoformat()
+            try:
+                mem_id = ms.add(
+                    created_at=now,
+                    kind="team_report",
+                    tags=["team_report", author, topic],
+                    content=f"[Report from {author}] {topic}\n\n{excerpt[:2000]}",
+                    meta={"filename": filename, "author": author, "topic": topic, "analysis": analysis},
+                )
+            finally:
+                ms.close()
+
+            # Invalidate RAG index so it rebuilds on next search
+            try:
+                (artifacts_dir / "brain" / "rag_index.json").unlink(missing_ok=True)
+            except Exception:
+                pass
+
+            # Write to research inbox
+            inbox = artifacts_dir / "research" / "inbox"
+            inbox.mkdir(parents=True, exist_ok=True)
+            safe_name = "".join(c if c.isalnum() or c in "-_." else "_" for c in filename)
+            report_path = inbox / f"{now[:10]}_{safe_name}.json"
+            report_path.write_text(json.dumps({
+                "filename": filename, "author": author, "topic": topic,
+                "received_at": now, "analysis": analysis, "excerpt": excerpt[:1000],
+            }, ensure_ascii=False, indent=2), encoding="utf-8")
+
+            return JSONResponse({
+                "ok": True,
+                "filename": filename,
+                "author": author,
+                "topic": topic,
+                "mem_id": str(mem_id) if "mem_id" in dir() else None,
+                "analysis": analysis,
+                "saved_to": str(report_path),
+            })
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)})
+
+    @app.get("/api/team_reports")
+    def api_team_reports() -> JSONResponse:
+        """List ingested team reports."""
+        inbox = artifacts_dir / "research" / "inbox"
+        if not inbox.exists():
+            return JSONResponse([])
+        reports = []
+        for p in sorted(inbox.iterdir(), reverse=True)[:20]:
+            if p.suffix == ".json":
+                try:
+                    data = json.loads(p.read_text("utf-8"))
+                    reports.append({
+                        "filename": data.get("filename", p.name),
+                        "author": data.get("author", "—"),
+                        "topic": data.get("topic", "—"),
+                        "received_at": data.get("received_at", ""),
+                        "has_analysis": bool(data.get("analysis")),
+                    })
+                except Exception:
+                    continue
+        return JSONResponse(reports)
+
+    # ── Kanban Task Board ──────────────────────────────────────────────────
+
+    try:
+        from pydantic import BaseModel as _BM
+        class TaskCreateRequest(_BM):
+            title: str = ""
+            description: str = ""
+            priority: str = "medium"
+            assignee: str = "NEXUS"
+            tags: List[str] = []
+            due_date: str = ""
+            created_by: str = "user"
+        class TaskUpdateRequest(_BM):
+            status: str = ""
+            priority: str = ""
+            progress: int = -1
+            assignee: str = ""
+            result: str = ""
+            title: str = ""
+            description: str = ""
+    except Exception:
+        TaskCreateRequest = None  # type: ignore
+        TaskUpdateRequest = None  # type: ignore
+
+    def _get_task_manager():
+        from ..tasks.manager import TaskManager
+        tm = TaskManager(artifacts_dir)
+        tm.seed_defaults()
+        return tm
+
+    @app.get("/api/tasks")
+    def api_tasks_list() -> JSONResponse:
+        """Kanban board: all tasks grouped by status."""
+        try:
+            tm = _get_task_manager()
+            cols = tm.by_status()
+            return JSONResponse({
+                "columns": {k: [t.to_dict() for t in v] for k, v in cols.items()},
+                "summary": tm.kanban_summary(),
+            })
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
+    @app.post("/api/tasks")
+    async def api_tasks_create(body: TaskCreateRequest) -> JSONResponse:
+        """Create a new task."""
+        try:
+            tm = _get_task_manager()
+            t = tm.create(
+                title=str(body.title or "Untitled"),
+                description=str(body.description or ""),
+                priority=str(body.priority or "medium"),
+                assignee=str(body.assignee or "NEXUS"),
+                tags=[str(x) for x in (body.tags or [])],
+                due_date=str(body.due_date) if body.due_date else None,
+                created_by=str(body.created_by or "user"),
+            )
+            return JSONResponse({"ok": True, "task": t.to_dict()})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)})
+
+    @app.patch("/api/tasks/{task_id}")
+    async def api_tasks_update(task_id: str, body: TaskUpdateRequest) -> JSONResponse:
+        """Update a task (status, progress, assignee, etc.)."""
+        try:
+            tm = _get_task_manager()
+            updates: Dict[str, Any] = {}
+            if body.status: updates["status"] = body.status
+            if body.priority: updates["priority"] = body.priority
+            if body.progress >= 0: updates["progress"] = body.progress
+            if body.assignee: updates["assignee"] = body.assignee
+            if body.result: updates["result"] = body.result
+            if body.title: updates["title"] = body.title
+            if body.description: updates["description"] = body.description
+            t = tm.update(task_id, **updates)
+            if not t:
+                return JSONResponse({"ok": False, "error": "Task not found"}, status_code=404)
+            return JSONResponse({"ok": True, "task": t.to_dict()})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)})
+
+    @app.delete("/api/tasks/{task_id}")
+    async def api_tasks_delete(task_id: str) -> JSONResponse:
+        """Delete a task."""
+        try:
+            tm = _get_task_manager()
+            ok = tm.delete(task_id)
+            return JSONResponse({"ok": ok})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)})
 
     # ── Serve static dashboard ─────────────────────────────────────────────
 

@@ -49,6 +49,7 @@ class EchoAgent(BaseAgent):
 
     name = "echo"
     default_model = "MiniMax-Text-01"
+    _smart_task_type = 'DATA_ANALYSIS'
 
     def run(self, context: AgentContext) -> AgentResult:
         metrics = context.recent_metrics

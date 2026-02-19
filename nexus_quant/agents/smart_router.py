@@ -111,6 +111,13 @@ class SmartRouter:
         project_root = Path(__file__).resolve().parents[2]
         self._log_path = log_path or (project_root / "artifacts" / "brain" / "routing_log.jsonl")
 
+    def get_model_spec(self, task_type: TaskType) -> Optional[ModelSpec]:
+        """Return the routed ModelSpec for this task type (may be None on error)."""
+        try:
+            return self.route(task_type)
+        except Exception:
+            return None
+
     def route(self, task_type: TaskType) -> ModelSpec:
         """
         Return the best available model spec for this task type.

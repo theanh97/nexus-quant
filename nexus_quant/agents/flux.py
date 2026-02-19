@@ -50,6 +50,7 @@ class FluxAgent(BaseAgent):
 
     name = "flux"
     default_model = "glm-4-long"
+    _smart_task_type = 'EXPERIMENT_DESIGN'
 
     def run(self, context: AgentContext) -> AgentResult:
         wisdom = context.wisdom

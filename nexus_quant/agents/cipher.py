@@ -48,6 +48,7 @@ class CipherAgent(BaseAgent):
 
     name = "cipher"
     default_model = "claude-sonnet-4-6"
+    _smart_task_type = 'RISK_ANALYSIS'
 
     def run(self, context: AgentContext) -> AgentResult:
         metrics = context.recent_metrics

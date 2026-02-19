@@ -462,6 +462,14 @@
         }
       }
 
+      /* Kanban columns responsive */
+      @media (max-width: 1100px) {
+        #kanban-board { grid-template-columns: repeat(2, 1fr) !important; }
+      }
+      @media (max-width: 640px) {
+        #kanban-board { grid-template-columns: 1fr !important; }
+      }
+
       /* Charts */
       .chart {
         width: 100%;
@@ -856,6 +864,36 @@
           </button>
           <button
             class="tab-btn"
+            id="tabbtn-tasks"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-tasks"
+            data-tab="tasks"
+          >
+            📋 Tasks
+          </button>
+          <button
+            class="tab-btn"
+            id="tabbtn-reports"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-reports"
+            data-tab="reports"
+          >
+            📂 Reports
+          </button>
+          <button
+            class="tab-btn"
+            id="tabbtn-market"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-market"
+            data-tab="market"
+          >
+            📡 Market
+          </button>
+          <button
+            class="tab-btn"
             id="tabbtn-chat"
             role="tab"
             aria-selected="false"
@@ -1245,6 +1283,193 @@
       <!-- =========================================================
         TAB 6 — Chat
       ========================================================== -->
+      <!-- =========================================================
+        MARKET TAB — Live Binance Funding Rates + Market Overview
+      ========================================================= -->
+      <!-- =========================================================
+        KANBAN TASKS TAB
+      ========================================================= -->
+      <section class="page" id="page-tasks" role="tabpanel" aria-labelledby="tabbtn-tasks" hidden>
+        <!-- Task creation form -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Task Board</div>
+                <div class="card-sub">Assign work to NEXUS agents or team members — drag tasks between columns</div>
+              </div>
+              <div id="task-summary-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+            </div>
+            <details style="margin-top:12px">
+              <summary style="cursor:pointer;color:var(--accent);font-size:13px;user-select:none">+ Create new task</summary>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+                <input class="input" id="new-task-title" placeholder="Task title*" style="height:38px;padding:0 12px">
+                <select class="input" id="new-task-priority" style="height:38px;padding:0 12px">
+                  <option value="critical">🔴 Critical</option>
+                  <option value="high">🟠 High</option>
+                  <option value="medium" selected>🟡 Medium</option>
+                  <option value="low">🟢 Low</option>
+                </select>
+                <input class="input" id="new-task-assignee" placeholder="Assignee (NEXUS / ATLAS / CIPHER / you)" style="height:38px;padding:0 12px" value="NEXUS">
+                <input class="input" id="new-task-due" type="date" style="height:38px;padding:0 12px">
+                <textarea class="input" id="new-task-desc" placeholder="Description…" rows="2" style="grid-column:1/-1"></textarea>
+                <button class="send-btn" onclick="createTask()" style="grid-column:1/-1;max-width:160px">Create Task</button>
+              </div>
+            </details>
+          </div>
+        </div>
+        <!-- Kanban columns -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="kanban-board">
+          <div class="card" id="col-todo">
+            <div class="card-inner">
+              <div class="card-header" style="margin-bottom:8px">
+                <div class="card-title" style="font-size:13px">📋 TO DO</div>
+                <span class="chip" id="count-todo">0</span>
+              </div>
+              <div id="tasks-todo" style="display:flex;flex-direction:column;gap:8px;min-height:60px"></div>
+            </div>
+          </div>
+          <div class="card" id="col-in-progress">
+            <div class="card-inner">
+              <div class="card-header" style="margin-bottom:8px">
+                <div class="card-title" style="font-size:13px">⚡ IN PROGRESS</div>
+                <span class="chip accent" id="count-in_progress">0</span>
+              </div>
+              <div id="tasks-in_progress" style="display:flex;flex-direction:column;gap:8px;min-height:60px"></div>
+            </div>
+          </div>
+          <div class="card" id="col-review">
+            <div class="card-inner">
+              <div class="card-header" style="margin-bottom:8px">
+                <div class="card-title" style="font-size:13px">👁 REVIEW</div>
+                <span class="chip" id="count-review">0</span>
+              </div>
+              <div id="tasks-review" style="display:flex;flex-direction:column;gap:8px;min-height:60px"></div>
+            </div>
+          </div>
+          <div class="card" id="col-done">
+            <div class="card-inner">
+              <div class="card-header" style="margin-bottom:8px">
+                <div class="card-title" style="font-size:13px">✅ DONE</div>
+                <span class="chip good" id="count-done">0</span>
+              </div>
+              <div id="tasks-done" style="display:flex;flex-direction:column;gap:8px;min-height:60px"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+        TEAM REPORTS TAB
+      ========================================================= -->
+      <section class="page" id="page-reports" role="tabpanel" aria-labelledby="tabbtn-reports" hidden>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Team Report Ingestion</div>
+                <div class="card-sub">Upload research reports, analysis files, or strategy documents. NEXUS will analyze and integrate into memory.</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+              <input class="input" id="report-author" placeholder="Author name" style="height:38px;padding:0 12px">
+              <input class="input" id="report-topic" placeholder="Topic / research area" style="height:38px;padding:0 12px">
+              <div style="grid-column:1/-1;border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer" onclick="document.getElementById('report-file').click()">
+                <div style="font-size:28px">📂</div>
+                <div style="color:var(--muted);margin-top:6px">Click to upload or drop file here</div>
+                <div style="color:var(--muted2);font-size:12px;margin-top:4px">Supports: .txt .md .json .csv .py (max 500KB)</div>
+                <input type="file" id="report-file" style="display:none" accept=".txt,.md,.json,.csv,.py,.log">
+                <div id="report-file-name" style="margin-top:8px;color:var(--accent);font-size:13px"></div>
+              </div>
+              <button class="send-btn" onclick="uploadReport()" style="grid-column:1/-1;max-width:200px">📤 Upload & Analyze</button>
+            </div>
+            <div id="upload-status" style="margin-top:12px;display:none"></div>
+          </div>
+        </div>
+        <!-- Analysis result panel -->
+        <div class="card" id="analysis-panel" style="display:none;margin-bottom:16px">
+          <div class="card-inner">
+            <div class="card-header">
+              <div class="card-title">GLM-5 Analysis Result</div>
+            </div>
+            <pre id="analysis-output" style="white-space:pre-wrap;font-family:var(--mono);font-size:12px;color:var(--text);margin:10px 0 0"></pre>
+          </div>
+        </div>
+        <!-- Recent reports -->
+        <div class="card">
+          <div class="card-inner">
+            <div class="card-header">
+              <div class="card-title">Ingested Reports</div>
+              <button class="icon-btn" onclick="loadReports()">↻</button>
+            </div>
+            <div style="overflow-x:auto;margin-top:12px">
+              <table class="table">
+                <thead><tr><th>Date</th><th>File</th><th>Author</th><th>Topic</th><th>Analysis</th></tr></thead>
+                <tbody id="reports-tbody"><tr><td colspan="5" class="muted">No reports ingested yet</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-market" role="tabpanel" aria-labelledby="tabbtn-market" hidden>
+        <div class="grid two" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Live Funding Rates <span class="status-dot live" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:6px" id="market-live-dot"></span></div>
+                  <div class="card-sub">Binance USDM Perpetual — Real-time (auto-refresh 30s)</div>
+                </div>
+                <button class="icon-btn" onclick="loadMarket()" title="Refresh market data">↻</button>
+              </div>
+              <div style="overflow-x:auto">
+                <table class="table" style="margin-top:12px" id="funding-table">
+                  <thead><tr>
+                    <th>Symbol</th>
+                    <th>Funding Rate</th>
+                    <th>APR equiv</th>
+                    <th>Signal</th>
+                    <th>Time</th>
+                  </tr></thead>
+                  <tbody id="funding-tbody"><tr><td colspan="5" class="muted" style="padding:12px">Loading…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Carry Signal</div>
+                  <div class="card-sub">Funding carry opportunity score</div>
+                </div>
+              </div>
+              <div id="carry-signal-grid" class="grid" style="grid-template-columns:repeat(2,1fr);gap:10px;margin-top:8px"></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Market Snapshot</div>
+                <div class="card-sub">Top perpetuals by volume (Binance USDM)</div>
+              </div>
+              <div id="market-ts" class="mono muted" style="font-size:11px"></div>
+            </div>
+            <div style="overflow-x:auto;margin-top:12px">
+              <table class="table" id="market-table">
+                <thead><tr>
+                  <th>#</th><th>Symbol</th><th>Last Price</th><th>24h Change</th><th>Volume (USDT)</th><th>Funding</th>
+                </tr></thead>
+                <tbody id="market-tbody"><tr><td colspan="6" class="muted" style="padding:12px">Loading…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="page" id="page-chat" role="tabpanel" aria-labelledby="tabbtn-chat">
         <div class="chat">
           <div class="card">
@@ -1264,11 +1489,20 @@
                 </div>
               </div>
 
+              <!-- Quick-action chips -->
+              <div style="padding:10px 16px 0;display:flex;flex-wrap:wrap;gap:6px" id="chat-chips">
+                <button class="chip" onclick="sendChatMessage('What is the current BTC funding rate?')" style="cursor:pointer;font-size:11px">📡 BTC Funding</button>
+                <button class="chip" onclick="sendChatMessage('Show current Sharpe and risk metrics')" style="cursor:pointer;font-size:11px">📊 Performance</button>
+                <button class="chip" onclick="sendChatMessage('What are my active goals?')" style="cursor:pointer;font-size:11px">🎯 Goals</button>
+                <button class="chip" onclick="sendChatMessage('Show walk-forward stability')" style="cursor:pointer;font-size:11px">🔄 Walk-Fwd</button>
+                <button class="chip" onclick="sendChatMessage('What is NEXUS current mood and status?')" style="cursor:pointer;font-size:11px">🧠 Status</button>
+                <button class="chip" onclick="sendChatMessage('Run backtest configs/run_synthetic_funding.json')" style="cursor:pointer;font-size:11px">▶ Run Backtest</button>
+                <button class="chip" onclick="sendChatMessage('Show top runs leaderboard')" style="cursor:pointer;font-size:11px">🏆 Leaderboard</button>
+              </div>
+
               <div class="chat-messages" id="chat-messages" aria-label="Chat messages">
                 <div class="msg nexus">
-                  Ask things like:
-                  <span class="mono">sharpe</span>, <span class="mono">risk var</span>, <span class="mono">walk-forward</span>,
-                  <span class="mono">top runs</span>, <span class="mono">goals</span>.
+                  NEXUS AI Research Analyst online. Ask about performance, funding rates, risk, goals, or run commands. I use GLM-5 with live Binance data.
                 </div>
               </div>
 
@@ -1320,6 +1554,10 @@
         runs: "/api/runs",
         brainIdentity: "/api/brain/identity",
         brainGoals: "/api/brain/goals",
+        market: "/api/market",
+        chat: "/api/chat",
+        feedback: "/api/feedback",
+        brainSearch: "/api/brain/search",
       });
 
       const state = {
@@ -1330,6 +1568,7 @@
         runs: null,
         brainIdentity: null,
         brainGoals: null,
+        market: null,
         lastOkAt: 0,
       };
 
@@ -2073,6 +2312,290 @@
       }
 
       // ==========================================================
+      // Kanban Task Board
+      // ==========================================================
+      const PRIORITY_COLORS = { critical: "#da3633", high: "#d29922", medium: "#4493f8", low: "#2ea043" };
+      const PRIORITY_LABELS = { critical: "🔴 CRITICAL", high: "🟠 HIGH", medium: "🟡 MED", low: "🟢 LOW" };
+      const STATUS_NEXT = { todo: "in_progress", in_progress: "review", review: "done", done: "todo" };
+      const STATUS_NEXT_LABEL = { todo: "→ Start", in_progress: "→ Review", review: "→ Done", done: "↩ Reset" };
+
+      function renderTaskCard(t) {
+        const pColor = PRIORITY_COLORS[t.priority] || "var(--muted)";
+        const pLabel = PRIORITY_LABELS[t.priority] || t.priority;
+        const prog = t.progress || 0;
+        const progBar = `<div style="height:4px;background:var(--border);border-radius:2px;margin:8px 0 4px">
+          <div style="height:4px;background:${pColor};border-radius:2px;width:${prog}%;transition:width .3s"></div>
+        </div>`;
+        const tags = (t.tags || []).map(tg => `<span class="chip" style="font-size:10px;padding:2px 6px">${escapeHtml(tg)}</span>`).join("");
+        const due = t.due_date ? `<span class="muted" style="font-size:11px">📅 ${escapeHtml(t.due_date)}</span>` : "";
+        const nextStatus = STATUS_NEXT[t.status] || "todo";
+        const nextLabel = STATUS_NEXT_LABEL[t.status] || "Move";
+        return `<div class="card" style="margin:0;border-left:3px solid ${pColor}" draggable="true" data-task-id="${t.id}">
+          <div style="padding:10px 12px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+              <div style="font-size:13px;font-weight:650;line-height:1.3">${escapeHtml(t.title)}</div>
+              <span style="font-size:10px;color:${pColor};white-space:nowrap;font-weight:700">${pLabel}</span>
+            </div>
+            ${t.description ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4">${escapeHtml(t.description.slice(0,120))}${t.description.length > 120 ? "…" : ""}</div>` : ""}
+            ${progBar}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;flex-wrap:wrap;gap:4px">
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                <span class="chip" style="font-size:10px;padding:2px 6px;background:rgba(68,147,248,.12)">@${escapeHtml(t.assignee)}</span>
+                ${tags}
+              </div>
+              ${due}
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button class="chip" style="cursor:pointer;font-size:11px;padding:3px 8px" onclick="moveTask('${t.id}','${nextStatus}')">${nextLabel}</button>
+              <input type="range" min="0" max="100" value="${prog}" style="flex:1;accent-color:${pColor}" oninput="updateProgress('${t.id}',this.value)">
+              <span style="font-size:11px;color:var(--muted);min-width:28px">${prog}%</span>
+              <button class="chip bad" style="cursor:pointer;font-size:11px;padding:3px 8px" onclick="deleteTask('${t.id}')">✕</button>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      async function loadTasks() {
+        try {
+          const data = await fetchJSON("/api/tasks");
+          const cols = data.columns || {};
+          const summary = data.summary || {};
+
+          // Update counts
+          ["todo", "in_progress", "review", "done"].forEach(s => {
+            const el = document.getElementById("count-" + s);
+            if (el) el.textContent = String((cols[s] || []).length);
+          });
+
+          // Summary chips
+          const sc = document.getElementById("task-summary-chips");
+          if (sc) {
+            sc.innerHTML = [
+              summary.critical > 0 ? `<span class="chip bad">⚠ ${summary.critical} Critical</span>` : "",
+              `<span class="chip">${summary.in_progress || 0} Active</span>`,
+              `<span class="chip good">${summary.done || 0} Done</span>`,
+            ].filter(Boolean).join("");
+          }
+
+          // Render cards
+          ["todo", "in_progress", "review", "done"].forEach(s => {
+            const container = document.getElementById("tasks-" + s);
+            if (!container) return;
+            const tasks = cols[s] || [];
+            if (!tasks.length) {
+              container.innerHTML = `<div style="color:var(--muted2);font-size:12px;padding:8px 0">Empty</div>`;
+            } else {
+              container.innerHTML = tasks.map(t => renderTaskCard(t)).join("");
+            }
+          });
+        } catch (e) {
+          console.error("loadTasks error:", e);
+        }
+      }
+
+      async function createTask() {
+        const title = (document.getElementById("new-task-title") || {}).value || "";
+        const priority = (document.getElementById("new-task-priority") || {}).value || "medium";
+        const assignee = (document.getElementById("new-task-assignee") || {}).value || "NEXUS";
+        const desc = (document.getElementById("new-task-desc") || {}).value || "";
+        const due = (document.getElementById("new-task-due") || {}).value || "";
+        if (!title.trim()) { alert("Task title required"); return; }
+        try {
+          const r = await fetch("/api/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: title.trim(), priority, assignee, description: desc, due_date: due, created_by: "user" }),
+          });
+          const d = await r.json();
+          if (d.ok) {
+            document.getElementById("new-task-title").value = "";
+            document.getElementById("new-task-desc").value = "";
+            loadTasks();
+          }
+        } catch (e) { console.error(e); }
+      }
+
+      async function moveTask(id, newStatus) {
+        try {
+          await fetch(`/api/tasks/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: newStatus }),
+          });
+          loadTasks();
+        } catch (e) { console.error(e); }
+      }
+
+      async function updateProgress(id, progress) {
+        try {
+          await fetch(`/api/tasks/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ progress: parseInt(progress) }),
+          });
+        } catch (e) { console.error(e); }
+      }
+
+      async function deleteTask(id) {
+        if (!confirm("Delete task?")) return;
+        try {
+          await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+          loadTasks();
+        } catch (e) { console.error(e); }
+      }
+
+      // ==========================================================
+      // Team Reports
+      // ==========================================================
+      document.addEventListener("DOMContentLoaded", () => {
+        const fileInput = document.getElementById("report-file");
+        if (fileInput) {
+          fileInput.addEventListener("change", () => {
+            const fn = document.getElementById("report-file-name");
+            if (fn) fn.textContent = fileInput.files[0] ? fileInput.files[0].name : "";
+          });
+        }
+      });
+
+      async function uploadReport() {
+        const file = (document.getElementById("report-file") || {}).files && document.getElementById("report-file").files[0];
+        if (!file) { alert("Select a file first"); return; }
+        const author = (document.getElementById("report-author") || {}).value || "team";
+        const topic = (document.getElementById("report-topic") || {}).value || "research";
+        const status = document.getElementById("upload-status");
+        if (status) { status.style.display = "block"; status.innerHTML = `<span style="color:var(--yellow)">⏳ Uploading + analyzing with GLM-5…</span>`; }
+
+        try {
+          const fd = new FormData();
+          fd.append("file", file);
+          fd.append("author", author);
+          fd.append("topic", topic);
+          const r = await fetch("/api/ingest_report", { method: "POST", body: fd });
+          const data = await r.json();
+          if (data.ok) {
+            if (status) status.innerHTML = `<span style="color:var(--green)">✓ Ingested: ${escapeHtml(data.filename)}</span>`;
+            const panel = document.getElementById("analysis-panel");
+            const output = document.getElementById("analysis-output");
+            if (panel && output) {
+              panel.style.display = "";
+              try {
+                const parsed = JSON.parse(data.analysis || "{}");
+                output.textContent = JSON.stringify(parsed, null, 2);
+              } catch {
+                output.textContent = data.analysis || "(no analysis)";
+              }
+            }
+            loadReports();
+          } else {
+            if (status) status.innerHTML = `<span style="color:var(--red)">✗ Error: ${escapeHtml(data.error || "unknown")}</span>`;
+          }
+        } catch (e) {
+          if (status) status.innerHTML = `<span style="color:var(--red)">✗ ${escapeHtml(String(e))}</span>`;
+        }
+      }
+
+      async function loadReports() {
+        try {
+          const reports = await fetchJSON("/api/team_reports");
+          const tbody = document.getElementById("reports-tbody");
+          if (!tbody) return;
+          if (!reports || !reports.length) {
+            tbody.innerHTML = `<tr><td colspan="5" class="muted">No reports ingested yet</td></tr>`;
+            return;
+          }
+          tbody.innerHTML = reports.map(r => `<tr>
+            <td class="mono muted">${escapeHtml((r.received_at || "").slice(0,10))}</td>
+            <td class="mono">${escapeHtml(r.filename || "—")}</td>
+            <td>${escapeHtml(r.author || "—")}</td>
+            <td>${escapeHtml(r.topic || "—")}</td>
+            <td>${r.has_analysis ? '<span class="chip good">✓ Analyzed</span>' : '<span class="chip">Pending</span>'}</td>
+          </tr>`).join("");
+        } catch (e) { console.error(e); }
+      }
+
+      // ==========================================================
+      // Market tab
+      // ==========================================================
+      async function loadMarket() {
+        try {
+          const data = await fetchJSON(API.market);
+          if (!data) return;
+          state.market = data;
+          const ts = document.getElementById("market-ts");
+          if (ts) ts.textContent = data.ts ? data.ts.slice(0, 19).replace("T", " ") + " UTC" : "";
+
+          // Funding table
+          const funding = data.funding || {};
+          const ftbody = document.getElementById("funding-tbody");
+          const carryGrid = document.getElementById("carry-signal-grid");
+          if (ftbody) {
+            const rows = Object.entries(funding);
+            if (!rows.length) {
+              ftbody.innerHTML = `<tr><td colspan="5" class="muted">No data</td></tr>`;
+            } else {
+              ftbody.innerHTML = rows.map(([sym, f]) => {
+                const rate = f.rate_pct;
+                const apr = (rate * 3 * 365).toFixed(2);
+                const positive = rate > 0;
+                const signal = Math.abs(rate) < 0.001 ? `<span class="chip">NEUTRAL</span>` :
+                  positive ? `<span class="chip bad">SHORT PERP (pay)</span>` : `<span class="chip good">LONG PERP (recv)</span>`;
+                const color = positive ? "var(--red)" : "var(--green)";
+                return `<tr>
+                  <td class="mono" style="font-weight:700">${escapeHtml(sym)}</td>
+                  <td class="mono" style="color:${color}">${rate > 0 ? "+" : ""}${rate.toFixed(6)}%</td>
+                  <td class="mono" style="color:${color}">${apr > 0 ? "+" : ""}${apr}% APR</td>
+                  <td>${signal}</td>
+                  <td class="mono muted">${f.time ? String(f.time).slice(0,10) : "—"}</td>
+                </tr>`;
+              }).join("");
+            }
+            if (carryGrid) {
+              carryGrid.innerHTML = rows.map(([sym, f]) => {
+                const rate = f.rate_pct;
+                const apr = Math.abs(rate * 3 * 365).toFixed(1);
+                const color = rate > 0 ? "var(--red)" : rate < 0 ? "var(--green)" : "var(--muted)";
+                const signal = rate > 0.005 ? "SHORT" : rate < -0.005 ? "LONG" : "HOLD";
+                return `<div class="metric">
+                  <div class="label">${escapeHtml(sym.replace("USDT",""))}</div>
+                  <div class="value" style="color:${color};font-size:20px">${signal}</div>
+                  <div class="hint">${(rate > 0 ? "+" : "")}${rate.toFixed(4)}% | ${apr}% APR</div>
+                </div>`;
+              }).join("");
+            }
+          }
+
+          // Market table
+          const tickers = data.top_tickers || [];
+          const mtbody = document.getElementById("market-tbody");
+          if (mtbody) {
+            if (!tickers.length) {
+              mtbody.innerHTML = `<tr><td colspan="6" class="muted">No ticker data</td></tr>`;
+            } else {
+              mtbody.innerHTML = tickers.slice(0, 10).map((t, i) => {
+                const chg = parseFloat(t.priceChangePercent || 0);
+                const chgColor = chg >= 0 ? "var(--green)" : "var(--red)";
+                const vol = parseFloat(t.quoteVolume || t.volume || 0);
+                const volStr = vol > 1e9 ? (vol/1e9).toFixed(2) + "B" : vol > 1e6 ? (vol/1e6).toFixed(1) + "M" : vol.toFixed(0);
+                const fundRate = (funding[t.symbol] || {}).rate_pct;
+                const fStr = fundRate != null ? `<span style="color:${fundRate > 0 ? "var(--red)" : "var(--green)"}">${(fundRate > 0 ? "+" : "")}${fundRate.toFixed(4)}%</span>` : "—";
+                return `<tr>
+                  <td class="mono muted">${i+1}</td>
+                  <td class="mono" style="font-weight:700">${escapeHtml(t.symbol || "")}</td>
+                  <td class="mono">${parseFloat(t.lastPrice || 0).toLocaleString()}</td>
+                  <td class="mono" style="color:${chgColor}">${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%</td>
+                  <td class="mono muted">$${volStr}</td>
+                  <td class="mono">${fStr}</td>
+                </tr>`;
+              }).join("");
+            }
+          }
+        } catch (e) {
+          const ftbody = document.getElementById("funding-tbody");
+          if (ftbody) ftbody.innerHTML = `<tr><td colspan="5" style="color:var(--red)">${escapeHtml(String(e))}</td></tr>`;
+        }
+      }
+
+      // ==========================================================
       // Tabs + indicator
       // ==========================================================
       const TAB_LOADERS = {
@@ -2081,6 +2604,9 @@
         walkforward: loadWalkForward,
         risk: loadRisk,
         ledger: loadLedger,
+        market: loadMarket,
+        tasks: loadTasks,
+        reports: loadReports,
         chat: loadBrain,
       };
 
@@ -2088,7 +2614,10 @@
         document.querySelectorAll(".tab-btn").forEach((b) => {
           b.setAttribute("aria-selected", b.dataset.tab === name ? "true" : "false");
         });
-        document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+        document.querySelectorAll(".page").forEach((p) => {
+          p.classList.remove("active");
+          p.removeAttribute("hidden");
+        });
         const page = document.getElementById("page-" + name);
         if (page) page.classList.add("active");
         moveIndicator();
@@ -2235,27 +2764,76 @@
         )}\nMood: ${meta.emoji} ${meta.label}\nTry: “risk var” or “top runs”.`;
       }
 
-      async function sendChatMessage() {
+      async function sendChatMessage(presetMsg) {
         const input = document.getElementById("chat-input");
-        const msg = (input && input.value ? input.value : "").trim();
+        const msg = presetMsg || (input && input.value ? input.value : "").trim();
         if (!msg) return;
-        input.value = "";
+        if (input) input.value = "";
 
         addChatBubble("user", msg);
         const loading = addThinkingBubble();
 
         try {
-          const resp = await generateNexusResponse(msg);
+          // Try real GLM-5 backend first
+          let responseText = "";
+          let liveMarket = null;
+          try {
+            const r = await fetch(API.chat, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message: msg }),
+            });
+            if (r.ok) {
+              const data = await r.json();
+              responseText = data.response || "";
+              liveMarket = data.live_market || null;
+              // Show tool result if present
+              if (data.tool_result) {
+                const tr = data.tool_result;
+                responseText += `\n\n[Tool: ${tr.tool || tr.action}] ${tr.ok ? "✓" : "✗"} ${tr.message || ""}`;
+              }
+            } else {
+              throw new Error("Backend " + r.status);
+            }
+          } catch (_backendErr) {
+            // Fallback to local
+            responseText = await generateNexusResponse(msg);
+          }
+
           if (loading) {
             loading.removeAttribute("id");
             loading.innerHTML = "";
-            loading.textContent = resp || "No response.";
-          } else {
-            addChatBubble("nexus", resp || "No response.");
+            // Render with line breaks
+            loading.innerHTML = responseText.replace(/\n/g, "<br>");
+          }
+
+          // If live market data returned, show inline market card
+          if (liveMarket && liveMarket.funding_rates && liveMarket.funding_rates.length) {
+            const messages = document.getElementById("chat-messages");
+            if (messages) {
+              const card = document.createElement("div");
+              card.className = "msg nexus";
+              card.style.cssText = "background:rgba(68,147,248,0.08);border:1px solid rgba(68,147,248,0.25);font-family:var(--mono)";
+              const sym = liveMarket.symbol || "BTCUSDT";
+              const rates = liveMarket.funding_rates;
+              card.innerHTML = `<strong>📡 Live ${escapeHtml(sym)} Funding</strong><br>` +
+                rates.map(r => {
+                  const pct = (parseFloat(r.fundingRate||0)*100).toFixed(6);
+                  const color = pct > 0 ? "var(--red)" : "var(--green)";
+                  return `${r.fundingTime ? String(r.fundingTime).slice(0,10) : ""} → <span style="color:${color}">${pct > 0 ? "+" : ""}${pct}%</span>`;
+                }).join("<br>");
+              messages.appendChild(card);
+              messages.scrollTop = messages.scrollHeight;
+            }
           }
         } catch (e) {
           if (loading) loading.textContent = "Error: " + (e && e.message ? e.message : String(e));
         }
+      }
+
+      function insertSuggestion(text) {
+        const input = document.getElementById("chat-input");
+        if (input) { input.value = text; input.focus(); }
       }
 
       function initChatKeys() {
@@ -2301,6 +2879,10 @@
 
         // Poll active tab every 12s
         setInterval(refreshActive, 12000);
+        // Market refreshes every 30s regardless (live funding rates)
+        setInterval(() => {
+          if (currentTab() === "market") loadMarket();
+        }, 30000);
       });
     </script>
   </body>
