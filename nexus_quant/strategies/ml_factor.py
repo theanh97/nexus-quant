@@ -12,25 +12,44 @@ Factors (all lagged, using idx-1 to avoid look-ahead bias):
   3. mean_rev_4h  : 4-bar return (inverted sign = mean-reversion signal)
   4. funding      : last funding rate before current timestamp
   5. basis        : perp/spot basis proxy (0 if spot not available)
-  6. vol          : 72-bar trailing volatility
-  7. intercept    : 1.0
+  6. intercept    : 1.0
+
+Note: vol is NOT a raw OLS feature; used only for inverse-vol position sizing.
+Cross-sectional z-scoring applied before feeding features to OLS.
 """
 
-from typing import Any, Dict, Optional
+import math
+from typing import Any, Dict, List, Optional
 
 from ._math import normalize_dollar_neutral, trailing_vol
 from ._ols import RollingOLS
 from .base import Strategy, Weights
 from ..data.schema import MarketDataset
 
-_N_FEATURES = 7
+
+def _zscore_features(feature_matrix: Dict[str, List[float]]) -> Dict[str, List[float]]:
+    """Cross-sectionally z-score each feature dimension across symbols."""
+    if not feature_matrix:
+        return feature_matrix
+    symbols = list(feature_matrix.keys())
+    n_feats = len(next(iter(feature_matrix.values())))
+    result = {s: list(v) for s, v in feature_matrix.items()}
+    for fi in range(n_feats - 1):  # skip intercept (last feature)
+        vals = [feature_matrix[s][fi] for s in symbols]
+        mean = sum(vals) / len(vals)
+        variance = sum((v - mean) ** 2 for v in vals) / max(1, len(vals))
+        std = math.sqrt(variance) if variance > 0 else 1.0
+        for s in symbols:
+            result[s][fi] = (feature_matrix[s][fi] - mean) / std
+    return result
+
+_N_FEATURES = 6
 _FEAT_MOM_1W = 0
 _FEAT_MOM_1D = 1
 _FEAT_MR_4H = 2
 _FEAT_FUNDING = 3
 _FEAT_BASIS = 4
-_FEAT_VOL = 5
-_FEAT_INTERCEPT = 6
+_FEAT_INTERCEPT = 5
 
 
 def _safe_ret(series: list, end_idx: int, lookback: int) -> float:
@@ -95,9 +114,8 @@ class MLFactorCrossSectionV1Strategy(Strategy):
         mr_4h = -_safe_ret(closes, idx - 1, 4)  # inverted = mean-reversion
         funding = float(dataset.last_funding_rate_before(symbol, ts))
         basis = float(dataset.basis(symbol, idx - 1)) if dataset.spot_close is not None else 0.0
-        vol = trailing_vol(closes, end_idx=idx - 1, lookback_bars=int(self.params.get("vol_lookback_bars") or 72))
 
-        return [mom_1w, mom_1d, mr_4h, funding, basis, vol, 1.0]
+        return [mom_1w, mom_1d, mr_4h, funding, basis, 1.0]
 
     def _update_models(self, dataset: MarketDataset, idx: int) -> None:
         """
@@ -108,22 +126,27 @@ class MLFactorCrossSectionV1Strategy(Strategy):
             return
         self._last_update_idx = idx
 
+        # Collect realized returns + raw features for all symbols
+        realized_rets: Dict[str, float] = {}
+        raw_feats_update: Dict[str, List[float]] = {}
         for symbol in dataset.symbols:
             closes = dataset.perp_close[symbol]
             if idx >= len(closes) or idx < 2:
                 continue
-            # Realized return from bar idx-1 -> idx
             c1 = float(closes[idx])
             c0 = float(closes[idx - 1])
             if c0 == 0:
                 continue
-            realized_ret = (c1 / c0) - 1.0
-
-            # Features at idx-1 (the predictor side)
+            realized_rets[symbol] = (c1 / c0) - 1.0
             feats = self._build_features(dataset, symbol, idx - 1)
-            if feats is None:
-                continue
-            self._get_model(symbol).update(feats, realized_ret)
+            if feats is not None:
+                raw_feats_update[symbol] = feats
+
+        # Apply cross-sectional z-scoring to training features
+        zscored_update = _zscore_features(raw_feats_update)
+        for symbol, feats in zscored_update.items():
+            if symbol in realized_rets:
+                self._get_model(symbol).update(feats, realized_rets[symbol])
 
     def should_rebalance(self, dataset: MarketDataset, idx: int) -> bool:
         min_warmup = int(self.params.get("min_warmup_bars") or 600)
@@ -144,15 +167,22 @@ class MLFactorCrossSectionV1Strategy(Strategy):
 
         ts = dataset.timeline[idx]
 
-        # Get predictions for each symbol
-        predictions: Dict[str, float] = {}
+        # Collect raw features for all ready symbols, then cross-sectionally z-score
+        raw_feats: Dict[str, List[float]] = {}
         for symbol in dataset.symbols:
             model = self._get_model(symbol)
             if not model.is_ready:
                 continue
             feats = self._build_features(dataset, symbol, idx)
-            if feats is None:
-                continue
+            if feats is not None:
+                raw_feats[symbol] = feats
+
+        zscored_feats = _zscore_features(raw_feats)
+
+        # Get predictions using z-scored features
+        predictions: Dict[str, float] = {}
+        for symbol, feats in zscored_feats.items():
+            model = self._get_model(symbol)
             pred = model.predict(feats)
             if pred is not None and not (pred != pred):  # NaN check
                 predictions[symbol] = pred
@@ -162,8 +192,8 @@ class MLFactorCrossSectionV1Strategy(Strategy):
             return {s: 0.0 for s in dataset.symbols}
 
         ranked = sorted(predictions.keys(), key=lambda s: predictions[s], reverse=True)
-        long_syms = ranked[-k:]   # predicted highest return -> long
-        short_syms = ranked[:k]   # predicted lowest return -> short
+        long_syms = ranked[:k]    # predicted highest return -> long
+        short_syms = ranked[-k:]  # predicted lowest return -> short
 
         inv_vol: Dict[str, float] = {}
         if risk_weighting == "inverse_vol":

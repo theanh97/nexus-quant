@@ -3,393 +3,1292 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>NEXUS Quant Dashboard</title>
+<title>NEXUS Quant — R&D Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-:root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922;--text:#e6edf3;--muted:#8b949e}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh}
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:16px}
-header h1{font-size:18px;font-weight:600;color:var(--accent)}
-header .subtitle{color:var(--muted);font-size:12px}
-nav{display:flex;gap:4px;margin-left:auto}
-nav button{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;transition:all .15s}
-nav button.active,nav button:hover{background:var(--accent);border-color:var(--accent);color:#fff}
-main{padding:20px 24px;max-width:1400px;margin:0 auto}
-.grid{display:grid;gap:16px}
-.grid-4{grid-template-columns:repeat(4,1fr)}
-.grid-2{grid-template-columns:repeat(2,1fr)}
-.grid-3{grid-template-columns:repeat(3,1fr)}
-@media(max-width:900px){.grid-4,.grid-2,.grid-3{grid-template-columns:1fr}}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
-.card h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
-.stat-val{font-size:28px;font-weight:700;line-height:1}
-.stat-label{font-size:11px;color:var(--muted);margin-top:4px}
-.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
-.badge-green{background:rgba(63,185,80,.15);color:var(--green)}
-.badge-red{background:rgba(248,81,73,.15);color:var(--red)}
-.badge-yellow{background:rgba(210,153,34,.15);color:var(--yellow)}
-.badge-blue{background:rgba(88,166,255,.15);color:var(--accent)}
-.chart-wrap{position:relative;height:260px}
-.chart-wrap-tall{position:relative;height:340px}
-.page{display:none}
-.page.active{display:block}
-table{width:100%;border-collapse:collapse;font-size:12px}
-th{color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-weight:500}
-td{padding:6px 8px;border-bottom:1px solid rgba(48,54,61,.5)}
-tr:hover td{background:rgba(88,166,255,.04)}
-.loading{color:var(--muted);font-size:12px;text-align:center;padding:32px}
-input[type=text]{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;width:260px}
-input[type=text]:focus{outline:none;border-color:var(--accent)}
-.tag{display:inline-block;background:rgba(88,166,255,.1);color:var(--accent);border-radius:4px;padding:1px 6px;font-size:10px;margin:1px}
-.refresh-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;margin-left:auto}
-.refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
-.row-flex{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+/* ─── CSS Variables ─────────────────────────────────────── */
+:root {
+  --bg:      #0d1117;
+  --surface: #161b22;
+  --surface2:#1c2128;
+  --border:  #30363d;
+  --accent:  #58a6ff;
+  --green:   #3fb950;
+  --red:     #f85149;
+  --yellow:  #d29922;
+  --purple:  #bc8cff;
+  --text:    #c9d1d9;
+  --muted:   #8b949e;
+  --radius:  8px;
+}
+
+/* ─── Reset & Base ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ─── Header ────────────────────────────────────────────── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-logo {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -.3px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.header-logo svg { flex-shrink: 0; }
+.header-sub {
+  color: var(--muted);
+  font-size: 11px;
+  border-left: 1px solid var(--border);
+  padding-left: 14px;
+  white-space: nowrap;
+}
+
+/* ─── Live Indicator ─────────────────────────────────────── */
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: auto;
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+  transition: background .3s;
+}
+.live-dot.live {
+  background: var(--green);
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .35; }
+}
+.live-label { transition: color .3s; }
+.live-dot.live + .live-label { color: var(--green); }
+
+/* ─── Tabs ───────────────────────────────────────────────── */
+nav {
+  display: flex;
+  gap: 2px;
+  margin-left: 20px;
+}
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 6px 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: background .13s, color .13s;
+  white-space: nowrap;
+}
+.tab-btn:hover { background: rgba(88,166,255,.08); color: var(--text); }
+.tab-btn.active {
+  background: rgba(88,166,255,.15);
+  color: var(--accent);
+}
+
+/* ─── Main ───────────────────────────────────────────────── */
+main {
+  padding: 20px 24px 40px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* ─── Page visibility ─────────────────────────────────────── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ─── Grid helpers ────────────────────────────────────────── */
+.grid { display: grid; gap: 14px; }
+.g2 { grid-template-columns: repeat(2, 1fr); }
+.g3 { grid-template-columns: repeat(3, 1fr); }
+.g4 { grid-template-columns: repeat(4, 1fr); }
+.g6 { grid-template-columns: repeat(6, 1fr); }
+@media (max-width: 1100px) { .g6 { grid-template-columns: repeat(3,1fr); } .g4 { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 750px)  { .g6,.g4,.g3,.g2 { grid-template-columns: 1fr; } }
+
+/* ─── Card ───────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.card-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── KPI Card ───────────────────────────────────────────── */
+.kpi { padding: 14px 16px; }
+.kpi .kpi-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.kpi .kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  transition: color .2s, background .15s;
+  border-radius: 4px;
+}
+.kpi .kpi-value.flash {
+  background: rgba(210,153,34,.18);
+  animation: kpi-flash .6s ease forwards;
+}
+@keyframes kpi-flash {
+  0%   { background: rgba(210,153,34,.25); }
+  100% { background: transparent; }
+}
+.kpi .kpi-sub {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ─── Badges ─────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-green  { background: rgba(63,185,80,.15);  color: var(--green); }
+.badge-red    { background: rgba(248,81,73,.15);  color: var(--red); }
+.badge-yellow { background: rgba(210,153,34,.15); color: var(--yellow); }
+.badge-blue   { background: rgba(88,166,255,.15); color: var(--accent); }
+.badge-purple { background: rgba(188,140,255,.15);color: var(--purple); }
+.badge-gray   { background: rgba(139,148,158,.12);color: var(--muted); }
+.badge-lg { font-size: 13px; padding: 4px 12px; }
+
+/* ─── Chart containers ───────────────────────────────────── */
+.chart-box { position: relative; }
+.h200 { height: 200px; }
+.h260 { height: 260px; }
+.h320 { height: 320px; }
+.h360 { height: 360px; }
+
+/* ─── Table ──────────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+th {
+  color: var(--muted);
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+  white-space: nowrap;
+}
+td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(48,54,61,.5);
+  white-space: nowrap;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(88,166,255,.03); }
+
+/* ─── Alert panel ────────────────────────────────────────── */
+.alert-panel {
+  background: rgba(210,153,34,.08);
+  border: 1px solid rgba(210,153,34,.3);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+.alert-panel .alert-title {
+  color: var(--yellow);
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.alert-panel .alert-count {
+  background: rgba(210,153,34,.25);
+  color: var(--yellow);
+  border-radius: 10px;
+  padding: 0 7px;
+  font-size: 11px;
+}
+.alert-item {
+  font-size: 11px;
+  color: var(--text);
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(210,153,34,.1);
+}
+.alert-item:last-child { border-bottom: none; }
+.alert-none {
+  font-size: 12px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Section spacing ─────────────────────────────────────── */
+.section { margin-bottom: 14px; }
+.section:last-child { margin-bottom: 0; }
+
+/* ─── Row flex ───────────────────────────────────────────── */
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+/* ─── Inputs ─────────────────────────────────────────────── */
+input[type="text"] {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  width: 280px;
+  transition: border-color .15s;
+}
+input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ─── Buttons ─────────────────────────────────────────────── */
+.btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: inherit;
+  transition: border-color .15s, color .15s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ─── Empty / loading states ─────────────────────────────── */
+.empty {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 28px;
+  text-align: center;
+}
+
+/* ─── Memory cards ───────────────────────────────────────── */
+.mem-item {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+.mem-item:last-child { border-bottom: none; }
+.mem-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.tag {
+  background: rgba(88,166,255,.1);
+  color: var(--accent);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+}
+.mem-content {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* ─── Separator line ─────────────────────────────────────── */
+.sep { height: 1px; background: var(--border); margin: 14px 0; }
+
+/* ─── Stability score large ──────────────────────────────── */
+.stability-score {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 </style>
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════════════════ -->
 <header>
-  <h1>⬡ NEXUS Quant</h1>
-  <span class="subtitle">Research &amp; Backtesting Platform</span>
+  <div class="header-logo">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <polygon points="9,1 17,5.5 17,12.5 9,17 1,12.5 1,5.5" stroke="#58a6ff" stroke-width="1.4" fill="rgba(88,166,255,.1)"/>
+      <polygon points="9,4.5 14,7.5 14,12 9,14.5 4,12 4,7.5" fill="#58a6ff" opacity=".35"/>
+    </svg>
+    NEXUS Quant
+  </div>
+  <div class="header-sub">R&D Monitoring Dashboard</div>
   <nav>
-    <button class="active" onclick="showPage('overview')">Overview</button>
-    <button onclick="showPage('walkforward')">Walk-Forward</button>
-    <button onclick="showPage('risk')">Risk</button>
-    <button onclick="showPage('ledger')">Ledger</button>
-    <button onclick="showPage('memory')">Memory</button>
+    <button class="tab-btn active" data-page="overview">Overview</button>
+    <button class="tab-btn" data-page="walkforward">Walk-Forward</button>
+    <button class="tab-btn" data-page="risk">Risk</button>
+    <button class="tab-btn" data-page="ledger">Ledger &amp; Alerts</button>
+    <button class="tab-btn" data-page="memory">Memory</button>
+    <button class="tab-btn" data-tab="chat">💬 Chat</button>
   </nav>
+  <div class="live-badge" id="live-badge">
+    <div class="live-dot" id="live-dot"></div>
+    <span class="live-label" id="live-label">Connecting…</span>
+  </div>
 </header>
 
 <main>
 
-<!-- ── OVERVIEW ─────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 1: OVERVIEW
+════════════════════════════════════════════════════════════ -->
 <div id="page-overview" class="page active">
-  <div class="grid grid-4" style="margin-bottom:16px" id="kpi-cards">
-    <div class="card"><div class="loading">Loading…</div></div>
-    <div class="card"><div class="loading">Loading…</div></div>
-    <div class="card"><div class="loading">Loading…</div></div>
-    <div class="card"><div class="loading">Loading…</div></div>
-  </div>
-  <div class="grid grid-2">
-    <div class="card">
-      <h2>Equity Curve</h2>
-      <div class="chart-wrap-tall"><canvas id="equityChart"></canvas></div>
-    </div>
-    <div class="card">
-      <h2>Return Distribution</h2>
-      <div class="chart-wrap-tall"><canvas id="returnChart"></canvas></div>
-    </div>
-  </div>
-  <div class="card" style="margin-top:16px">
-    <h2>Self-Learning Activity</h2>
-    <div id="sl-stats" class="grid grid-3" style="gap:12px;padding:4px 0">
-      <div class="loading">Loading…</div>
-    </div>
-  </div>
-</div>
 
-<!-- ── WALK-FORWARD ──────────────────────────────── -->
+  <!-- KPI Row -->
+  <div class="section grid g6" id="kpi-row">
+    <div class="card kpi"><div class="kpi-label">Sharpe Ratio</div><div class="kpi-value" id="kpi-sharpe">—</div><div class="kpi-sub">annualised</div></div>
+    <div class="card kpi"><div class="kpi-label">Calmar Ratio</div><div class="kpi-value" id="kpi-calmar">—</div><div class="kpi-sub">CAGR / Max DD</div></div>
+    <div class="card kpi"><div class="kpi-label">Max Drawdown</div><div class="kpi-value" id="kpi-mdd" style="color:var(--red)">—</div><div class="kpi-sub">peak-to-trough</div></div>
+    <div class="card kpi"><div class="kpi-label">CAGR</div><div class="kpi-value" id="kpi-cagr">—</div><div class="kpi-sub">annualised return</div></div>
+    <div class="card kpi"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="kpi-winrate">—</div><div class="kpi-sub">trades positive</div></div>
+    <div class="card kpi" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:6px">
+      <div class="kpi-label">Verdict</div>
+      <div id="kpi-verdict"><span class="badge badge-gray badge-lg">—</span></div>
+      <div class="kpi-sub" id="kpi-run-name">—</div>
+    </div>
+  </div>
+
+  <!-- Row 1: Equity Curve (full width) -->
+  <div class="section card">
+    <div class="card-title">
+      Equity Curve
+      <span id="equity-bars" style="color:var(--muted);font-weight:400">—</span>
+    </div>
+    <div class="chart-box h320"><canvas id="equityChart"></canvas></div>
+  </div>
+
+  <!-- Row 2: Return Distribution + Strategy Comparison -->
+  <div class="section grid g2">
+    <div class="card">
+      <div class="card-title">Return Distribution</div>
+      <div class="chart-box h260"><canvas id="returnDistChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        Strategy Comparison
+        <span style="color:var(--muted);font-weight:400;font-size:10px">Sharpe per run</span>
+      </div>
+      <div class="chart-box h260"><canvas id="strategyCompChart"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- /overview -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 2: WALK-FORWARD
+════════════════════════════════════════════════════════════ -->
 <div id="page-walkforward" class="page">
-  <div class="card" style="margin-bottom:16px" id="wf-stability">
-    <div class="loading">Loading…</div>
-  </div>
-  <div class="grid grid-2">
-    <div class="card">
-      <h2>Sharpe per Window</h2>
-      <div class="chart-wrap-tall"><canvas id="wfSharpeChart"></canvas></div>
-    </div>
-    <div class="card">
-      <h2>Calmar per Window</h2>
-      <div class="chart-wrap-tall"><canvas id="wfCalmarChart"></canvas></div>
-    </div>
-  </div>
-  <div class="card" style="margin-top:16px">
-    <h2>Windows Detail</h2>
-    <div style="overflow-x:auto"><table id="wf-table">
-      <thead><tr><th>#</th><th>CAGR</th><th>Sharpe</th><th>Calmar</th><th>MDD</th><th>Win Rate</th></tr></thead>
-      <tbody><tr><td colspan="6" class="loading">Loading…</td></tr></tbody>
-    </table></div>
-  </div>
-</div>
 
-<!-- ── RISK ──────────────────────────────────────── -->
+  <!-- Stability summary -->
+  <div class="section card" id="wf-stability-card">
+    <div class="card-title">Walk-Forward Stability</div>
+    <div class="grid g4" id="wf-stability-kpis">
+      <div class="empty">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Sharpe bar chart (full width) -->
+  <div class="section card">
+    <div class="card-title">Sharpe per Window <span style="color:var(--muted);font-weight:400">(green=positive, red=negative)</span></div>
+    <div class="chart-box h260"><canvas id="wfSharpeChart"></canvas></div>
+  </div>
+
+  <!-- Window detail table -->
+  <div class="section card">
+    <div class="card-title row-between">
+      <span>Window Detail</span>
+      <span id="wf-window-count" class="badge badge-blue">0 windows</span>
+    </div>
+    <div class="tbl-wrap">
+      <table id="wf-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Train Sharpe</th>
+            <th>Test Sharpe</th>
+            <th>CAGR</th>
+            <th>Max DD</th>
+            <th>Win Rate</th>
+            <th>Stability</th>
+          </tr>
+        </thead>
+        <tbody><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /walkforward -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 3: RISK
+════════════════════════════════════════════════════════════ -->
 <div id="page-risk" class="page">
-  <div class="grid grid-4" id="risk-kpi" style="margin-bottom:16px">
-    <div class="card"><div class="loading">Loading…</div></div>
-  </div>
-  <div class="grid grid-2">
-    <div class="card">
-      <h2>Regime Detection</h2>
-      <div id="regime-detail" style="padding:8px 0"><div class="loading">Loading…</div></div>
-    </div>
-    <div class="card">
-      <h2>Tail Risk Stats</h2>
-      <div id="tail-stats" style="padding:8px 0"><div class="loading">Loading…</div></div>
-    </div>
-  </div>
-</div>
 
-<!-- ── LEDGER ─────────────────────────────────────── -->
+  <!-- Risk KPI row -->
+  <div class="section grid g6" id="risk-kpi-row">
+    <div class="card kpi"><div class="kpi-label">VaR 95%</div><div class="kpi-value" id="risk-var95" style="color:var(--yellow)">—</div><div class="kpi-sub">historical</div></div>
+    <div class="card kpi"><div class="kpi-label">VaR 99%</div><div class="kpi-value" id="risk-var99" style="color:var(--red)">—</div><div class="kpi-sub">historical</div></div>
+    <div class="card kpi"><div class="kpi-label">CVaR 95%</div><div class="kpi-value" id="risk-cvar95" style="color:var(--red)">—</div><div class="kpi-sub">expected shortfall</div></div>
+    <div class="card kpi"><div class="kpi-label">Ann. Volatility</div><div class="kpi-value" id="risk-vol">—</div><div class="kpi-sub">annualised</div></div>
+    <div class="card kpi"><div class="kpi-label">Skewness</div><div class="kpi-value" id="risk-skew">—</div><div class="kpi-sub">return distribution</div></div>
+    <div class="card kpi"><div class="kpi-label">Kurtosis</div><div class="kpi-value" id="risk-kurt">—</div><div class="kpi-sub">excess kurtosis</div></div>
+  </div>
+
+  <!-- Regime + Tail Risk -->
+  <div class="section grid g2">
+    <div class="card">
+      <div class="card-title">Market Regime</div>
+      <div id="regime-badge-wrap" style="margin-bottom:14px">
+        <span class="badge badge-gray badge-lg" id="regime-badge">Unknown</span>
+      </div>
+      <div id="regime-details" style="display:grid;gap:8px;font-size:12px">
+        <div class="empty">Loading…</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tail Risk Profile</div>
+      <div id="tail-stats" style="display:grid;gap:8px;font-size:12px">
+        <div class="empty">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rolling VaR chart (if data available) -->
+  <div class="section card" id="rolling-var-card">
+    <div class="card-title">Drawdown Profile</div>
+    <div class="chart-box h200"><canvas id="drawdownChart"></canvas></div>
+  </div>
+
+</div><!-- /risk -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 4: LEDGER & ALERTS
+════════════════════════════════════════════════════════════ -->
 <div id="page-ledger" class="page">
-  <div class="card">
-    <div class="row-flex">
-      <h2 style="margin:0">Recent Ledger Events</h2>
-      <button class="refresh-btn" onclick="loadLedger()">↻ Refresh</button>
-    </div>
-    <div style="overflow-x:auto"><table id="ledger-table">
-      <thead><tr><th>Time</th><th>Kind</th><th>Run</th><th>Verdict</th><th>Sharpe</th><th>MDD</th><th>Accepted</th></tr></thead>
-      <tbody><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
-    </table></div>
-  </div>
-</div>
 
-<!-- ── MEMORY ────────────────────────────────────── -->
-<div id="page-memory" class="page">
-  <div class="card">
-    <div class="row-flex" style="margin-bottom:12px">
-      <input type="text" id="mem-search" placeholder="Search memory…" oninput="debounceMemSearch()"/>
-      <button class="refresh-btn" onclick="loadMemory()">↻ Refresh</button>
+  <!-- Alert panel -->
+  <div id="alert-panel" class="section alert-panel">
+    <div class="alert-title">
+      Anomaly Monitor
+      <span class="alert-count" id="alert-count">0</span>
     </div>
-    <div id="memory-list"><div class="loading">Loading…</div></div>
+    <div id="alert-list"><div class="empty">Loading…</div></div>
   </div>
-</div>
+
+  <!-- Ledger table -->
+  <div class="section card">
+    <div class="card-title row-between">
+      <div class="row">
+        <span>Recent Ledger Events</span>
+        <div class="live-badge" style="margin-left:4px">
+          <div class="live-dot live" id="ledger-live-dot"></div>
+          <span class="live-label" style="color:var(--green)">Live</span>
+        </div>
+      </div>
+      <button class="btn" onclick="loadLedger()">Refresh</button>
+    </div>
+    <div class="tbl-wrap">
+      <table id="ledger-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Kind</th>
+            <th>Run</th>
+            <th>Sharpe</th>
+            <th>Max DD</th>
+            <th>Verdict</th>
+            <th>Accepted</th>
+          </tr>
+        </thead>
+        <tbody><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /ledger -->
+
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 5: MEMORY
+════════════════════════════════════════════════════════════ -->
+<div id="page-memory" class="page">
+
+  <div class="section card">
+    <div class="card-title row-between" style="margin-bottom:14px">
+      <span>Memory Store</span>
+      <div class="row">
+        <input type="text" id="mem-search" placeholder="Search memory items…" oninput="debounceMemSearch()"/>
+        <button class="btn" onclick="loadMemory()">Search</button>
+        <button class="btn" onclick="document.getElementById('mem-search').value=''; loadMemory()">Clear</button>
+      </div>
+    </div>
+    <div id="memory-list"><div class="empty">Loading…</div></div>
+  </div>
+
+</div><!-- /memory -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 6: CHAT
+════════════════════════════════════════════════════════════ -->
+<div id="page-chat" class="page">
+
+  <div class="tab-panel" id="chat">
+    <div class="card" style="max-width:800px;margin:0 auto">
+      <div style="padding:16px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;background:linear-gradient(135deg,#58a6ff,#bc8cff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">🧠</div>
+        <div>
+          <div style="font-weight:600;color:#c9d1d9" id="chat-nexus-name">NEXUS</div>
+          <div style="font-size:12px;color:#8b949e"><span id="chat-nexus-mood">● Initializing</span> — <span id="chat-nexus-goal">No active goals</span></div>
+        </div>
+      </div>
+      <div id="chat-messages" style="height:380px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="background:#1c2128;border-radius:12px 12px 12px 4px;padding:12px 16px;max-width:80%;color:#c9d1d9;font-size:14px;line-height:1.5">
+          Hello! I am NEXUS, your autonomous quantitative research AI. Ask me about strategies, performance, risk, or what I am planning next.
+        </div>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid #30363d;display:flex;gap:8px">
+        <input id="chat-input" type="text" placeholder="Ask NEXUS anything..." style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px 14px;color:#c9d1d9;font-size:14px;outline:none" />
+        <button id="chat-send" onclick="sendChatMessage()" style="background:#58a6ff;color:#0d1117;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Send</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /chat -->
 
 </main>
 
 <script>
-// ── State ──────────────────────────────────────────
-let charts = {};
-let memTimer = null;
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+const CHARTS = {};
+let sseSource = null;
+let memDebounceTimer = null;
+let autoRefreshInterval = null;
+let currentPage = 'overview';
 
-// ── Navigation ─────────────────────────────────────
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  event.target.classList.add('active');
-  if (name === 'overview') loadOverview();
-  if (name === 'walkforward') loadWalkForward();
-  if (name === 'risk') loadRisk();
-  if (name === 'ledger') loadLedger();
-  if (name === 'memory') loadMemory();
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const page = btn.dataset.page || btn.dataset.tab;
+    if (!page) return;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const pageEl = document.getElementById('page-' + page);
+    if (pageEl) pageEl.classList.add('active');
+    currentPage = page;
+    if (LOAD_MAP[page]) LOAD_MAP[page]();
+  });
+});
+
+const LOAD_MAP = {
+  overview:    loadOverview,
+  walkforward: loadWalkForward,
+  risk:        loadRisk,
+  ledger:      () => { loadLedger(); loadAnomalies(); },
+  memory:      loadMemory,
+  chat:        loadChatIdentity,
+};
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+function fmt(v, d=2) {
+  if (v == null || v === undefined || isNaN(+v)) return '—';
+  return (+v).toFixed(d);
+}
+function pct(v, d=1) {
+  if (v == null || v === undefined || isNaN(+v)) return '—';
+  return ((+v) * 100).toFixed(d) + '%';
+}
+function abs_pct(v, d=1) {
+  if (v == null || v === undefined || isNaN(+v)) return '—';
+  return (Math.abs(+v) * 100).toFixed(d) + '%';
+}
+function ts(str) {
+  if (!str) return '—';
+  return String(str).replace('T', ' ').slice(0, 19);
+}
+function badge(cls, text) {
+  return `<span class="badge badge-${cls}">${text}</span>`;
+}
+function verdictBadge(v) {
+  if (v === true  || v === 'pass') return badge('green',  'PASS');
+  if (v === false || v === 'fail') return badge('red',    'FAIL');
+  return badge('gray', '—');
+}
+function verdictBadgeLg(v) {
+  if (v === true  || v === 'pass') return badge('green badge-lg',  'PASS');
+  if (v === false || v === 'fail') return badge('red badge-lg',    'FAIL');
+  return badge('gray badge-lg', '—');
+}
+function regimeBadge(r) {
+  const map = {
+    trending:  ['blue',   'Trending'],
+    ranging:   ['yellow', 'Ranging'],
+    volatile:  ['red',    'Volatile'],
+    unknown:   ['gray',   'Unknown'],
+  };
+  const [cls, label] = map[r] || ['gray', r || 'Unknown'];
+  return badge(cls + ' badge-lg', label);
+}
+function colorFor(sharpe) {
+  if (sharpe == null || isNaN(sharpe)) return 'var(--muted)';
+  if (sharpe > 1.5) return 'var(--green)';
+  if (sharpe > 0.5) return 'var(--accent)';
+  if (sharpe > 0)   return 'var(--yellow)';
+  return 'var(--red)';
+}
+function flashKpi(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('flash');
+  void el.offsetWidth; // reflow
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 700);
+}
+function setKpi(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (el.textContent !== val) {
+    el.textContent = val;
+    flashKpi(id);
+  }
 }
 
-// ── Helpers ────────────────────────────────────────
-function fmt(v, dec=2) {
-  if (v == null || isNaN(v)) return '—';
-  return Number(v).toFixed(dec);
+// Safe fetch wrapper
+async function apiFetch(url) {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
 }
-function pct(v, dec=1) {
-  if (v == null || isNaN(v)) return '—';
-  return (Number(v)*100).toFixed(dec) + '%';
-}
-function badge(val, good='green') {
-  if (val == null) return '<span class="badge badge-yellow">?</span>';
-  if (val === true || val === 'pass') return '<span class="badge badge-green">PASS</span>';
-  if (val === false || val === 'fail') return '<span class="badge badge-red">FAIL</span>';
-  return '<span class="badge badge-yellow">' + val + '</span>';
-}
-function kpiCard(label, value, sub='', color='') {
-  return `<div class="card">
-    <h2>${label}</h2>
-    <div class="stat-val" style="color:${color||'var(--text)'}">${value}</div>
-    ${sub ? `<div class="stat-label">${sub}</div>` : ''}
-  </div>`;
-}
+
+// ═══════════════════════════════════════════════════════════
+// CHART HELPERS
+// ═══════════════════════════════════════════════════════════
 function destroyChart(id) {
-  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
 }
-function sparkLine(id, labels, data, color='#58a6ff', fill=false) {
+
+function makeLineChart(id, labels, datasets, opts={}) {
   destroyChart(id);
   const ctx = document.getElementById(id);
   if (!ctx) return;
-  charts[id] = new Chart(ctx, {
+  CHARTS[id] = new Chart(ctx, {
     type: 'line',
-    data: { labels, datasets: [{ data, borderColor: color, backgroundColor: fill ? color+'22' : 'transparent',
-      borderWidth: 1.5, pointRadius: 0, fill }] },
-    options: { animation:false, plugins:{legend:{display:false}},
-      scales:{ x:{display:false}, y:{grid:{color:'#30363d'},ticks:{color:'#8b949e',font:{size:10}}} } }
-  });
-}
-function barChart(id, labels, data, color='#58a6ff') {
-  destroyChart(id);
-  const ctx = document.getElementById(id);
-  if (!ctx) return;
-  charts[id] = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: data.map(v=>v>=0?'#3fb95066':'#f8514966'), borderWidth:0 }] },
-    options: { animation:false, plugins:{legend:{display:false}},
-      scales:{ x:{display:false}, y:{grid:{color:'#30363d'},ticks:{color:'#8b949e',font:{size:10}}} } }
+    data: { labels, datasets },
+    options: {
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: datasets.length > 1, labels: { color: '#8b949e', boxWidth: 10, font: { size: 10 } } },
+        tooltip: {
+          backgroundColor: '#161b22',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#c9d1d9',
+          bodyColor: '#8b949e',
+          padding: 8,
+        },
+      },
+      scales: {
+        x: {
+          display: opts.xDisplay !== undefined ? opts.xDisplay : true,
+          ticks: { color: '#8b949e', font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 },
+          grid: { color: 'rgba(48,54,61,.5)' },
+        },
+        y: {
+          ticks: { color: '#8b949e', font: { size: 10 }, maxTicksLimit: 6 },
+          grid: { color: 'rgba(48,54,61,.5)' },
+        },
+      },
+      ...opts.chartOpts,
+    },
   });
 }
 
-// ── Overview ────────────────────────────────────────
+function makeBarChart(id, labels, data, colorFn, opts={}) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const bgs = Array.isArray(colorFn) ? colorFn : data.map(colorFn);
+  CHARTS[id] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: bgs,
+        borderRadius: 3,
+        borderWidth: 0,
+      }],
+    },
+    options: {
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#161b22',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#c9d1d9',
+          bodyColor: '#8b949e',
+          padding: 8,
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.y;
+              return opts.tooltipFmt ? opts.tooltipFmt(v) : v.toFixed(3);
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          display: opts.xDisplay !== undefined ? opts.xDisplay : true,
+          ticks: { color: '#8b949e', font: { size: 10 }, maxRotation: 45 },
+          grid: { color: 'rgba(48,54,61,.3)' },
+        },
+        y: {
+          ticks: { color: '#8b949e', font: { size: 10 }, maxTicksLimit: 6 },
+          grid: { color: 'rgba(48,54,61,.5)' },
+        },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// TAB 1: OVERVIEW
+// ═══════════════════════════════════════════════════════════
 async function loadOverview() {
-  const [status, equity, wisdom] = await Promise.all([
-    fetch('/api/status').then(r=>r.json()).catch(()=>({})),
-    fetch('/api/equity').then(r=>r.json()).catch(()=>({})),
-    fetch('/api/wisdom').then(r=>r.json()).catch(()=>({})),
+  const [wisdom, equity, runs] = await Promise.all([
+    apiFetch('/api/wisdom'),
+    apiFetch('/api/equity'),
+    apiFetch('/api/runs'),
   ]);
 
-  const sl = wisdom.self_learn || {};
-  const metrics = (wisdom.recent || {}).metrics || {};
-  const verdict = (wisdom.recent || {}).verdict || {};
+  const recent  = (wisdom || {}).recent || {};
+  const metrics = recent.metrics || {};
+  const verdict = recent.verdict || {};
+  const runName = recent.run_name || '—';
 
-  // KPI cards
-  document.getElementById('kpi-cards').innerHTML = [
-    kpiCard('Sharpe Ratio', fmt(metrics.sharpe||status.last_sharpe), 'annualised', Number(metrics.sharpe)>1?'var(--green)':Number(metrics.sharpe)>0?'var(--yellow)':'var(--red)'),
-    kpiCard('Calmar Ratio', fmt(metrics.calmar||status.last_calmar), 'CAGR / Max DD', Number(metrics.calmar)>2?'var(--green)':'var(--text)'),
-    kpiCard('Max Drawdown', pct(metrics.max_drawdown||status.last_mdd), 'peak-to-trough', 'var(--red)'),
-    kpiCard('Total Return', pct(metrics.total_return), metrics.periods ? metrics.periods+' bars' : ''),
-  ].join('');
+  // KPIs
+  const sharpe  = metrics.sharpe;
+  const calmar  = metrics.calmar;
+  const mdd     = metrics.max_drawdown;
+  const cagr    = metrics.cagr;
+  const winRate = metrics.win_rate;
+
+  setKpi('kpi-sharpe',  fmt(sharpe));
+  setKpi('kpi-calmar',  fmt(calmar));
+  setKpi('kpi-mdd',     abs_pct(mdd));
+  setKpi('kpi-cagr',    pct(cagr));
+  setKpi('kpi-winrate', pct(winRate));
+
+  const sharpeEl = document.getElementById('kpi-sharpe');
+  if (sharpeEl) sharpeEl.style.color = colorFor(sharpe);
+
+  const verdictEl = document.getElementById('kpi-verdict');
+  if (verdictEl) verdictEl.innerHTML = verdictBadgeLg(verdict.pass);
+  const rnEl = document.getElementById('kpi-run-name');
+  if (rnEl) rnEl.textContent = runName;
 
   // Equity curve
-  const eq = equity.equity_curve || [];
+  const eq  = (equity || {}).equity_curve || [];
+  const nBars = (equity || {}).n_bars || eq.length;
+  const barsEl = document.getElementById('equity-bars');
+  if (barsEl) barsEl.textContent = nBars ? nBars.toLocaleString() + ' bars' : '';
+
   if (eq.length > 0) {
-    sparkLine('equityChart', eq.map((_,i)=>i), eq, '#58a6ff', true);
+    const step = Math.max(1, Math.floor(eq.length / 600));
+    const eqSampled = eq.filter((_, i) => i % step === 0);
+    const labels = eqSampled.map((_, i) => i * step);
+    makeLineChart('equityChart', labels, [{
+      data: eqSampled,
+      borderColor: '#3fb950',
+      backgroundColor: 'rgba(63,185,80,.06)',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: true,
+      tension: 0.1,
+    }], { xDisplay: false });
+  } else {
+    const ctx = document.getElementById('equityChart');
+    if (ctx) { const c = ctx.getContext('2d'); c.clearRect(0,0,ctx.width,ctx.height); }
   }
 
-  // Return distribution histogram (simple bucketing)
-  const ret = equity.returns || [];
-  if (ret.length > 0) {
-    const n = 30;
-    const mn = Math.min(...ret), mx = Math.max(...ret);
-    const bw = (mx - mn) / n || 0.001;
-    const buckets = Array(n).fill(0);
-    const labels = [];
-    for (let i=0;i<n;i++) labels.push(((mn + i*bw)*100).toFixed(2)+'%');
+  // Return distribution histogram
+  const ret = (equity || {}).returns || [];
+  if (ret.length > 1) {
+    const N  = 40;
+    const mn = Math.min(...ret);
+    const mx = Math.max(...ret);
+    const bw = (mx - mn) / N || 0.0001;
+    const bins   = Array(N).fill(0);
+    const blabels = [];
+    for (let i = 0; i < N; i++) blabels.push(((mn + (i + 0.5) * bw) * 100).toFixed(2) + '%');
     ret.forEach(r => {
-      const b = Math.min(n-1, Math.floor((r-mn)/bw));
-      buckets[b]++;
+      const b = Math.min(N - 1, Math.floor((r - mn) / bw));
+      bins[b]++;
     });
-    barChart('returnChart', labels, buckets);
+    const binColors = bins.map((_, i) => {
+      const mid = mn + (i + 0.5) * bw;
+      return mid >= 0 ? 'rgba(63,185,80,.65)' : 'rgba(248,81,73,.55)';
+    });
+    makeBarChart('returnDistChart', blabels, bins, binColors, {
+      xDisplay: false,
+      tooltipFmt: v => v + ' bars',
+    });
   }
 
-  // Self-learning stats
-  document.getElementById('sl-stats').innerHTML = `
-    <div><div class="stat-val">${sl.events||0}</div><div class="stat-label">Learn Events</div></div>
-    <div><div class="stat-val">${sl.accepted||0}</div><div class="stat-label">Accepted</div></div>
-    <div><div class="stat-val">${pct(sl.accept_rate)}</div><div class="stat-label">Accept Rate</div></div>
-  `;
+  // Strategy comparison (Sharpe per run)
+  if (Array.isArray(runs) && runs.length > 0) {
+    const sorted = [...runs].filter(r => r.sharpe != null).sort((a, b) => b.sharpe - a.sharpe).slice(0, 16);
+    const slabels = sorted.map(r => {
+      const name = r.run_name || r.strategy || '?';
+      return name.length > 20 ? name.slice(0, 18) + '…' : name;
+    });
+    const sdata = sorted.map(r => +(r.sharpe || 0));
+    const scolors = sdata.map(v => v >= 0 ? 'rgba(63,185,80,.7)' : 'rgba(248,81,73,.6)');
+    makeBarChart('strategyCompChart', slabels, sdata, scolors, {
+      tooltipFmt: v => fmt(v),
+    });
+  }
 }
 
-// ── Walk-Forward ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// TAB 2: WALK-FORWARD
+// ═══════════════════════════════════════════════════════════
 async function loadWalkForward() {
-  const data = await fetch('/api/walk_forward').then(r=>r.json()).catch(()=>({}));
-  const windows = data.windows || [];
-  const stability = data.stability || {};
+  const data = await apiFetch('/api/walk_forward');
+  const windows   = (data || {}).windows   || [];
+  const stability = (data || {}).stability || {};
 
-  document.getElementById('wf-stability').innerHTML = `
-    <h2 style="margin-bottom:12px">Stability Summary</h2>
-    <div class="grid grid-4">
-      ${kpiCard('Windows', stability.windows||0, 'rolling windows')}
-      ${kpiCard('% Profitable', pct(stability.fraction_profitable), 'windows with CAGR > 0', Number(stability.fraction_profitable)>=0.6?'var(--green)':'var(--yellow)')}
-      ${kpiCard('% Calmar > 0', pct(stability.fraction_calmar_positive), '', '')}
-      ${kpiCard('% MDD < 35%', pct(stability.fraction_mdd_lt_0_35), '', '')}
-    </div>
-  `;
+  // Stability KPIs
+  const stabKpis = [
+    { label: 'Windows',         val: stability.windows || windows.length || 0,  sub: 'rolling windows',      raw: null },
+    { label: '% Profitable',    val: pct(stability.fraction_profitable),          sub: 'CAGR > 0',             raw: +(stability.fraction_profitable||0) },
+    { label: '% Sharpe Pos.',   val: pct(stability.fraction_calmar_positive),     sub: 'Calmar > 0',           raw: null },
+    { label: '% MDD < 35%',     val: pct(stability.fraction_mdd_lt_0_35),         sub: 'controlled drawdown',  raw: null },
+  ];
+  document.getElementById('wf-stability-kpis').innerHTML = stabKpis.map(k => {
+    const color = k.raw != null ? (k.raw >= 0.6 ? 'var(--green)' : k.raw >= 0.4 ? 'var(--yellow)' : 'var(--red)') : 'var(--text)';
+    return `<div class="card kpi">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value" style="color:${color}">${k.val}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`;
+  }).join('');
 
-  if (windows.length > 0) {
-    const sharpes = windows.map(w=>+(w.sharpe||0).toFixed(3));
-    const calmars = windows.map(w=>+(w.calmar||0).toFixed(3));
-    const labels = windows.map((_,i)=>'W'+(i+1));
-    barChart('wfSharpeChart', labels, sharpes);
-    barChart('wfCalmarChart', labels, calmars);
-    const tbody = windows.map((w,i)=>`<tr>
-      <td>${i+1}</td>
-      <td>${pct(w.cagr)}</td>
-      <td>${fmt(w.sharpe)}</td>
-      <td>${fmt(w.calmar)}</td>
-      <td style="color:var(--red)">${pct(w.max_drawdown)}</td>
-      <td>${pct(w.win_rate)}</td>
-    </tr>`).join('');
-    document.querySelector('#wf-table tbody').innerHTML = tbody;
+  const countEl = document.getElementById('wf-window-count');
+  if (countEl) countEl.textContent = windows.length + ' windows';
+
+  if (windows.length === 0) {
+    // Clear charts
+    destroyChart('wfSharpeChart');
+    document.querySelector('#wf-table tbody').innerHTML = '<tr><td colspan="7" class="empty">No walk-forward data</td></tr>';
+    return;
   }
+
+  // Sharpe bar chart
+  const wlabels = windows.map((_, i) => 'W' + (i + 1));
+  const sharpes = windows.map(w => +(w.sharpe || 0));
+  const sharpeColors = sharpes.map(v => v >= 0 ? 'rgba(63,185,80,.75)' : 'rgba(248,81,73,.65)');
+  makeBarChart('wfSharpeChart', wlabels, sharpes, sharpeColors, { tooltipFmt: v => fmt(v) });
+
+  // Table
+  const tbody = windows.map((w, i) => {
+    const trainSharpe = w.train_sharpe != null ? fmt(w.train_sharpe) : fmt(w.sharpe);
+    const testSharpe  = w.test_sharpe  != null ? fmt(w.test_sharpe)  : '—';
+    const s = +(w.sharpe || 0);
+    const stabColor = s >= 1 ? 'var(--green)' : s >= 0 ? 'var(--yellow)' : 'var(--red)';
+    const stabText  = s >= 1 ? 'Stable' : s >= 0 ? 'Marginal' : 'Unstable';
+    return `<tr>
+      <td style="color:var(--muted)">${i + 1}</td>
+      <td style="color:${colorFor(+trainSharpe)}">${trainSharpe}</td>
+      <td style="color:${colorFor(+testSharpe)}">${testSharpe}</td>
+      <td>${pct(w.cagr)}</td>
+      <td style="color:var(--red)">${abs_pct(w.max_drawdown)}</td>
+      <td>${pct(w.win_rate)}</td>
+      <td>${badge(stabColor === 'var(--green)' ? 'green' : stabColor === 'var(--yellow)' ? 'yellow' : 'red', stabText)}</td>
+    </tr>`;
+  }).join('');
+  document.querySelector('#wf-table tbody').innerHTML = tbody;
 }
 
-// ── Risk ────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// TAB 3: RISK
+// ═══════════════════════════════════════════════════════════
 async function loadRisk() {
-  const data = await fetch('/api/risk').then(r=>r.json()).catch(()=>({}));
-  const v = data.var || {};
-  const regime = data.regime || {};
+  const data = await apiFetch('/api/risk');
+  const v      = (data || {}).var    || {};
+  const regime = (data || {}).regime || {};
 
-  document.getElementById('risk-kpi').innerHTML = [
-    kpiCard('VaR 95%', pct(v.var_95), 'historical', 'var(--yellow)'),
-    kpiCard('VaR 99%', pct(v.var_99), 'historical', 'var(--red)'),
-    kpiCard('CVaR 95%', pct(v.cvar_95), 'expected shortfall', 'var(--red)'),
-    kpiCard('Ann. Vol', pct(v.annualised_vol), 'hourly × √8760', ''),
-  ].join('');
+  // KPIs
+  setKpi('risk-var95',  abs_pct(v.var_95));
+  setKpi('risk-var99',  abs_pct(v.var_99));
+  setKpi('risk-cvar95', abs_pct(v.cvar_95));
+  setKpi('risk-vol',    pct(v.annualised_vol));
+  setKpi('risk-skew',   fmt(v.skewness, 3));
+  setKpi('risk-kurt',   fmt(v.kurtosis, 3));
 
+  // Regime badge
   const rn = regime.regime || 'unknown';
-  const rcolor = rn==='trending'?'var(--green)':rn==='volatile'?'var(--red)':'var(--yellow)';
-  document.getElementById('regime-detail').innerHTML = `
-    <div class="stat-val" style="color:${rcolor};text-transform:uppercase;font-size:22px">${rn}</div>
-    <div style="margin-top:12px;display:grid;gap:6px;font-size:12px">
-      <div><span style="color:var(--muted)">Trend Strength:</span> ${fmt(regime.trend_strength)}</div>
-      <div><span style="color:var(--muted)">Vol Ratio (recent/long):</span> ${fmt(regime.vol_ratio)}</div>
-      <div><span style="color:var(--muted)">Autocorrelation:</span> ${fmt(regime.autocorr)}</div>
+  const regimeBadgeEl = document.getElementById('regime-badge');
+  if (regimeBadgeEl) regimeBadgeEl.outerHTML = `<div id="regime-badge-wrap">${regimeBadge(rn)}</div>`;
+
+  document.getElementById('regime-details').innerHTML = `
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="color:var(--muted)">Trend Strength</span>
+      <span>${fmt(regime.trend_strength, 4)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="color:var(--muted)">Volatility Ratio (recent / long)</span>
+      <span>${fmt(regime.vol_ratio, 3)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0">
+      <span style="color:var(--muted)">Autocorrelation (lag-1)</span>
+      <span>${fmt(regime.autocorr, 4)}</span>
     </div>
   `;
 
   document.getElementById('tail-stats').innerHTML = `
-    <div style="display:grid;gap:6px;font-size:12px">
-      <div><span style="color:var(--muted)">Skewness:</span> ${fmt(v.skewness,3)}</div>
-      <div><span style="color:var(--muted)">Excess Kurtosis:</span> ${fmt(v.kurtosis,3)}</div>
-      <div><span style="color:var(--muted)">Worst Period:</span> <span style="color:var(--red)">${pct(v.max_loss_1d)}</span></div>
-      <div><span style="color:var(--muted)">Mean Return/bar:</span> ${pct(v.mean_return,4)}</div>
-      <div><span style="color:var(--muted)">Approx Sharpe:</span> ${fmt(v.sharpe_approx)}</div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="color:var(--muted)">Worst Period Return</span>
+      <span style="color:var(--red)">${abs_pct(v.max_loss_1d)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="color:var(--muted)">Mean Return / Bar</span>
+      <span>${pct(v.mean_return, 4)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="color:var(--muted)">Approx. Sharpe</span>
+      <span style="color:${colorFor(v.sharpe_approx)}">${fmt(v.sharpe_approx)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:6px 0">
+      <span style="color:var(--muted)">VaR 95% / 99% Ratio</span>
+      <span>${(v.var_95 && v.var_99) ? fmt(v.var_99 / v.var_95, 3) : '—'}</span>
     </div>
   `;
+
+  // Drawdown chart from equity
+  const eq = await apiFetch('/api/equity');
+  const equityCurve = (eq || {}).equity_curve || [];
+  if (equityCurve.length > 1) {
+    // Compute drawdown series
+    const step = Math.max(1, Math.floor(equityCurve.length / 600));
+    const sampled = equityCurve.filter((_, i) => i % step === 0);
+    let peak = sampled[0];
+    const dd = sampled.map(e => {
+      if (e > peak) peak = e;
+      return peak > 0 ? (e - peak) / peak : 0;
+    });
+    const lbls = sampled.map((_, i) => i * step);
+    makeLineChart('drawdownChart', lbls, [{
+      data: dd,
+      borderColor: '#f85149',
+      backgroundColor: 'rgba(248,81,73,.07)',
+      borderWidth: 1.2,
+      pointRadius: 0,
+      fill: true,
+      tension: 0.05,
+    }], { xDisplay: false });
+  }
 }
 
-// ── Ledger ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// TAB 4: LEDGER & ALERTS
+// ═══════════════════════════════════════════════════════════
+async function loadAnomalies() {
+  const data = await apiFetch('/api/anomalies');
+  const anomalies = (data || {}).anomalies || [];
+  const count = (data || {}).count || 0;
+
+  const countEl = document.getElementById('alert-count');
+  if (countEl) countEl.textContent = count;
+
+  const listEl = document.getElementById('alert-list');
+  if (!listEl) return;
+
+  if (count === 0) {
+    listEl.innerHTML = '<div class="alert-none"><span style="color:var(--green)">✓</span> No anomalies detected in recent ledger</div>';
+    return;
+  }
+
+  listEl.innerHTML = anomalies.slice(0, 8).map(a => {
+    const payload = a.payload || {};
+    const flags = ['slippage_alert','drawdown_alert','drift_alert','funding_alert','regime_alert']
+      .filter(f => payload[f])
+      .join(', ');
+    return `<div class="alert-item">
+      <span style="color:var(--muted);font-size:10px">${ts(a.ts)}</span>
+      <span style="margin:0 6px;color:var(--muted)">|</span>
+      <span>${a.run_name || a.kind || '?'}</span>
+      ${flags ? `<span style="margin-left:6px;color:var(--yellow);font-size:10px">[${flags}]</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
 async function loadLedger() {
-  const events = await fetch('/api/ledger').then(r=>r.json()).catch(()=>[]);
-  if (!events.length) {
-    document.querySelector('#ledger-table tbody').innerHTML = '<tr><td colspan="7" class="loading">No ledger events</td></tr>';
+  const events = await apiFetch('/api/ledger');
+  const tbody = document.querySelector('#ledger-table tbody');
+  if (!tbody) return;
+
+  if (!Array.isArray(events) || events.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">No ledger events found</td></tr>';
     return;
   }
-  const rows = events.map(e=>`<tr>
-    <td style="color:var(--muted);font-size:11px">${(e.ts||'').replace('T',' ').slice(0,19)}</td>
-    <td><span class="badge badge-blue">${e.kind||''}</span></td>
-    <td style="font-size:11px">${e.run_name||''}</td>
-    <td>${badge(e.verdict)}</td>
-    <td>${fmt(e.metrics?.sharpe)}</td>
-    <td style="color:var(--red)">${pct(e.metrics?.max_drawdown)}</td>
-    <td>${e.accepted!=null ? badge(e.accepted) : '—'}</td>
-  </tr>`).join('');
-  document.querySelector('#ledger-table tbody').innerHTML = rows;
+
+  tbody.innerHTML = events.map(e => {
+    const m = e.metrics || {};
+    const kindBadgeCls = {
+      run:        'blue',
+      self_learn: 'purple',
+      anomaly:    'red',
+      schedule:   'yellow',
+    }[e.kind] || 'gray';
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px">${ts(e.ts)}</td>
+      <td>${badge(kindBadgeCls, e.kind || '—')}</td>
+      <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis">${e.run_name || '—'}</td>
+      <td style="color:${colorFor(m.sharpe)}">${fmt(m.sharpe)}</td>
+      <td style="color:var(--red)">${abs_pct(m.max_drawdown)}</td>
+      <td>${verdictBadge(e.verdict)}</td>
+      <td>${e.accepted != null ? verdictBadge(e.accepted) : badge('gray','—')}</td>
+    </tr>`;
+  }).join('');
 }
 
-// ── Memory ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// TAB 5: MEMORY
+// ═══════════════════════════════════════════════════════════
 function debounceMemSearch() {
-  clearTimeout(memTimer);
-  memTimer = setTimeout(loadMemory, 400);
-}
-async function loadMemory() {
-  const q = document.getElementById('mem-search').value;
-  const url = q ? `/api/memory?q=${encodeURIComponent(q)}&limit=30` : '/api/memory?limit=30';
-  const items = await fetch(url).then(r=>r.json()).catch(()=>[]);
-  if (!Array.isArray(items) || !items.length) {
-    document.getElementById('memory-list').innerHTML = '<div class="loading">No memory items</div>';
-    return;
-  }
-  const html = items.map(it=>`
-    <div style="border-bottom:1px solid var(--border);padding:10px 0">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-        <span class="badge badge-blue">${it.kind}</span>
-        ${(it.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}
-        <span style="color:var(--muted);font-size:11px;margin-left:auto">${(it.ts||'').slice(0,19)}</span>
-      </div>
-      <div style="font-size:12px;color:var(--text)">${it.content||''}</div>
-    </div>
-  `).join('');
-  document.getElementById('memory-list').innerHTML = html;
+  clearTimeout(memDebounceTimer);
+  memDebounceTimer = setTimeout(loadMemory, 350);
 }
 
-// ── Init ────────────────────────────────────────────
-loadOverview();
+async function loadMemory() {
+  const q   = (document.getElementById('mem-search') || {}).value || '';
+  const url = q ? `/api/memory?q=${encodeURIComponent(q)}&limit=40` : '/api/memory?limit=40';
+  const items = await apiFetch(url);
+  const listEl = document.getElementById('memory-list');
+  if (!listEl) return;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    listEl.innerHTML = '<div class="empty">No memory items found' + (q ? ' for "' + q + '"' : '') + '</div>';
+    return;
+  }
+
+  listEl.innerHTML = items.map(it => {
+    const tags = (it.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+    const kindCls = { insight: 'blue', param: 'purple', experiment: 'yellow', alert: 'red' }[it.kind] || 'gray';
+    return `<div class="mem-item">
+      <div class="mem-meta">
+        ${badge(kindCls, it.kind || '?')}
+        ${tags}
+        <span style="color:var(--muted);font-size:10px;margin-left:auto">${ts(it.ts)}</span>
+      </div>
+      <div class="mem-content">${it.content || ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// SSE LIVE CONNECTION
+// ═══════════════════════════════════════════════════════════
+function connectSSE() {
+  const dot   = document.getElementById('live-dot');
+  const label = document.getElementById('live-label');
+
+  if (sseSource) { sseSource.close(); sseSource = null; }
+
+  try {
+    sseSource = new EventSource('/api/stream');
+
+    sseSource.onopen = () => {
+      dot.classList.add('live');
+      label.textContent = 'Live';
+    };
+
+    sseSource.onmessage = evt => {
+      try {
+        const d = JSON.parse(evt.data);
+        // Update KPIs on overview if visible
+        if (currentPage === 'overview') {
+          if (d.sharpe != null) setKpi('kpi-sharpe', fmt(d.sharpe));
+          if (d.mdd   != null) setKpi('kpi-mdd',     abs_pct(d.mdd));
+        }
+        // Heartbeat pulse
+        dot.classList.remove('live');
+        requestAnimationFrame(() => dot.classList.add('live'));
+      } catch {}
+    };
+
+    sseSource.onerror = () => {
+      dot.classList.remove('live');
+      label.textContent = 'Offline';
+      sseSource.close();
+      sseSource = null;
+      // Retry in 15 seconds
+      setTimeout(connectSSE, 15000);
+    };
+  } catch {
+    dot.classList.remove('live');
+    label.textContent = 'No SSE';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// AUTO-REFRESH (every 10s)
+// ═══════════════════════════════════════════════════════════
+function startAutoRefresh() {
+  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+  autoRefreshInterval = setInterval(() => {
+    const fn = LOAD_MAP[currentPage];
+    if (fn) fn();
+  }, 10000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  loadOverview();
+  connectSSE();
+  startAutoRefresh();
+});
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const messages = document.getElementById('chat-messages');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  // User bubble
+  const userDiv = document.createElement('div');
+  userDiv.style.cssText = 'background:#1a3a5c;border-radius:12px 12px 4px 12px;padding:12px 16px;max-width:80%;color:#c9d1d9;font-size:14px;align-self:flex-end;margin-left:auto;line-height:1.5';
+  userDiv.textContent = msg;
+  messages.appendChild(userDiv);
+  messages.scrollTop = messages.scrollHeight;
+  // Loading
+  const loadDiv = document.createElement('div');
+  loadDiv.id = 'chat-loading';
+  loadDiv.style.cssText = 'background:#1c2128;border-radius:12px;padding:12px 16px;max-width:80%;color:#8b949e;font-size:14px;font-style:italic';
+  loadDiv.textContent = 'NEXUS is thinking...';
+  messages.appendChild(loadDiv);
+  messages.scrollTop = messages.scrollHeight;
+  try {
+    const resp = await fetch('/api/chat', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    const data = await resp.json();
+    loadDiv.remove();
+    const nexusDiv = document.createElement('div');
+    nexusDiv.style.cssText = 'background:#1c2128;border-radius:12px 12px 12px 4px;padding:12px 16px;max-width:80%;color:#c9d1d9;font-size:14px;line-height:1.5;white-space:pre-wrap';
+    nexusDiv.textContent = data.response || 'No response.';
+    messages.appendChild(nexusDiv);
+    messages.scrollTop = messages.scrollHeight;
+  } catch(e) {
+    loadDiv.textContent = 'Error: ' + e.message;
+  }
+}
+
+// Load NEXUS identity for chat header
+async function loadChatIdentity() {
+  try {
+    const r = await fetch('/api/brain/identity');
+    const d = await r.json();
+    const moodMap = {focused:'🔵 Focused',exploring:'🟡 Exploring',concerned:'🔴 Concerned',satisfied:'🟢 Satisfied',initializing:'⚪ Initializing'};
+    document.getElementById('chat-nexus-mood').textContent = moodMap[d.mood] || d.mood || '⚪';
+    const goals = d.current_goals || [];
+    document.getElementById('chat-nexus-goal').textContent = goals.length ? goals[0] : 'No active goals';
+  } catch(e) {}
+}
+
+// Enter key sends message
+document.addEventListener('DOMContentLoaded', function() {
+  const inp = document.getElementById('chat-input');
+  if (inp) inp.addEventListener('keypress', function(e) { if (e.key==='Enter') sendChatMessage(); });
+  loadChatIdentity();
+});
 </script>
 </body>
 </html>

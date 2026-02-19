@@ -94,6 +94,13 @@ def _parse_args() -> argparse.Namespace:
     risk_p = sub.add_parser("risk", help="Run VaR + regime detection on latest backtest result")
     risk_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
 
+    brain_p = sub.add_parser("brain", help="Run the NEXUS autonomous brain loop")
+    brain_p.add_argument("--config", required=True, help="Path to JSON config")
+    brain_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    brain_p.add_argument("--cycles", type=int, default=1, help="How many cycles to run (default: 1)")
+    brain_p.add_argument("--loop", action="store_true", help="Run continuously")
+    brain_p.add_argument("--interval", type=int, default=3600, help="Seconds between cycles in loop mode (default: 3600)")
+
     return p.parse_args()
 
 
@@ -187,6 +194,23 @@ def main() -> int:
     cfg_path = Path(args.config)
     if not cfg_path.exists():
         raise SystemExit(f"Config not found: {cfg_path}")
+
+    if args.cmd == "brain":
+        from .brain.loop import NexusAutonomousLoop
+        loop_obj = NexusAutonomousLoop(Path(args.config), Path(args.artifacts))
+        if args.loop:
+            import time
+            cycle = 0
+            while True:
+                result = loop_obj.run_cycle()
+                print(f"Cycle {result['cycle_number']}: sharpe={result.get('best_sharpe')} mood={result.get('mood')}")
+                cycle += 1
+                time.sleep(args.interval)
+        else:
+            for i in range(args.cycles):
+                result = loop_obj.run_cycle()
+                print(json.dumps(result, indent=2, default=str))
+        return 0
 
     if args.cmd == "dump-config":
         data = json.loads(cfg_path.read_text(encoding="utf-8"))
