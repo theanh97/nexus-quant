@@ -280,6 +280,10 @@ class NexusAlphaV1Strategy(Strategy):
         w_vm     = self._p("w_vol_momentum",    0.05)
         w_ft     = self._p("w_funding_trend",   0.00)
 
+        # Phase 56 signal engineering enhancements (defaults preserve V1 behavior)
+        conditional_mr   = self._p("conditional_mr", False)      # MR only when momentum agrees
+        score_weight_mix = self._p("score_weight_mix", 0.0)      # 0=pure inv-vol, 1=pure score
+
         ts = dataset.timeline[idx]
 
         # ── Signal 1: Funding carry ────────────────────────────────
@@ -317,6 +321,16 @@ class NexusAlphaV1Strategy(Strategy):
             mr_raw[s] = (c1 / c0 - 1.0) if c0 > 0 else 0.0
         mr_z = zscores(mr_raw)
         mr = {s: -float(mr_z.get(s, 0.0)) for s in syms}    # invert: losers → +ve → LONG
+
+        # Conditional MR: only apply MR where momentum direction agrees
+        # "Buy dips in uptrends" = MR positive only when momentum positive
+        # "Short bounces in downtrends" = MR negative only when momentum negative
+        if conditional_mr:
+            for s in syms:
+                if mom[s] > 0 and mr[s] < 0:
+                    mr[s] = 0.0   # don't short MR in uptrend
+                elif mom[s] < 0 and mr[s] > 0:
+                    mr[s] = 0.0   # don't long MR in downtrend
 
         # ── Signal 5: Vol-adjusted momentum ──────────────────────
         # Momentum normalised by trailing vol (Sharpe-ratio-like quality signal)
@@ -381,6 +395,20 @@ class NexusAlphaV1Strategy(Strategy):
                     inv_vol[s] = (1.0 / v) if v > 0 else 1.0
             else:
                 inv_vol = {s: 1.0 for s in all_active}
+
+            # Score-weighted: blend inv_vol with score magnitude
+            if score_weight_mix > 0.0:
+                score_wt: Dict[str, float] = {}
+                for s in all_active:
+                    score_wt[s] = max(0.01, abs(score.get(s, 0.0)))
+                # Blend: (1-mix)*inv_vol + mix*score_magnitude
+                blend_wt: Dict[str, float] = {}
+                for s in all_active:
+                    iv = inv_vol.get(s, 1.0)
+                    sw = score_wt.get(s, 1.0)
+                    blend_wt[s] = (1.0 - score_weight_mix) * iv + score_weight_mix * sw
+                inv_vol = blend_wt
+
             w = normalize_dollar_neutral(long_syms, short_syms, inv_vol, target_gross)
 
         # ── Portfolio vol targeting (optional) ────────────────────
