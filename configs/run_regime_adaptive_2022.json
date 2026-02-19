@@ -1,0 +1,42 @@
+{
+  "data": {
+    "provider": "binance_rest_v1",
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "BNBUSDT",
+      "SOLUSDT",
+      "AVAXUSDT"
+    ],
+    "start": "2022-01-01",
+    "end": "2022-12-31",
+    "timeframe": "1h"
+  },
+  "strategy": {
+    "name": "nexus_alpha_v1_regime",
+    "params": {
+      "k_per_side": 2,
+      "momentum_lookback_bars": 168,
+      "mean_reversion_lookback_bars": 48,
+      "rebalance_interval_bars": 168,
+      "target_gross_leverage": 0.35,
+      "max_gross_leverage": 0.65,
+      "min_gross_leverage": 0.05,
+      "regime_lookback_bars": 200,
+      "bear_leverage_mult": 0.25,
+      "high_vol_leverage_mult": 0.4,
+      "bull_leverage_mult": 1.0,
+      "use_regime_filter": true
+    }
+  },
+  "venue": {
+    "name": "binance_usdm",
+    "vip_tier": 0
+  },
+  "self_learn": {
+    "enabled": false
+  },
+  "output": {
+    "artifacts_dir": "artifacts"
+  }
+}

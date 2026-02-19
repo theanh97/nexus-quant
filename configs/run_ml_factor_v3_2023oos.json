@@ -1,0 +1,37 @@
+{
+  "run_name": "ml_factor_v3_2023oos",
+  "seed": 42,
+  "venue": {"name": "binance_usdm", "kind": "crypto_perp"},
+  "data": {
+    "provider": "binance_rest_v1",
+    "start": "2023-01-01",
+    "end": "2023-12-31",
+    "symbols": [
+      "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "AVAXUSDT",
+      "ADAUSDT", "DOTUSDT", "LINKUSDT", "LTCUSDT", "DOGEUSDT"
+    ],
+    "bar_interval_minutes": 60,
+    "funding_interval_hours": 8
+  },
+  "execution": {"style": "taker", "slippage_bps": 3.0},
+  "strategy": {
+    "name": "ml_factor_v3",
+    "params": {
+      "k_per_side": 2,
+      "ols_window": 720,
+      "ols_refit_every": 24,
+      "min_warmup_bars": 336,
+      "learning_rate": 0.01,
+      "vol_lookback_bars": 168,
+      "rebalance_interval_bars": 24,
+      "target_gross_leverage": 0.3,
+      "risk_weighting": "inverse_vol"
+    }
+  },
+  "costs": {"fee_rate": 0.0004, "slippage_rate": 0.0003, "cost_multiplier": 1.0},
+  "benchmark": {"version": "v1", "walk_forward": {"enabled": false}},
+  "risk": {"max_drawdown": 0.35, "max_turnover_per_rebalance": 1.5},
+  "self_learn": {
+    "enabled": false
+  }
+}
