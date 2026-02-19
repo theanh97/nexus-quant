@@ -91,6 +91,28 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
 
     bench_cfg = BenchmarkConfig.from_dict(cfg.get("benchmark") or {})
     bench = run_benchmark_pack_v1(dataset=dataset, result=result, bench_cfg=bench_cfg)
+
+    # Run bias checks
+    try:
+        from .validation.bias_checker import run_full_bias_check
+
+        returns = result.returns if hasattr(result, "returns") else result.to_dict().get("returns", [])
+        if returns:
+            bias = run_full_bias_check(
+                returns,
+                n_params_searched=int(cfg.get("self_learn", {}).get("n_trials", 1)),
+                periods_per_year=8760.0,
+            )
+            bench["bias_check"] = {
+                "verdict": bias["overall_verdict"],
+                "confidence": bias["confidence_score"],
+                "flags": bias["flags"],
+                "sharpe_tstat": bias["checks"]["sharpe_sig"].get("t_stat"),
+                "significant_95": bias["checks"]["sharpe_sig"].get("significant_95"),
+                "likely_overfit": bias["checks"]["overfitting"].get("likely_overfit"),
+            }
+    except Exception as e:
+        bench["bias_check"] = {"error": str(e)}
     bench["verdict"] = _compute_verdict(bench, risk_cfg=cfg.get("risk") or {}, data_quality_ok=bool(dq["ok"]))
 
     (run_root / "config.json").write_text(json.dumps(cfg, indent=2, sort_keys=True), encoding="utf-8")
@@ -119,6 +141,7 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
             "data": cfg.get("data") or {},
             "strategy": cfg["strategy"]["name"],
             "metrics": bench.get("summary") or {},
+            "bias_check": bench.get("bias_check") or {},
             "data_quality_ok": bool(dq["ok"]),
             "verdict": bench.get("verdict") or {},
             "paths": {
