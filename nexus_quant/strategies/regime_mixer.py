@@ -14,12 +14,10 @@ Regime Detection:
   1. Momentum signal: BTC trailing return over regime_lookback_bars (168h default)
   2. Volatility signal: BTC realized vol vs longer-term vol (vol_ratio)
 
-  Regime classification (V2 — fixes 2023 regression):
-  - BEAR:     (vol_spike AND btc_ret < 0) OR (btc_ret < -bear_threshold)
-  - BULL:     BTC return > +bull_threshold
+  Regime classification:
+  - BULL:     BTC return > +bull_threshold AND vol_ratio < vol_spike_threshold
+  - BEAR:     BTC return < -bear_threshold OR vol_ratio > vol_spike_threshold
   - SIDEWAYS: neither bull nor bear (low conviction environment)
-  Note: V1 had vol_spike alone → bear, which misclassified uptrend
-  corrections as bear, killing V1's MR alpha in recovery markets.
 
   The regime feeds into a weight matrix that determines how much
   capital each sub-strategy receives. Transitions use exponential
@@ -118,10 +116,7 @@ class RegimeMixerStrategy(Strategy):
         self._last_regime: str = "unknown"
         self._regime_history: List[str] = []
 
-        # Cache sub-strategy weights at their natural rebalance intervals
-        # This prevents over-trading: V1 rebalances every 168h, LV every 24h
-        self._cached_v1_weights: Optional[Dict[str, float]] = None
-        self._cached_lv_weights: Optional[Dict[str, float]] = None
+        pass  # end of __init__
 
     def _p(self, key: str, default: Any) -> Any:
         v = self.params.get(key)
@@ -184,35 +179,24 @@ class RegimeMixerStrategy(Strategy):
         return recent_vol / longer_vol
 
     def _detect_regime(self, dataset: MarketDataset, idx: int) -> str:
-        """Multi-signal regime detection: bull / bear / sideways / unknown.
-
-        V2 fix: vol spike alone no longer forces bear — requires negative
-        momentum too. This prevents misclassifying corrections in uptrends
-        (where V1's MR component profits) while still catching genuine bear
-        markets (2022: negative momentum + elevated vol).
-        """
+        """Multi-signal regime detection: bull / bear / sideways / unknown."""
         btc_ret = self._compute_btc_return(dataset, idx)
         vol_ratio = self._compute_vol_ratio(dataset, idx)
 
         if btc_ret is None:
             return "unknown"
 
-        vol_elevated = vol_ratio is not None and vol_ratio > self._vol_spike
-
-        # Bear: vol spike + ANY negative momentum (catches 2022 crashes,
-        # but NOT 2023 dips where trailing return is still positive)
-        if vol_elevated and btc_ret < 0:
+        # Vol spike overrides to bear (crash/stress)
+        if vol_ratio is not None and vol_ratio > self._vol_spike:
             return "bear"
 
-        # Pure momentum bear (sustained drop)
-        if btc_ret < -self._bear_thr:
-            return "bear"
-
-        # Bull: positive momentum
+        # Momentum-based classification
         if btc_ret > self._bull_thr:
             return "bull"
-
-        return "sideways"
+        elif btc_ret < -self._bear_thr:
+            return "bear"
+        else:
+            return "sideways"
 
     def _update_smooth_weights(self, regime: str) -> None:
         """Exponential smoothing of strategy weights to prevent whipsaw."""
@@ -244,22 +228,12 @@ class RegimeMixerStrategy(Strategy):
         # Update smooth allocation weights
         self._update_smooth_weights(regime)
 
-        # Adaptive caching: respect V1's natural 168h rebalance in bull (holds winners),
-        # but force fresh computation in bear/sideways (cuts losses faster).
-        # LV always recomputes at its own 24h interval.
-        v1_natural = self._v1.should_rebalance(dataset, idx)
-        v1_needs_update = (
-            self._cached_v1_weights is None
-            or v1_natural
-            or regime in ("bear", "sideways")  # force fresh in non-bull regimes
-        )
-        if v1_needs_update:
-            self._cached_v1_weights = self._v1.target_weights(dataset, idx, current)
-        if self._lv.should_rebalance(dataset, idx) or self._cached_lv_weights is None:
-            self._cached_lv_weights = self._lv.target_weights(dataset, idx, current)
-
-        v1_w = self._cached_v1_weights
-        lv_w = self._cached_lv_weights
+        # Get fresh weights from each sub-strategy every mixer rebalance.
+        # Even though V1 rebalances every 168h, getting fresh signal estimates
+        # at every mixer rebalance (24h) allows the regime blend to respond
+        # to intra-cycle changes.
+        v1_w = self._v1.target_weights(dataset, idx, current)
+        lv_w = self._lv.target_weights(dataset, idx, current)
 
         # Blend according to smoothed regime weights
         out: Dict[str, float] = {}
