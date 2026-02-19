@@ -228,6 +228,11 @@ class NexusAlphaV1Strategy(Strategy):
 
     def __init__(self, params: Dict[str, Any]) -> None:
         super().__init__(name="nexus_alpha_v1", params=params)
+        # Drawdown risk overlay state
+        self._dd_equity: float = 1.0
+        self._dd_hwm: float = 1.0
+        self._dd_prev_idx: int = -1
+        self._dd_prev_weights: Optional[Dict[str, float]] = None
 
     def _p(self, key: str, default: Any) -> Any:
         v = self.params.get(key)
@@ -478,4 +483,35 @@ class NexusAlphaV1Strategy(Strategy):
 
         out = {s: 0.0 for s in syms}
         out.update(w)
+
+        # ── Drawdown risk overlay (optional) ────────────────────
+        dd_trigger = self._p("dd_leverage_trigger", 0.0)
+        if dd_trigger > 0:
+            # Track equity from held positions
+            if self._dd_prev_weights is not None and self._dd_prev_idx > 0:
+                port_ret = 0.0
+                for s_name, s_w in self._dd_prev_weights.items():
+                    if abs(s_w) < 1e-10:
+                        continue
+                    c = dataset.perp_close.get(s_name)
+                    if c is None:
+                        continue
+                    i0 = min(self._dd_prev_idx - 1, len(c) - 1)
+                    i1 = min(idx - 1, len(c) - 1)
+                    if i0 >= 0 and i1 >= 0 and float(c[i0]) > 0:
+                        port_ret += s_w * (float(c[i1]) / float(c[i0]) - 1.0)
+                self._dd_equity *= (1.0 + port_ret)
+                self._dd_hwm = max(self._dd_hwm, self._dd_equity)
+
+            self._dd_prev_weights = dict(out)
+            self._dd_prev_idx = idx
+
+            # Compute current drawdown
+            dd = 1.0 - (self._dd_equity / self._dd_hwm) if self._dd_hwm > 0 else 0.0
+            if dd > dd_trigger:
+                # Scale leverage linearly: at trigger → 80%, at 2x trigger → 30%
+                dd_floor = self._p("dd_leverage_floor", 0.3)
+                scale = max(dd_floor, 1.0 - (dd - dd_trigger) / max(0.01, dd_trigger))
+                out = {s: v * scale for s, v in out.items()}
+
         return out
