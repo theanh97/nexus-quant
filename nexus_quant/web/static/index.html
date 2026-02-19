@@ -485,15 +485,15 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
         <div class="chat-header-left">
           <span id="chat-sse-dot" class="sse-dot yellow" title="SSE disconnected"></span>
           <span>NEXUS Brain</span>
-          <span id="chat-model-badge" class="model-badge">GLM-5</span>
+          <span id="chat-model-badge" class="model-badge">SAGE</span>
         </div>
         <div class="chat-header-right" style="display:flex;align-items:center;gap:6px">
           <select id="model-select" onchange="onModelChange()" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--fg);cursor:pointer;height:28px">
-            <option value="glm-5" selected>🤖 GLM-5.0</option>
-            <option value="claude-sonnet-4-6">🔵 Claude Sonnet 4.6</option>
-            <option value="claude-opus-4-6">🟣 Claude Opus 4.6</option>
-            <option value="codex">🟢 GPT-5.2 (Codex)</option>
-            <option value="minimax-2.5">🟠 MiniMax 2.5</option>
+            <option value="glm-5" selected>🧠 SAGE — The Thinker (GLM-5)</option>
+            <option value="claude-sonnet-4-6">🔵 SENTINEL — The Analyst (Sonnet 4.6)</option>
+            <option value="claude-opus-4-6">🟣 NEXUS PRIME — The Architect (Opus 4.6)</option>
+            <option value="codex">🟢 FORGE — The Builder (GPT-5.2)</option>
+            <option value="minimax-2.5">🟠 SCOUT — The Explorer (MiniMax 2.5)</option>
           </select>
           <button class="btn btn-s btn-sm" id="debate-toggle-btn" onclick="toggleDebateMode()" title="Debate mode: all models discuss + critique each other" style="background:var(--surface);border:1px solid var(--border)">⚔️ Debate</button>
           <button class="btn btn-s btn-sm" onclick="copyLastAI()" title="Copy last AI response">Copy</button>
@@ -502,7 +502,7 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
       </div>
       <!-- Debate mode banner -->
       <div id="debate-banner" style="display:none;padding:6px 12px;background:linear-gradient(90deg,#6366f1,#8b5cf6);color:#fff;font-size:11px;text-align:center">
-        ⚔️ <strong>Debate Mode ON</strong> — 4 models (GLM-5 + Claude + GPT-5.2 + MiniMax) will analyze, critique each other, then synthesize a verdict. Takes ~30-60s.
+        ⚔️ <strong>Debate Mode ON</strong> — 4 agents (SAGE + SENTINEL + FORGE + SCOUT) will analyze, critique each other, then synthesize a verdict. Takes ~30-60s.
         <button onclick="toggleDebateMode()" style="margin-left:8px;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px">✕ Off</button>
       </div>
       <!-- Quick chips -->
@@ -915,6 +915,46 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
     </div>
   </div>
 
+  <!-- AI Workforce Team -->
+  <div class="card mb2">
+    <div class="ctitle">🤖 AI Workforce — Multi-Model Team</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:8px">
+      <div style="text-align:center;padding:14px 10px;background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:10px">
+        <div style="font-size:24px">🟣</div>
+        <div style="font-weight:700;font-size:14px;color:#6D28D9;margin-top:4px">NEXUS PRIME</div>
+        <div style="font-size:10px;font-weight:600;color:#7C3AED;text-transform:uppercase;letter-spacing:.05em;margin-top:2px">The Architect</div>
+        <div style="font-size:11px;color:#6B7280;margin-top:6px">Claude Opus 4.6<br>Strategy · Architecture · Integration · Final decisions</div>
+      </div>
+      <div style="text-align:center;padding:14px 10px;background:linear-gradient(135deg,#ECFDF5,#D1FAE5);border-radius:10px">
+        <div style="font-size:24px">🧠</div>
+        <div style="font-weight:700;font-size:14px;color:#059669;margin-top:4px">SAGE</div>
+        <div style="font-size:10px;font-weight:600;color:#10B981;text-transform:uppercase;letter-spacing:.05em;margin-top:2px">The Thinker</div>
+        <div style="font-size:11px;color:#6B7280;margin-top:6px">GLM-5.0<br>Deep reasoning · Brain loop · Research synthesis</div>
+      </div>
+      <div style="text-align:center;padding:14px 10px;background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border-radius:10px">
+        <div style="font-size:24px">🔵</div>
+        <div style="font-weight:700;font-size:14px;color:#1D4ED8;margin-top:4px">SENTINEL</div>
+        <div style="font-size:10px;font-weight:600;color:#3B82F6;text-transform:uppercase;letter-spacing:.05em;margin-top:2px">The Analyst</div>
+        <div style="font-size:11px;color:#6B7280;margin-top:6px">Claude Sonnet 4.6<br>QA validation · Bias detection · Cross-verification</div>
+      </div>
+      <div style="text-align:center;padding:14px 10px;background:linear-gradient(135deg,#F0FDF4,#DCFCE7);border-radius:10px">
+        <div style="font-size:24px">🟢</div>
+        <div style="font-weight:700;font-size:14px;color:#16A34A;margin-top:4px">FORGE</div>
+        <div style="font-size:10px;font-weight:600;color:#22C55E;text-transform:uppercase;letter-spacing:.05em;margin-top:2px">The Builder</div>
+        <div style="font-size:11px;color:#6B7280;margin-top:6px">GPT-5.2 (Codex)<br>Code implementation · Algorithm engineering · Execution</div>
+      </div>
+      <div style="text-align:center;padding:14px 10px;background:linear-gradient(135deg,#FFF7ED,#FED7AA);border-radius:10px">
+        <div style="font-size:24px">🟠</div>
+        <div style="font-weight:700;font-size:14px;color:#D97706;margin-top:4px">SCOUT</div>
+        <div style="font-size:10px;font-weight:600;color:#F59E0B;text-transform:uppercase;letter-spacing:.05em;margin-top:2px">The Explorer</div>
+        <div style="font-size:11px;color:#6B7280;margin-top:6px">MiniMax 2.5<br>Alternative perspectives · Contrarian analysis · Diversity</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:#6B7280;text-align:center">
+      All 5 AI agents collaborate through debate, critique, and consensus protocols. No single point of failure.
+    </div>
+  </div>
+
   <!-- Accelerated Learning Stats -->
   <div class="card mb2">
     <div class="ctitle">⚡ Accelerated Learning Engine Status</div>
@@ -953,11 +993,11 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
         </select>
         <select id="log-filter-source" onchange="loadLogs()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:13px">
           <option value="">All Sources</option>
-          <option value="claude">Claude</option>
-          <option value="gpt-5.2">GPT-5.2</option>
-          <option value="glm-5">GLM-5</option>
-          <option value="sonnet-4.6">Sonnet 4.6</option>
-          <option value="multi-model">Multi-Model</option>
+          <option value="claude">NEXUS PRIME (Claude)</option>
+          <option value="gpt-5.2">FORGE (GPT-5.2)</option>
+          <option value="glm-5">SAGE (GLM-5)</option>
+          <option value="sonnet-4.6">SENTINEL (Sonnet)</option>
+          <option value="multi-model">Multi-Model Debate</option>
           <option value="user">User</option>
         </select>
         <label style="font-size:11px;color:var(--fg-muted);display:flex;align-items:center;gap:4px">
@@ -980,8 +1020,10 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
         </div>
         <div style="display:flex;gap:6px">
           <input type="text" id="log-chat-input" placeholder="Ask about research findings..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:13px" onkeydown="if(event.key==='Enter')sendLogChat()">
-          <select id="log-chat-model" style="padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:12px;width:90px">
-            <option value="glm-5">GLM-5</option>
+          <select id="log-chat-model" style="padding:6px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:12px;width:120px">
+            <option value="glm-5">🧠 SAGE</option>
+            <option value="claude-sonnet-4-6">🔵 SENTINEL</option>
+            <option value="codex">🟢 FORGE</option>
           </select>
           <button class="btn btn-s" onclick="sendLogChat()" style="padding:6px 14px">Send</button>
         </div>
@@ -1475,11 +1517,11 @@ function onModelChange() {
   const sel = document.getElementById('model-select');
   const badge = document.getElementById('chat-model-badge');
   const labels = {
-    'glm-5': 'GLM-5',
-    'claude-sonnet-4-6': 'Sonnet 4.6',
-    'claude-opus-4-6': 'Opus 4.6',
-    'codex': 'GPT-5.2',
-    'minimax-2.5': 'MiniMax 2.5',
+    'glm-5': 'SAGE',
+    'claude-sonnet-4-6': 'SENTINEL',
+    'claude-opus-4-6': 'NEXUS PRIME',
+    'codex': 'FORGE',
+    'minimax-2.5': 'SCOUT',
   };
   if (badge) badge.textContent = labels[sel.value] || sel.value;
 }
@@ -2221,10 +2263,12 @@ function toggleDebateMode(){
 
 function modelTag(model){
   const m=(model||'').toLowerCase();
-  if(m.includes('glm'))return`<span class="debate-model-tag tag-glm">🤖 GLM-5</span>`;
-  if(m.includes('claude')||m.includes('sonnet')||m.includes('opus'))return`<span class="debate-model-tag tag-claude">🔵 Claude</span>`;
-  if(m.includes('codex')||m.includes('gpt'))return`<span class="debate-model-tag tag-codex">🟢 GPT-5.2</span>`;
-  if(m.includes('minimax'))return`<span class="debate-model-tag tag-minimax">🟠 MiniMax</span>`;
+  if(m.includes('glm'))return`<span class="debate-model-tag tag-glm">🧠 SAGE (GLM-5)</span>`;
+  if(m.includes('sonnet'))return`<span class="debate-model-tag tag-claude">🔵 SENTINEL (Sonnet)</span>`;
+  if(m.includes('opus'))return`<span class="debate-model-tag tag-claude">🟣 NEXUS PRIME (Opus)</span>`;
+  if(m.includes('claude'))return`<span class="debate-model-tag tag-claude">🔵 SENTINEL (Claude)</span>`;
+  if(m.includes('codex')||m.includes('gpt'))return`<span class="debate-model-tag tag-codex">🟢 FORGE (GPT-5.2)</span>`;
+  if(m.includes('minimax'))return`<span class="debate-model-tag tag-minimax">🟠 SCOUT (MiniMax)</span>`;
   return`<span class="debate-model-tag" style="background:#f1f5f9">${escHtml(model)}</span>`;
 }
 
@@ -2299,7 +2343,7 @@ function sendMsg(){
     const thinkId='debate-thinking-'+Date.now();
     addMsg('a',`<div id="${thinkId}" style="display:flex;align-items:center;gap:8px;color:var(--fg-muted);font-size:13px">
       <div class="loading-dot"></div>
-      ⚔️ Calling 4 models in 3 rounds... (GLM-5 → Claude → GPT-5.2 → MiniMax → Synthesis)
+      ⚔️ Calling 4 agents in 3 rounds... (SAGE → SENTINEL → FORGE → SCOUT → Synthesis)
       <span style="font-size:11px">~30-60s</span>
     </div>`,true);
     fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},
