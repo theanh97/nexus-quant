@@ -494,8 +494,47 @@ def _sample_candidate_cfg(
         cand["w_funding_trend"] = pick("w_funding_trend", cast=float, fallback=[0.0, 0.05, 0.10])
         cand["rebalance_interval_bars"] = pick("rebalance_interval_bars", cast=int, fallback=[72, 120, 168, 240, 336])
         cand["target_gross_leverage"] = pick("target_gross_leverage", cast=float, fallback=[0.20, 0.30, 0.35, 0.45, 0.55])
-        cand["mr_lookback_bars"] = pick("mr_lookback_bars", cast=int, fallback=[24, 36, 48, 72, 96])
+        cand["mean_reversion_lookback_bars"] = pick("mean_reversion_lookback_bars", cast=int, fallback=[24, 36, 48, 72, 96])
         cand["risk_weighting"] = pick("risk_weighting", cast=str, fallback=["equal", "inverse_vol"])
+        return {"name": name, "params": cand}
+
+    if name == "regime_mixer":
+        cand = dict(base_params)
+        cand["bull_threshold"] = pick("bull_threshold", cast=float, fallback=[0.01, 0.02, 0.03, 0.05])
+        cand["bear_threshold"] = pick("bear_threshold", cast=float, fallback=[0.01, 0.02, 0.03, 0.05])
+        cand["vol_spike_threshold"] = pick("vol_spike_threshold", cast=float, fallback=[1.3, 1.5, 1.8, 2.0])
+        cand["smoothing_alpha"] = pick("smoothing_alpha", cast=float, fallback=[0.05, 0.10, 0.15, 0.25])
+        cand["rebalance_interval_bars"] = pick("rebalance_interval_bars", cast=int, fallback=[12, 24, 48])
+        cand["regime_lookback_bars"] = pick("regime_lookback_bars", cast=int, fallback=[72, 168, 336])
+        return {"name": name, "params": cand}
+
+    if name == "low_vol_alpha":
+        max_k = max(1, len(dataset.symbols) // 2)
+        k = pick("k_per_side", cast=int, fallback=[1, 2, 3])
+        k = max(1, min(k, max_k))
+        cand = dict(base_params)
+        cand["k_per_side"] = k
+        cand["vol_lookback_bars"] = pick("vol_lookback_bars", cast=int, fallback=[72, 168, 336])
+        cand["target_gross_leverage"] = pick("target_gross_leverage", cast=float, fallback=[0.20, 0.35, 0.50])
+        cand["rebalance_interval_bars"] = pick("rebalance_interval_bars", cast=int, fallback=[12, 24, 48])
+        return {"name": name, "params": cand}
+
+    if name == "funding_carry_alpha":
+        max_k = max(1, len(dataset.symbols) // 2)
+        k = pick("k_per_side", cast=int, fallback=[1, 2, 3])
+        k = max(1, min(k, max_k))
+        cand = dict(base_params)
+        cand["k_per_side"] = k
+        cand["vol_lookback_bars"] = pick("vol_lookback_bars", cast=int, fallback=[72, 168, 336])
+        cand["target_gross_leverage"] = pick("target_gross_leverage", cast=float, fallback=[0.20, 0.35, 0.50])
+        cand["rebalance_interval_bars"] = pick("rebalance_interval_bars", cast=int, fallback=[24, 48, 168])
+        return {"name": name, "params": cand}
+
+    if name == "regime_switch_ensemble":
+        cand = dict(base_params)
+        cand["regime_lookback_bars"] = pick("regime_lookback_bars", cast=int, fallback=[72, 168, 336])
+        cand["regime_threshold"] = pick("regime_threshold", cast=float, fallback=[-0.01, 0.0, 0.01, 0.02])
+        cand["target_gross_leverage"] = pick("target_gross_leverage", cast=float, fallback=[0.20, 0.35, 0.50])
         return {"name": name, "params": cand}
 
     # Unknown strategy: no-op
