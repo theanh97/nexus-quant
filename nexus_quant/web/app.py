@@ -20,8 +20,12 @@ try:
     from pydantic import BaseModel
     class ChatRequest(BaseModel):
         message: str = ""
+    class FeedbackRequest(BaseModel):
+        message: str = ""
+        tags: List[str] = []
 except ImportError:
     ChatRequest = None  # type: ignore
+    FeedbackRequest = None  # type: ignore
 
 
 def _read_json(path: Path) -> Optional[Dict[str, Any]]:
@@ -81,6 +85,120 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
 
     app = FastAPI(title="NEXUS Quant Dashboard", version="1.0")
     static_dir = Path(__file__).parent / "static"
+
+    def _repo_root() -> Path:
+        return Path(__file__).resolve().parents[2]
+
+    def _safe_resolve_path(root: Path, p: Path) -> Optional[Path]:
+        try:
+            rp = p.resolve()
+        except Exception:
+            return None
+        try:
+            rp.relative_to(root.resolve())
+        except Exception:
+            return None
+        return rp
+
+    def _extract_tail_after(phrase: str, text: str) -> Optional[str]:
+        import re
+        m = re.search(rf"\\b{re.escape(phrase)}\\b(.*)$", text, flags=re.IGNORECASE)
+        if not m:
+            return None
+        raw = (m.group(1) or "").strip()
+        return raw or None
+
+    def _candidate_path_strings(text: str) -> List[str]:
+        import re
+        raw: List[str] = []
+        raw.extend(re.findall(r"`([^`]+)`", text or ""))
+        raw.extend(re.findall(r"\"([^\"]+)\"", text or ""))
+        raw.extend(re.findall(r"'([^']+)'", text or ""))
+        raw.extend((text or "").split())
+
+        cleaned: List[str] = []
+        for s in raw:
+            v = (s or "").strip()
+            v = v.strip(" \t\r\n'\"`")
+            v = v.strip("()[]{}<>")
+            v = v.rstrip("?.!,;:")
+            if v:
+                cleaned.append(v)
+        return cleaned
+
+    def _find_existing_file(
+        text: str,
+        *,
+        allowed_roots: List[Path],
+        must_suffix: Optional[str] = None,
+    ) -> Optional[Path]:
+        suffix = (must_suffix or "").lower().strip()
+        for cand in _candidate_path_strings(text):
+            p = Path(cand)
+            if suffix and p.suffix.lower() != suffix:
+                continue
+            if p.is_absolute():
+                for root in allowed_roots:
+                    safe = _safe_resolve_path(root, p)
+                    if safe and safe.exists() and safe.is_file():
+                        return safe
+                continue
+
+            for root in allowed_roots:
+                safe = _safe_resolve_path(root, root / p)
+                if safe and safe.exists() and safe.is_file():
+                    return safe
+        return None
+
+    def _looks_like_file_token(token: str) -> bool:
+        t = (token or "").strip()
+        if not t:
+            return False
+        if "/" in t or "\\" in t:
+            return True
+        if t.startswith(".") and len(t) > 1:
+            return True
+        suffix = Path(t).suffix.lower()
+        return suffix in {
+            ".py",
+            ".json",
+            ".md",
+            ".txt",
+            ".html",
+            ".csv",
+            ".yaml",
+            ".yml",
+            ".toml",
+            ".ini",
+            ".log",
+        }
+
+    def _read_text_preview(path: Path, *, limit_chars: int = 12000) -> str:
+        try:
+            data = path.read_bytes()
+        except Exception as e:
+            return f"[error reading {path}: {e}]"
+        try:
+            text = data.decode("utf-8")
+        except Exception:
+            text = data.decode("utf-8", errors="replace")
+        if len(text) <= limit_chars:
+            return text
+        return text[:limit_chars] + "\n\n[truncated]"
+
+    def _rag_search(q: str, *, limit: int) -> List[Dict[str, Any]]:
+        q = (q or "").strip()
+        if not q:
+            return []
+        limit_i = max(1, min(int(limit or 5), 20))
+        try:
+            from ..memory.rag import NexusRAG
+            rag = NexusRAG(artifacts_dir)
+            if not rag.index_path.exists():
+                rag.rebuild()
+            return rag.search(q, top_k=limit_i)
+        except Exception:
+            return []
 
     # ── API routes ─────────────────────────────────────────────────────────
 
@@ -374,6 +492,24 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 continue
         return JSONResponse(list(reversed(out)))
 
+    @app.get("/api/brain/search")
+    def api_brain_search(q: str = "", limit: int = 5) -> JSONResponse:
+        """RAG search over memory + diary."""
+        hits = _rag_search(q, limit=limit)
+        out = []
+        for h in hits:
+            content = str(h.get("content") or "")
+            out.append(
+                {
+                    "doc_id": str(h.get("doc_id") or ""),
+                    "score": float(h.get("score") or 0.0),
+                    "content_preview": content[:300],
+                    "source": str(h.get("source") or ""),
+                    "date": str(h.get("date") or h.get("created_at") or ""),
+                }
+            )
+        return JSONResponse(out)
+
     @app.post("/api/chat")
     async def api_chat(body: ChatRequest) -> JSONResponse:
         """Chat with NEXUS. POST body: {"message": "..."}"""
@@ -382,6 +518,66 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             user_msg = str(body.message or "")[:1000]
             if not user_msg:
                 return JSONResponse({"response": "Please ask me something."})
+
+            rag_hits = _rag_search(user_msg, limit=3)
+            rag_ctx_lines: List[str] = []
+            for i, h in enumerate(rag_hits[:3], start=1):
+                date = str(h.get("date") or h.get("created_at") or "")
+                src = str(h.get("source") or "")
+                doc_id = str(h.get("doc_id") or "")
+                score = float(h.get("score") or 0.0)
+                snippet = str(h.get("content") or "")[:500].replace("\n", " ").strip()
+                rag_ctx_lines.append(f"[{i}] {doc_id} ({src} {date}) score={score:.4f}: {snippet}")
+            rag_ctx = "\n".join(rag_ctx_lines).strip()
+
+            low = user_msg.lower()
+            if "what are my goals" in low:
+                try:
+                    from ..brain.goals import GoalTracker
+                    gt = GoalTracker(artifacts_dir)
+                    goals = [g.to_dict() for g in gt.all_goals()]
+                    active = [g for g in goals if str(g.get("status") or "").lower() == "active"]
+                    if not goals:
+                        resp = "No goals found."
+                    elif not active:
+                        resp = "No active goals.\n\n" + "\n".join(f"- {g.get('title','')}".rstrip() for g in goals[:10])
+                    else:
+                        resp = "Active goals:\n" + "\n".join(f"- {g.get('title','')}".rstrip() for g in active[:10])
+                    return JSONResponse(
+                        {
+                            "response": resp,
+                            "goals": goals,
+                            "ts": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+                        }
+                    )
+                except Exception as e:
+                    return JSONResponse(
+                        {
+                            "response": f"Error loading goals: {e}",
+                            "ts": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+                        }
+                    )
+
+            show_tail = _extract_tail_after("show me", user_msg)
+            if show_tail:
+                repo_root = _repo_root()
+                file_like = [c for c in _candidate_path_strings(show_tail) if _looks_like_file_token(c)]
+                chosen = _find_existing_file(" ".join(file_like), allowed_roots=[repo_root, artifacts_dir])
+                if file_like and chosen:
+                    content = _read_text_preview(chosen)
+                    return JSONResponse(
+                        {
+                            "response": f"File: {chosen}\n\n{content}",
+                            "ts": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+                        }
+                    )
+                if file_like and not chosen:
+                    return JSONResponse(
+                        {
+                            "response": f"File not found or not allowed: {file_like[0]}",
+                            "ts": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+                        }
+                    )
 
             # Build context
             ctx: dict = {}
@@ -421,9 +617,50 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             try:
                 from ..brain.reasoning import answer_question
                 from ..brain.identity import NEXUS_PERSONA
-                response = answer_question(user_msg, ctx, persona=NEXUS_PERSONA)
+                augmented = user_msg
+                if rag_ctx:
+                    augmented = f"{user_msg}\n\nRelevant context (RAG):\n{rag_ctx}"
+                response = answer_question(augmented, ctx, persona=NEXUS_PERSONA)
             except Exception as e:
                 response = f"I encountered an issue processing your question: {e}"
+
+            tool_result: Optional[Dict[str, Any]] = None
+            try:
+                from ..run import run_one, improve_one
+                if "run backtest" in low:
+                    cfg_path = _find_existing_file(user_msg, allowed_roots=[_repo_root()], must_suffix=".json")
+                    if cfg_path is None:
+                        default_cfg = _repo_root() / "configs" / "run_synthetic_funding.json"
+                        cfg_path = default_cfg if default_cfg.exists() else None
+                    if cfg_path is None or not cfg_path.exists():
+                        tool_result = {"tool": "run_backtest", "ok": False, "error": "No config file found"}
+                    else:
+                        run_id = run_one(cfg_path, artifacts_dir)
+                        tool_result = {
+                            "tool": "run_backtest",
+                            "ok": True,
+                            "run_id": run_id,
+                            "config": str(cfg_path),
+                        }
+                elif "run experiment" in low:
+                    cfg_path = _find_existing_file(user_msg, allowed_roots=[_repo_root()], must_suffix=".json")
+                    if cfg_path is None:
+                        default_cfg = _repo_root() / "configs" / "run_synthetic_funding.json"
+                        cfg_path = default_cfg if default_cfg.exists() else None
+                    if cfg_path is None or not cfg_path.exists():
+                        tool_result = {"tool": "run_experiment", "ok": False, "error": "No config file found"}
+                    else:
+                        run_id = improve_one(cfg_path, artifacts_dir, trials=10)
+                        tool_result = {
+                            "tool": "run_experiment",
+                            "ok": True,
+                            "run_id": run_id,
+                            "config": str(cfg_path),
+                            "trials": 10,
+                        }
+            except Exception as e:
+                if ("run backtest" in low) or ("run experiment" in low):
+                    tool_result = {"tool": "runner", "ok": False, "error": str(e)}
 
             # Log to notifications
             try:
@@ -436,12 +673,64 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             except Exception:
                 pass
 
-            return JSONResponse({
+            payload: Dict[str, Any] = {
                 "response": response,
                 "ts": _dt.datetime.now(_dt.timezone.utc).isoformat(),
-            })
+            }
+            if tool_result is not None:
+                payload["tool_result"] = tool_result
+            return JSONResponse(payload)
         except Exception as e:
             return JSONResponse({"response": f"Error: {e}"})
+
+    @app.post("/api/feedback")
+    async def api_feedback(body: FeedbackRequest) -> JSONResponse:
+        import datetime as _dt
+        try:
+            msg = str(body.message or "").strip()
+            tags = body.tags or []
+            tags_list = [str(t) for t in tags if t is not None and str(t).strip()]
+            if not msg:
+                return JSONResponse({"ok": False, "error": "message is required"})
+
+            from ..memory.store import MemoryStore
+            db = artifacts_dir / "memory" / "memory.db"
+            ms = MemoryStore(db)
+            try:
+                item_id = ms.add(
+                    created_at=_dt.datetime.now(_dt.timezone.utc).isoformat(),
+                    kind="feedback",
+                    tags=tags_list,
+                    content=msg,
+                    meta={"source": "web", "endpoint": "/api/feedback"},
+                )
+            finally:
+                ms.close()
+
+            try:
+                (artifacts_dir / "brain" / "rag_index.json").unlink()
+            except Exception:
+                pass
+
+            return JSONResponse({"ok": True, "id": str(item_id)})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)})
+
+    @app.get("/api/report")
+    def api_report() -> HTMLResponse:
+        out_path = artifacts_dir / "reports" / "latest.html"
+        try:
+            from ..report_cli import generate_report
+            generate_report(artifacts_dir=artifacts_dir, out_path=out_path)
+            html_doc = out_path.read_text("utf-8")
+        except Exception as e:
+            html_doc = f"<html><body><h1>Report error</h1><pre>{json.dumps({'error': str(e)})}</pre></body></html>"
+            try:
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                out_path.write_text(html_doc, encoding="utf-8")
+            except Exception:
+                pass
+        return HTMLResponse(content=html_doc)
 
     # ── Serve static dashboard ─────────────────────────────────────────────
 
