@@ -15,23 +15,23 @@
     "name": "ml_factor_xs_v1",
     "params": {
       "k_per_side": 2,
-      "ols_window": 336,
-      "ols_refit_every": 12,
+      "ols_window": 504,
+      "ols_refit_every": 24,
       "ols_min_samples": 30,
-      "min_warmup_bars": 240,
+      "min_warmup_bars": 336,
       "risk_weighting": "inverse_vol",
-      "vol_lookback_bars": 72,
-      "target_gross_leverage": 0.50,
-      "rebalance_interval_bars": 12
+      "vol_lookback_bars": 168,
+      "target_gross_leverage": 0.30,
+      "rebalance_interval_bars": 24
     }
   },
   "costs": {"fee_rate": 0.0005, "slippage_rate": 0.0003, "cost_multiplier": 1.0},
   "benchmark": {"version": "v1", "walk_forward": {"enabled": true}},
   "risk": {
-    "max_drawdown": 0.25,
-    "max_turnover_per_rebalance": 1.0,
-    "max_gross_leverage": 1.0,
-    "max_position_per_symbol": 0.35
+    "max_drawdown": 0.20,
+    "max_turnover_per_rebalance": 0.8,
+    "max_gross_leverage": 0.6,
+    "max_position_per_symbol": 0.25
   },
   "self_learn": {
     "enabled": true,
