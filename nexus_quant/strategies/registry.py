@@ -18,6 +18,7 @@ from .regime_adaptive import NexusAlphaV1RegimeStrategy, NexusAlphaV1VolScaledSt
 from .orderflow_alpha import OrderflowAlphaV1Strategy
 from .positioning_alpha import PositioningAlphaV1Strategy
 from .nexus_ensemble_v1 import NexusEnsembleV1Strategy
+from .nexus_ensemble_v2 import NexusEnsembleV2Strategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -58,6 +59,9 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
 
     if name == "nexus_ensemble_v1":
         return NexusEnsembleV1Strategy(params=params)
+
+    if name == "nexus_ensemble_v2":
+        return NexusEnsembleV2Strategy(params=params)
 
     if name == "ensemble_v1":
         sub_cfgs = params.pop("sub_strategies", [])

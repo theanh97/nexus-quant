@@ -1,0 +1,41 @@
+{
+  "_comment": "Positioning Alpha V1: proxy mode. 2022 Bear test. V3 params: 72h rebalance, longer lookbacks, tuned weights.",
+  "run_name": "positioning_alpha_v1_2022",
+  "seed": 42,
+  "venue": {"name": "binance_usdm", "kind": "crypto_perp", "vip_tier": 0},
+  "data": {
+    "provider": "binance_rest_v1",
+    "symbols": [
+      "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+      "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT"
+    ],
+    "start": "2022-01-01T00:00:00Z",
+    "end": "2023-01-01T00:00:00Z",
+    "bar_interval": "1h",
+    "cache_dir": ".cache/binance_rest"
+  },
+  "execution": {"style": "taker", "slippage_bps": 3.0},
+  "strategy": {
+    "name": "positioning_alpha_v1",
+    "params": {
+      "oi_lookback_bars": 72,
+      "ls_lookback_bars": 336,
+      "w_oi_momentum": 0.25,
+      "w_contrarian_ls": 0.55,
+      "w_smart_money": 0.20,
+      "k_per_side": 2,
+      "target_gross_leverage": 0.35,
+      "vol_lookback_bars": 168,
+      "rebalance_interval_bars": 72
+    }
+  },
+  "costs": {"fee_rate": 0.0005, "slippage_rate": 0.0003, "cost_multiplier": 1.0},
+  "benchmark": {"version": "v1", "walk_forward": {"enabled": true}},
+  "risk": {
+    "max_drawdown": 0.20,
+    "max_turnover_per_rebalance": 0.8,
+    "max_gross_leverage": 0.7,
+    "max_position_per_symbol": 0.3
+  },
+  "self_learn": {"enabled": false}
+}
