@@ -91,6 +91,55 @@ tr:hover td{background:var(--surface2)}
 .srow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
 .srow:last-child{border-bottom:none}
 .srow .lbl{color:var(--fg-muted)}.srow .val{font-weight:500}
+/* Console */
+.console-wrap{display:grid;grid-template-columns:280px 1fr;gap:14px;height:calc(100vh - 200px);min-height:500px}
+@media(max-width:900px){.console-wrap{grid-template-columns:1fr}}
+.proc-list{display:flex;flex-direction:column;gap:6px}
+.proc-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:12px}
+.proc-item.running{border-color:var(--green)}
+.proc-item.stopped{border-color:var(--border);opacity:.7}
+.proc-status{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.proc-status.running{background:var(--green);animation:pulse 2s infinite}
+.proc-status.stopped{background:var(--border)}
+.ctrl-btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ctrl-btn{padding:5px 11px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:12px;cursor:pointer;transition:all .2s}
+.ctrl-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ctrl-btn.danger:hover{background:#EF4444;border-color:#EF4444;color:#fff}
+.log-viewer{display:flex;flex-direction:column;height:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.log-tabs{display:flex;gap:0;border-bottom:1px solid var(--border)}
+.log-tab{padding:7px 14px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;color:var(--fg-muted)}
+.log-tab.active{border-bottom-color:var(--accent);color:var(--accent);font-weight:600}
+.log-body{flex:1;overflow-y:auto;padding:10px 12px;font-size:11px;font-family:monospace;line-height:1.5;background:#1E2030;color:#C5C8C6}
+.log-body .lg-info{color:#7EC8E3}
+.log-body .lg-warn{color:#F9C74F}
+.log-body .lg-err{color:#FF6B6B}
+.log-body .lg-ok{color:#90EE90}
+.phase-timeline{display:flex;flex-direction:column;gap:4px}
+.phase-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;font-size:12px}
+.phase-item.done{background:var(--green-light)}
+.phase-item.curr{background:var(--accent-light)}
+.phase-num{font-weight:700;font-size:11px;min-width:36px;color:var(--accent)}
+.year-bar-wrap{display:flex;align-items:flex-end;gap:8px;height:120px;padding:8px 0}
+.year-bar-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px}
+.year-bar{width:100%;border-radius:4px 4px 0 0;transition:height .4s ease;min-height:4px;cursor:pointer}
+.year-bar.pos{background:linear-gradient(180deg,var(--green),#86efac)}
+.year-bar.neg{background:linear-gradient(180deg,#FF6B6B,#fca5a5)}
+.year-bar.is{background:linear-gradient(180deg,var(--yellow),#fde68a);opacity:.6}
+.year-bar-lbl{font-size:10px;color:var(--fg-muted);text-align:center}
+.year-bar-val{font-size:11px;font-weight:700;text-align:center}
+.bias-card{border-left:4px solid #EF4444}
+.bias-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.bias-row:last-child{border-bottom:none}
+.bias-type{color:var(--fg-muted)}
+.bias-verdict.pass{color:var(--green);font-weight:600}
+.bias-verdict.warn{color:var(--yellow);font-weight:600}
+.bias-verdict.fail{color:#EF4444;font-weight:600}
+.sys-meter{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px}
+.sys-bar{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden}
+.sys-fill{height:100%;border-radius:4px;transition:width .5s}
+.sys-fill.ok{background:var(--green)}
+.sys-fill.warn{background:var(--yellow)}
+.sys-fill.crit{background:#EF4444}
 
 /* Chat */
 .chat-wrap{display:grid;grid-template-columns:1fr 280px;gap:14px;height:calc(100vh - 200px);min-height:560px}
@@ -227,6 +276,7 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
   <div class="tab" onclick="go('files')">📁 Files</div>
   <div class="tab" onclick="go('market')">📡 Market</div>
   <div class="tab" onclick="go('pitch')">🎯 Pitch</div>
+  <div class="tab" onclick="go('console')">⚙️ Console</div>
 </nav>
 
 <!-- KPI Strip -->
@@ -348,6 +398,54 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
           <li>2020 pandemic crash data not yet tested</li>
         </ul>
       </div>
+    </div>
+  </div>
+  <!-- Sharpe by Year bar chart -->
+  <div class="card mb2">
+    <div class="ctitle">📊 Sharpe by Year — Full Cycle OOS Summary
+      <span class="bdg bg-g" style="font-size:10px">IS=2024 ONLY</span>
+    </div>
+    <div class="year-bar-wrap" id="year-bar-chart"></div>
+    <div style="display:flex;gap:12px;margin-top:6px;font-size:11px;color:var(--fg-muted)">
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:3px"></span>Positive OOS</span>
+      <span><span style="display:inline-block;width:10px;height:10px;background:var(--yellow);border-radius:2px;opacity:.6;margin-right:3px"></span>In-Sample (2024)</span>
+    </div>
+  </div>
+  <!-- Bias Monitor -->
+  <div class="card mb2 bias-card">
+    <div class="ctitle">⚠️ Bias & Overfitting Monitor
+      <span class="bdg bg-r" style="font-size:10px">CRITICAL</span>
+    </div>
+    <div class="bias-row">
+      <span class="bias-type">In-Sample Bias (2024)</span>
+      <span class="bias-verdict warn">FLAGGED — Sharpe=2.78 IS inflated vs OOS avg 1.01</span>
+    </div>
+    <div class="bias-row">
+      <span class="bias-type">Look-Ahead Bias</span>
+      <span class="bias-verdict pass">PASS — OOS predictions use t-1 data only, no future leakage</span>
+    </div>
+    <div class="bias-row">
+      <span class="bias-type">Selection Bias (k, rebal window)</span>
+      <span class="bias-verdict warn">PARTIAL — 168h/48h tested ~7 variants; DSR adjusted</span>
+    </div>
+    <div class="bias-row">
+      <span class="bias-type">Survivorship Bias</span>
+      <span class="bias-verdict warn">PARTIAL — 10 majors only; MATICUSDT rename handled</span>
+    </div>
+    <div class="bias-row">
+      <span class="bias-type">Multiple Testing (DSR)</span>
+      <span class="bias-verdict warn">DSR=0.46 — 30+ experiments; discount applies to IS results</span>
+    </div>
+    <div class="bias-row">
+      <span class="bias-type">Regime Bias (regime lock-in)</span>
+      <span class="bias-verdict pass">PASS — Tested bull/bear/recovery/sideways across 5 years</span>
+    </div>
+    <div class="bias-row">
+      <span class="bias-type">Walk-Forward Stability</span>
+      <span class="bias-verdict pass">PASS — 67% of 2023 WF windows profitable; 85% Monte Carlo paths</span>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--fg-muted)">
+      💡 Honest OOS Sharpe = <strong>1.01</strong> (avg 2021+2022+2023+2025). Use this, not the IS 2024 number.
     </div>
   </div>
   <div class="card mt2">
@@ -795,6 +893,93 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
 </div>
 
 <!-- Toast -->
+<!-- ═══ CONSOLE ═══ -->
+<div class="page" id="page-console">
+  <div class="rowb mb2">
+    <div class="section-title" style="margin-bottom:0">⚙️ NEXUS Console — Live Process Control</div>
+    <div class="row">
+      <button class="btn btn-s btn-sm" onclick="refreshConsole()">↻ Refresh</button>
+    </div>
+  </div>
+  <div class="console-wrap">
+    <!-- Left panel: processes + controls -->
+    <div style="display:flex;flex-direction:column;gap:14px;overflow-y:auto">
+      <!-- System Status -->
+      <div class="card">
+        <div class="ctitle">🖥 System Status</div>
+        <div id="sys-status"><div class="empty">Loading...</div></div>
+      </div>
+      <!-- Running Processes -->
+      <div class="card">
+        <div class="ctitle">🔄 Active Processes
+          <span id="proc-count" class="bdg bg-g" style="font-size:10px">0</span>
+        </div>
+        <div class="proc-list" id="proc-list"><div class="empty">Loading...</div></div>
+      </div>
+      <!-- Quick Controls -->
+      <div class="card">
+        <div class="ctitle">🎮 Control Panel</div>
+        <div style="font-size:11px;color:var(--fg-muted);margin-bottom:8px">Start / stop NEXUS processes:</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <button class="ctrl-btn" onclick="ctrlAction('start','brain')">▶ Start Brain</button>
+          <button class="ctrl-btn danger" onclick="ctrlAction('stop','brain')">⏹ Stop Brain</button>
+          <button class="ctrl-btn" onclick="ctrlAction('start','research')">▶ Start Research</button>
+          <button class="ctrl-btn danger" onclick="ctrlAction('stop','research')">⏹ Stop Research</button>
+          <button class="ctrl-btn" onclick="ctrlAction('restart','brain')">↺ Restart Brain</button>
+          <button class="ctrl-btn" onclick="ctrlAction('restart','research')">↺ Restart Research</button>
+        </div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--fg-muted);margin-bottom:6px">Run backtest:</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select id="backtest-cfg" style="flex:1;font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--fg)">
+              <option value="configs/run_synthetic_funding.json">Synthetic Funding</option>
+              <option value="configs/run_binance_v1_full_2023_2025.json">V1 Full 2023-2025</option>
+              <option value="configs/run_binance_nexus_alpha_v1_2025ytd.json">V1 2025 YTD</option>
+              <option value="configs/run_binance_v1_2022_bear.json">V1 2022 Bear</option>
+            </select>
+            <button class="ctrl-btn" onclick="ctrlAction('start','backtest')">▶ Run</button>
+          </div>
+        </div>
+        <div id="ctrl-result" style="margin-top:8px;font-size:11px;color:var(--accent);min-height:16px"></div>
+      </div>
+      <!-- Phase Timeline -->
+      <div class="card">
+        <div class="ctitle">📋 Completed Phases</div>
+        <div class="phase-timeline">
+          <div class="phase-item done"><span class="phase-num">Ph 1-10</span><span>Real data, venue costs, walk-forward, risk, ML, agents</span></div>
+          <div class="phase-item done"><span class="phase-num">Ph 11</span><span>NEXUS Brain — GLM-5 + diary + goals</span></div>
+          <div class="phase-item done"><span class="phase-num">Ph 12</span><span>RAG-lite TF-IDF + SmartRouter</span></div>
+          <div class="phase-item done"><span class="phase-num">Ph 13</span><span>Bias checker + web research tools</span></div>
+          <div class="phase-item done"><span class="phase-num">Ph 14</span><span>Kanban + team reports + live market</span></div>
+          <div class="phase-item done"><span class="phase-num">Ph 29-31</span><span>OOS validation — avg Sharpe 1.01</span></div>
+          <div class="phase-item done"><span class="phase-num">Ph 32</span><span>Multi-model chat + memory tree</span></div>
+          <div class="phase-item curr"><span class="phase-num">Ph 33</span><span>Console + UI/UX overhaul ← current</span></div>
+        </div>
+      </div>
+    </div>
+    <!-- Right panel: log viewer -->
+    <div class="log-viewer">
+      <div class="log-tabs">
+        <div class="log-tab active" id="ltab-dashboard" onclick="switchLogTab('dashboard')">Dashboard</div>
+        <div class="log-tab" id="ltab-brain" onclick="switchLogTab('brain')">Brain</div>
+        <div class="log-tab" id="ltab-research" onclick="switchLogTab('research')">Research</div>
+        <div class="log-tab" id="ltab-backtest" onclick="switchLogTab('backtest')">Backtest</div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:4px 8px">
+          <label style="font-size:11px;color:var(--fg-muted);display:flex;align-items:center;gap:4px">
+            <input type="checkbox" id="log-auto" checked onchange="toggleLogAuto()"> Auto
+          </label>
+          <button class="btn btn-s btn-sm" onclick="refreshLog()">↻</button>
+        </div>
+      </div>
+      <div class="log-body" id="log-body"><span style="color:#888">Connecting to log stream...</span></div>
+      <div style="padding:6px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--fg-muted);display:flex;justify-content:space-between">
+        <span id="log-info">Lines: 0</span>
+        <span id="log-updated">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -814,7 +999,7 @@ function toast(m,d=3){const t=$('toast');t.textContent=m;t.classList.add('show')
 function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB';}
 
 // ─── Tab system ───
-const TABS=['overview','chat','benchmark','performance','risk','research','tasks','files','market','pitch'];
+const TABS=['overview','chat','benchmark','performance','risk','research','tasks','files','market','pitch','console'];
 let _tab='overview';
 function go(name){
   $$('.tab').forEach((t,i)=>{t.classList[TABS[i]===name?'add':'remove']('active');});
@@ -1623,7 +1808,8 @@ function loadPitch(){
 
 const LOADERS={
   overview:loadOv,chat:loadChat,benchmark:loadBM,performance:loadPerf,
-  risk:loadRisk,research:loadResearch,tasks:loadTasks,files:loadFiles,market:loadMarket,pitch:loadPitch
+  risk:loadRisk,research:loadResearch,tasks:loadTasks,files:loadFiles,market:loadMarket,pitch:loadPitch,
+  console:refreshConsole
 };
 
 // ─── Auto refresh (fallback polling if SSE fails) ───
@@ -1701,6 +1887,140 @@ function _updateEquityTail(tail){
   _eq.update('none');
 }
 
+// ─── Year Bar Chart (Overview) ───
+function renderYearBars(){
+  const data=[
+    {year:'2021',sharpe:2.047,type:'pos',tip:'Bull market · OOS'},
+    {year:'2022',sharpe:0.112,type:'pos',tip:'Bear (BTC -65%) · OOS · Survived'},
+    {year:'2023',sharpe:1.075,type:'pos',tip:'Recovery · OOS'},
+    {year:'2024',sharpe:2.78,type:'is',tip:'Bull ATH · IN-SAMPLE (biased)'},
+    {year:'2025',sharpe:0.816,type:'pos',tip:'YTD · OOS'},
+  ];
+  const maxS=3.0;
+  const el=$('year-bar-chart');
+  if(!el)return;
+  el.innerHTML=data.map(d=>{
+    const pct=Math.max(4,(d.sharpe/maxS)*100);
+    const cls=d.type==='is'?'year-bar is':'year-bar pos';
+    const valColor=d.type==='is'?'var(--yellow)':'var(--green)';
+    return `<div class="year-bar-col" title="${d.tip}">
+      <div class="year-bar-val" style="color:${valColor}">${d.sharpe.toFixed(2)}</div>
+      <div class="${cls}" style="height:${pct}%;"></div>
+      <div class="year-bar-lbl">${d.year}${d.type==='is'?' (IS)':''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── Console ───
+let _logTarget='dashboard';
+let _logAutoRefresh=true;
+let _logTimer=null;
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function colorLine(line){
+  if(/ERROR|CRITICAL|Exception|Traceback/.test(line)) return `<span class="lg-err">${escHtml(line)}</span>`;
+  if(/WARNING|WARN/.test(line)) return `<span class="lg-warn">${escHtml(line)}</span>`;
+  if(/INFO|started|loaded|done|success/i.test(line)) return `<span class="lg-info">${escHtml(line)}</span>`;
+  if(/Sharpe|OOS|✓|✅/.test(line)) return `<span class="lg-ok">${escHtml(line)}</span>`;
+  return `<span>${escHtml(line)}</span>`;
+}
+
+function refreshLog(){
+  const logMap={dashboard:'/tmp/nexus_dash.log',brain:null,research:null,backtest:'/tmp/nexus_alpha_v1_run.log'};
+  jx(`/api/log_tail?n=200&target=${_logTarget}`).then(d=>{
+    const lines=(d.lines||[]);
+    const el=$('log-body');
+    if(!el)return;
+    el.innerHTML=lines.map(colorLine).join('<br>');
+    el.scrollTop=el.scrollHeight;
+    set('log-info',`Lines: ${lines.length}`);
+    set('log-updated','Updated: '+now());
+  }).catch(e=>{
+    const el=$('log-body');
+    if(el)el.innerHTML=`<span class="lg-warn">Log unavailable: ${escHtml(String(e))}</span>`;
+  });
+}
+
+function switchLogTab(name){
+  _logTarget=name;
+  ['dashboard','brain','research','backtest'].forEach(t=>{
+    const el=$('ltab-'+t);
+    if(el)el.classList[t===name?'add':'remove']('active');
+  });
+  refreshLog();
+}
+
+function toggleLogAuto(){
+  const cb=document.getElementById('log-auto');
+  _logAutoRefresh=cb?cb.checked:true;
+  if(_logAutoRefresh){_logTimer=setInterval(refreshLog,3000);}
+  else{clearInterval(_logTimer);}
+}
+
+function refreshConsole(){
+  // Processes
+  jx('/api/processes').then(d=>{
+    const procs=d.processes||[];
+    set('proc-count',procs.length);
+    if(!procs.length){html('proc-list','<div class="empty text-sm">No NEXUS processes running</div>');return;}
+    html('proc-list',procs.map(p=>`
+      <div class="proc-item ${p.status}">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="proc-status ${p.status}"></div>
+          <div>
+            <div style="font-weight:600">${escHtml(p.name)}</div>
+            <div style="font-size:10px;color:var(--fg-muted)">PID ${p.pid||'—'}</div>
+          </div>
+        </div>
+        <div style="text-align:right;font-size:10px;color:var(--fg-muted)">
+          <div>${escHtml(p.cpu_pct!=null?p.cpu_pct.toFixed(1)+'% CPU':'')}</div>
+          <div>${escHtml(p.mem_mb!=null?p.mem_mb.toFixed(0)+' MB':'')}</div>
+        </div>
+      </div>`).join(''));
+  }).catch(()=>html('proc-list','<div class="empty text-sm">Process monitor unavailable</div>'));
+  // System status
+  jx('/api/system_status').then(d=>{
+    const cpu=d.cpu_pct||0,mem=d.mem_pct||0,disk=d.disk_pct||0;
+    html('sys-status',`
+      <div class="sys-meter">
+        <span style="min-width:40px;color:var(--fg-muted)">CPU</span>
+        <div class="sys-bar"><div class="sys-fill ${cpu>80?'crit':cpu>60?'warn':'ok'}" style="width:${cpu}%"></div></div>
+        <span style="min-width:36px;text-align:right;font-weight:600">${cpu.toFixed(1)}%</span>
+      </div>
+      <div class="sys-meter">
+        <span style="min-width:40px;color:var(--fg-muted)">RAM</span>
+        <div class="sys-bar"><div class="sys-fill ${mem>80?'crit':mem>60?'warn':'ok'}" style="width:${mem}%"></div></div>
+        <span style="min-width:36px;text-align:right;font-weight:600">${mem.toFixed(1)}%</span>
+      </div>
+      <div class="sys-meter">
+        <span style="min-width:40px;color:var(--fg-muted)">Disk</span>
+        <div class="sys-bar"><div class="sys-fill ${disk>90?'crit':disk>70?'warn':'ok'}" style="width:${disk}%"></div></div>
+        <span style="min-width:36px;text-align:right;font-weight:600">${disk.toFixed(1)}%</span>
+      </div>
+      <div style="font-size:11px;color:var(--fg-muted);margin-top:4px">Cache: ${escHtml(d.cache_size||'—')} · Artifacts: ${escHtml(d.artifacts_size||'—')}</div>
+    `);
+  }).catch(()=>html('sys-status','<div class="text-sm text-muted">System stats unavailable</div>'));
+  // Start log auto-refresh
+  clearInterval(_logTimer);
+  refreshLog();
+  if(_logAutoRefresh)_logTimer=setInterval(refreshLog,3000);
+}
+
+function ctrlAction(action,target){
+  const cfg=target==='backtest'?(document.getElementById('backtest-cfg')||{}).value:'';
+  set('ctrl-result','⏳ Sending...');
+  fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action,target,config:cfg||''})})
+  .then(r=>r.json()).then(d=>{
+    const msg=d.status==='ok'?`✅ ${action} ${target}: ${d.message||'done'}`:
+      `❌ ${d.message||'Error'}`;
+    set('ctrl-result',msg);
+    toast(msg,3);
+    setTimeout(refreshConsole,800);
+  }).catch(e=>{set('ctrl-result','❌ Request failed');});
+}
+
 // ─── Clock ───
 setInterval(()=>set('hdr-clock',new Date().toLocaleTimeString()),1000);
 
@@ -1708,6 +2028,7 @@ setInterval(()=>set('hdr-clock',new Date().toLocaleTimeString()),1000);
 _connectSSE();
 loadKPI();
 loadOv();
+renderYearBars();
 </script>
 </body>
 </html>

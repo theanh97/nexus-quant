@@ -25,9 +25,14 @@ try:
     class FeedbackRequest(BaseModel):
         message: str = ""
         tags: List[str] = []
+    class ControlRequest(BaseModel):
+        action: str = "status"   # start | stop | restart | status
+        target: str = "brain"    # brain | research | backtest
+        config: str = ""         # optional config path for backtest
 except ImportError:
     ChatRequest = None  # type: ignore
     FeedbackRequest = None  # type: ignore
+    ControlRequest = None  # type: ignore
 
 
 def _read_json(path: Path) -> Optional[Dict[str, Any]]:
@@ -1641,4 +1646,204 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
     print(f"[NEXUS Dashboard] http://{host}:{port}  artifacts={artifacts_dir}")
+    @app.get("/api/processes")
+    async def api_processes() -> JSONResponse:
+        """List running NEXUS processes."""
+        import subprocess as _sp
+        lines = []
+        try:
+            r = _sp.run(["ps", "aux"], capture_output=True, text=True, timeout=5)
+            for ln in r.stdout.splitlines():
+                if any(k in ln for k in ["nexus_quant", "brain", "dashboard", "start_nexus"]):
+                    parts = ln.split(None, 10)
+                    if len(parts) >= 11:
+                        lines.append({
+                            "pid": parts[1],
+                            "cpu": parts[2],
+                            "mem": parts[3],
+                            "command": parts[10][:120],
+                        })
+        except Exception as e:
+            lines = [{"error": str(e)}]
+
+        # Read saved PIDs if any
+        pid_info: dict = {}
+        pid_file = Path("/tmp/nexus_pids.txt")
+        if pid_file.exists():
+            saved = pid_file.read_text().strip().split()
+            labels = ["dashboard", "brain"]
+            for i, pid in enumerate(saved):
+                if i < len(labels):
+                    pid_info[labels[i]] = pid
+
+        return JSONResponse({
+            "processes": lines,
+            "saved_pids": pid_info,
+            "log_files": {
+                "brain": "/tmp/nexus_brain.log",
+                "dashboard": "/tmp/nexus_dashboard.log",
+            }
+        })
+
+    @app.get("/api/log_tail")
+    async def api_log_tail(target: str = "brain", n: int = 80) -> JSONResponse:
+        """Return last N lines from a NEXUS log file."""
+        log_map = {
+            "brain": Path("/tmp/nexus_brain.log"),
+            "dashboard": Path("/tmp/nexus_dashboard.log"),
+            "research": Path("/tmp/nexus_research.log"),
+        }
+        lp = log_map.get(target, Path(f"/tmp/nexus_{target}.log"))
+        if not lp.exists():
+            return JSONResponse({"lines": [], "exists": False, "path": str(lp)})
+        try:
+            text = lp.read_text("utf-8", errors="replace")
+            lines = text.splitlines()[-n:]
+            return JSONResponse({"lines": lines, "exists": True, "path": str(lp), "total_lines": len(text.splitlines())})
+        except Exception as e:
+            return JSONResponse({"lines": [], "error": str(e), "exists": True})
+
+    @app.post("/api/control")
+    async def api_control(body: ControlRequest) -> JSONResponse:
+        """Start / stop / restart NEXUS processes."""
+        import subprocess as _sp
+        import os as _os
+        action = str(body.action or "status").lower()
+        target = str(body.target or "brain").lower()
+
+        env = dict(_os.environ)
+        env.setdefault("ZAI_API_KEY", "b3893915bcea4355a46eeab30ba8db35.EExWnj8Q7bxqtvGx")
+        env.setdefault("ZAI_ANTHROPIC_BASE_URL", "https://api.z.ai/api/anthropic")
+        env.setdefault("ZAI_DEFAULT_MODEL", "glm-5")
+        repo = str(artifacts_dir.parent) if artifacts_dir else "/Users/qtmobile/Desktop/Nexus - Quant Trading "
+
+        if action == "stop":
+            pid_file = Path("/tmp/nexus_pids.txt")
+            killed = []
+            if pid_file.exists():
+                for pid in pid_file.read_text().strip().split():
+                    try:
+                        _sp.run(["kill", "-TERM", pid], capture_output=True, timeout=3)
+                        killed.append(pid)
+                    except Exception:
+                        pass
+                pid_file.unlink(missing_ok=True)
+            # Also kill by process name
+            try:
+                _sp.run(["pkill", "-f", "nexus_quant brain"], capture_output=True)
+            except Exception:
+                pass
+            return JSONResponse({"ok": True, "action": "stop", "killed": killed})
+
+        if action in ("start", "restart"):
+            if target == "brain":
+                cfg = body.config or "configs/run_binance_nexus_alpha_v1_2023oos.json"
+                log_f = open("/tmp/nexus_brain.log", "a")
+                proc = _sp.Popen(
+                    ["python3", "-m", "nexus_quant", "brain", "--config", cfg, "--loop"],
+                    cwd=repo, stdout=log_f, stderr=log_f, env=env,
+                )
+                # Save PID
+                existing = Path("/tmp/nexus_pids.txt")
+                dash_pid = ""
+                if existing.exists():
+                    parts = existing.read_text().strip().split()
+                    if parts:
+                        dash_pid = parts[0]
+                Path("/tmp/nexus_pids.txt").write_text(f"{dash_pid} {proc.pid}")
+                return JSONResponse({"ok": True, "action": action, "target": "brain", "pid": proc.pid})
+
+            if target == "research":
+                log_f = open("/tmp/nexus_research.log", "a")
+                proc = _sp.Popen(
+                    ["python3", "-m", "nexus_quant", "learn", "--artifacts", "artifacts"],
+                    cwd=repo, stdout=log_f, stderr=log_f, env=env,
+                )
+                return JSONResponse({"ok": True, "action": action, "target": "research", "pid": proc.pid})
+
+            if target == "backtest":
+                cfg = body.config or "configs/run_binance_nexus_alpha_v1_2023oos.json"
+                log_f = open("/tmp/nexus_backtest.log", "a")
+                proc = _sp.Popen(
+                    ["python3", "-m", "nexus_quant", "run", "--config", cfg],
+                    cwd=repo, stdout=log_f, stderr=log_f, env=env,
+                )
+                return JSONResponse({"ok": True, "action": action, "target": "backtest", "pid": proc.pid, "config": cfg})
+
+        return JSONResponse({"ok": True, "action": "status", "target": target})
+
+    @app.get("/api/system_status")
+    async def api_system_status() -> JSONResponse:
+        """System resource usage: CPU, memory, disk, cache."""
+        import subprocess as _sp
+        status: dict = {}
+        try:
+            # CPU + memory via top
+            r = _sp.run(["top", "-l", "1", "-n", "0"], capture_output=True, text=True, timeout=5)
+            for line in r.stdout.splitlines():
+                if "CPU usage" in line:
+                    status["cpu_line"] = line.strip()
+                if "PhysMem" in line:
+                    status["mem_line"] = line.strip()
+        except Exception:
+            pass
+        # Cache size
+        cache_dir = artifacts_dir.parent / ".cache" / "binance_rest" if artifacts_dir else Path(".cache/binance_rest")
+        if cache_dir.exists():
+            total = sum(f.stat().st_size for f in cache_dir.rglob("*") if f.is_file())
+            status["cache_size_mb"] = round(total / 1e6, 1)
+            status["cache_files"] = len(list(cache_dir.glob("*.json")))
+        # Artifacts size
+        if artifacts_dir and artifacts_dir.exists():
+            total = sum(f.stat().st_size for f in artifacts_dir.rglob("*") if f.is_file())
+            status["artifacts_size_mb"] = round(total / 1e6, 1)
+            status["run_count"] = len(list((artifacts_dir / "runs").glob("*"))) if (artifacts_dir / "runs").exists() else 0
+        return JSONResponse(status)
+
+    @app.get("/api/runs_history")
+    async def api_runs_history(limit: int = 50) -> JSONResponse:
+        """Return summarized history of all backtest runs for Performance tab."""
+        runs_dir = artifacts_dir / "runs" if artifacts_dir else Path("artifacts/runs")
+        if not runs_dir.exists():
+            return JSONResponse([])
+        rows = []
+        run_dirs = sorted(runs_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True)
+        for rd in run_dirs[:limit]:
+            mf = rd / "metrics.json"
+            if not mf.exists():
+                continue
+            try:
+                m = json.loads(mf.read_text("utf-8"))
+                s = m.get("summary", {})
+                meta = m.get("meta", {})
+                verdict = m.get("verdict", {})
+                bias = m.get("bias_check", {})
+                # Parse year from run_name
+                rn = rd.name
+                year = "unknown"
+                for y in ["2021", "2022", "2023", "2024", "2025"]:
+                    if y in rn:
+                        year = y
+                        break
+                rows.append({
+                    "run_id": rn,
+                    "run_name": rn.split(".")[0] if "." in rn else rn,
+                    "year": year,
+                    "sharpe": round(float(s.get("sharpe", 0)), 3),
+                    "calmar": round(float(s.get("calmar", 0)), 3),
+                    "cagr": round(float(s.get("cagr", 0)), 4),
+                    "max_drawdown": round(float(s.get("max_drawdown", 0)), 4),
+                    "beta": round(float(s.get("beta", 0)), 4),
+                    "win_rate": round(float(s.get("win_rate", 0)), 3),
+                    "total_return": round(float(s.get("total_return", 0)), 4),
+                    "periods": int(s.get("periods", 0)),
+                    "verdict_pass": bool(verdict.get("pass", True)),
+                    "bias_likely_overfit": bool(bias.get("likely_overfit", False)),
+                    "data_provider": meta.get("data_provider", ""),
+                    "mtime": mf.stat().st_mtime,
+                })
+            except Exception:
+                continue
+        return JSONResponse(rows)
+
     uvicorn.run(app, host=host, port=port, log_level="warning")
