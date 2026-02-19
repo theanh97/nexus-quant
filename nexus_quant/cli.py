@@ -101,6 +101,10 @@ def _parse_args() -> argparse.Namespace:
     brain_p.add_argument("--loop", action="store_true", help="Run continuously")
     brain_p.add_argument("--interval", type=int, default=3600, help="Seconds between cycles in loop mode (default: 3600)")
 
+    tg_p = sub.add_parser("telegram", help="Start Telegram bot for NEXUS interaction (24/7)")
+    tg_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    tg_p.add_argument("--config", default=None, help="Config for /run command (default: auto-detect)")
+
     return p.parse_args()
 
 
@@ -210,6 +214,13 @@ def main() -> int:
             for i in range(args.cycles):
                 result = loop_obj.run_cycle()
                 print(json.dumps(result, indent=2, default=str))
+        return 0
+
+    if args.cmd == "telegram":
+        from .comms.telegram_bot import TelegramBot
+        cfg = Path(args.config) if getattr(args, "config", None) else None
+        bot = TelegramBot(Path(args.artifacts), config_path=cfg)
+        bot.start_polling()
         return 0
 
     if args.cmd == "dump-config":

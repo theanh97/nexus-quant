@@ -1108,6 +1108,66 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         except Exception as e:
             return JSONResponse({"ok": False, "error": str(e)})
 
+    # ── Validation Suite endpoints ─────────────────────────────────────────
+
+    @app.post("/api/validation/run")
+    async def api_validation_run() -> JSONResponse:
+        """Run full IS/WFA/OOS/Stress/FlashCrash/Regime/MC validation suite."""
+        import asyncio
+        try:
+            result = _latest_run_result(artifacts_dir)
+            if not result:
+                return JSONResponse({"error": "No backtest results. Run a backtest first."})
+            returns = result.get("returns") or []
+            if len(returns) < 100:
+                return JSONResponse({"error": f"Insufficient data: {len(returns)} bars (need 100+)"})
+            from ..validation.full_suite import run_full_validation_suite
+            report = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: run_full_validation_suite(returns, run_name="latest", n_monte_carlo=200),
+            )
+            val_dir = artifacts_dir / "validation"
+            val_dir.mkdir(parents=True, exist_ok=True)
+            (val_dir / "latest.json").write_text(
+                json.dumps(report, indent=2, ensure_ascii=False), "utf-8"
+            )
+            return JSONResponse(report)
+        except Exception as e:
+            return JSONResponse({"error": str(e)})
+
+    @app.get("/api/validation/latest")
+    def api_validation_latest() -> JSONResponse:
+        """Get latest validation suite results."""
+        val_path = artifacts_dir / "validation" / "latest.json"
+        return JSONResponse(_read_json(val_path) or {})
+
+    @app.get("/api/benchmark")
+    async def api_benchmark() -> JSONResponse:
+        """Compare NEXUS vs S&P500, Bitcoin, Renaissance, 60/40 portfolio."""
+        import asyncio
+        try:
+            result = _latest_run_result(artifacts_dir)
+            if not result:
+                return JSONResponse({"error": "No results found"})
+            returns = result.get("returns") or []
+            if not returns:
+                return JSONResponse({"error": "No returns data"})
+            m = _latest_metrics(artifacts_dir) or {}
+            run_name = m.get("run_name") or "NEXUS Strategy"
+            from ..validation.benchmarks import build_benchmark_comparison
+            comparison = await asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: build_benchmark_comparison(returns, strategy_name=run_name),
+            )
+            bm_dir = artifacts_dir / "validation"
+            bm_dir.mkdir(parents=True, exist_ok=True)
+            (bm_dir / "benchmark.json").write_text(
+                json.dumps(comparison, indent=2, ensure_ascii=False), "utf-8"
+            )
+            return JSONResponse(comparison)
+        except Exception as e:
+            return JSONResponse({"error": str(e)})
+
     # ── Strategy Generator endpoints ───────────────────────────────────────
 
     @app.get("/api/strategy_generator/proposals")
@@ -1137,6 +1197,68 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 "tasks_created": task_ids,
                 "count": len(proposals),
             })
+        except Exception as e:
+            return JSONResponse({"error": str(e)})
+
+    # ── Computer Use endpoints ─────────────────────────────────────────────
+
+    @app.post("/api/computer/screenshot")
+    async def api_computer_screenshot() -> JSONResponse:
+        """Take a screenshot and return path."""
+        try:
+            from ..tools.computer_use import NexusComputer
+            nc = NexusComputer(artifacts_dir)
+            path = nc.screenshot()
+            if path:
+                return JSONResponse({"ok": True, "path": str(path), "capabilities": nc.capabilities})
+            return JSONResponse({"ok": False, "error": "Screenshot failed"})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)})
+
+    @app.post("/api/computer/analyze")
+    async def api_computer_analyze(request: Request) -> JSONResponse:
+        """Screenshot + GLM-5 vision analysis."""
+        import asyncio
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        task = body.get("task", "Describe what's on screen and suggest what NEXUS should do next")
+        try:
+            from ..tools.computer_use import NexusComputer
+            nc = NexusComputer(artifacts_dir)
+            result = await asyncio.get_event_loop().run_in_executor(
+                None, lambda: nc.analyze_screen(task=task)
+            )
+            return JSONResponse(result)
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)})
+
+    @app.post("/api/computer/open_url")
+    async def api_computer_open_url(request: Request) -> JSONResponse:
+        """Open a URL in Chrome."""
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        url = body.get("url", "")
+        if not url:
+            return JSONResponse({"ok": False, "error": "url required"})
+        try:
+            from ..tools.computer_use import NexusComputer
+            nc = NexusComputer(artifacts_dir)
+            ok = nc.open_url(url)
+            return JSONResponse({"ok": ok, "url": url})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)})
+
+    @app.get("/api/computer/capabilities")
+    def api_computer_capabilities() -> JSONResponse:
+        """Get computer use capabilities (what's installed)."""
+        try:
+            from ..tools.computer_use import NexusComputer
+            nc = NexusComputer(artifacts_dir)
+            return JSONResponse({"capabilities": nc.capabilities, "actions": nc.recent_actions(5)})
         except Exception as e:
             return JSONResponse({"error": str(e)})
 
