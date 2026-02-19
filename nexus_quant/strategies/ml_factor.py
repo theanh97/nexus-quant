@@ -3,32 +3,23 @@ from __future__ import annotations
 """
 ML Factor Cross-Sectional Strategy V1.
 
-Uses per-symbol rolling Ridge regression to predict next-period returns from lagged factors.
-Now uses numpy/sklearn when available (100x faster + better regularization).
+Uses per-symbol rolling Ridge regression (numpy/sklearn backend) to predict
+next-period returns from lagged factors. Falls back to stdlib OLS if numpy unavailable.
 Constructs a dollar-neutral portfolio: long top-k predicted, short bottom-k predicted.
 
 Factors (all lagged, using idx-1 to avoid look-ahead bias):
   1. momentum_1w  : 168-bar return
   2. momentum_1d  : 24-bar return
-  3. momentum_2d  : 48-bar return (medium-term)
-  4. mean_rev_4h  : 4-bar return (inverted sign = mean-reversion signal)
-  5. realized_vol : 72-bar realized volatility (low-vol anomaly factor)
-  6. funding      : last funding rate before current timestamp
-  7. basis        : perp/spot basis proxy (0 if spot not available)
-  8. vol_mom      : volume z-score vs 24-bar mean (high volume = attention)
-  9. intercept    : 1.0
+  3. mean_rev_4h  : 4-bar return (inverted sign = mean-reversion signal)
+  4. funding      : last funding rate before current timestamp
+  5. basis        : perp/spot basis proxy (0 if spot not available)
+  6. intercept    : 1.0
 
 Cross-sectional z-scoring applied before feeding features to Ridge.
 """
 
 import math
 from typing import Any, Dict, List, Optional
-
-try:
-    import numpy as _np
-    _HAS_NP = True
-except ImportError:
-    _HAS_NP = False
 
 from ._math import normalize_dollar_neutral, trailing_vol
 from ._ols import RollingOLS
@@ -52,16 +43,13 @@ def _zscore_features(feature_matrix: Dict[str, List[float]]) -> Dict[str, List[f
             result[s][fi] = (feature_matrix[s][fi] - mean) / std
     return result
 
-_N_FEATURES = 9
+_N_FEATURES = 6
 _FEAT_MOM_1W = 0
 _FEAT_MOM_1D = 1
-_FEAT_MOM_2D = 2
-_FEAT_MR_4H = 3
-_FEAT_RVOL = 4
-_FEAT_FUNDING = 5
-_FEAT_BASIS = 6
-_FEAT_VOL_MOM = 7
-_FEAT_INTERCEPT = 8
+_FEAT_MR_4H = 2
+_FEAT_FUNDING = 3
+_FEAT_BASIS = 4
+_FEAT_INTERCEPT = 5
 
 
 def _safe_ret(series: list, end_idx: int, lookback: int) -> float:
@@ -114,7 +102,7 @@ class MLFactorCrossSectionV1Strategy(Strategy):
         return self._models[symbol]
 
     def _build_features(self, dataset: MarketDataset, symbol: str, idx: int) -> Optional[list]:
-        """Build 9-feature vector at bar idx (using idx-1 for lag). Returns None if not enough data."""
+        """Build 6-feature vector at bar idx (using idx-1 for lag). Returns None if not enough data."""
         min_lookback = 168 + 2
         if idx < min_lookback:
             return None
@@ -123,26 +111,11 @@ class MLFactorCrossSectionV1Strategy(Strategy):
 
         mom_1w = _safe_ret(closes, idx - 1, 168)
         mom_1d = _safe_ret(closes, idx - 1, 24)
-        mom_2d = _safe_ret(closes, idx - 1, 48)   # medium-term momentum
-        mr_4h = -_safe_ret(closes, idx - 1, 4)    # mean-reversion (inverted)
-
-        # Realized volatility (low-vol anomaly: low-vol assets tend to outperform)
-        rvol = trailing_vol(closes, end_idx=idx - 1, lookback_bars=72)
-        rvol = rvol if rvol > 0 else 1e-6
-
+        mr_4h = -_safe_ret(closes, idx - 1, 4)  # inverted = mean-reversion
         funding = float(dataset.last_funding_rate_before(symbol, ts))
         basis = float(dataset.basis(symbol, idx - 1)) if dataset.spot_close is not None else 0.0
 
-        # Volume momentum: current vol vs 24-bar mean (high attention signal)
-        vol_mom = 0.0
-        if dataset.perp_volume is not None and symbol in dataset.perp_volume:
-            vols = dataset.perp_volume[symbol]
-            if idx >= 25:
-                cur_vol = float(vols[idx - 1]) if idx - 1 < len(vols) else 0.0
-                avg_vol = sum(float(vols[max(0, idx - 1 - j)]) for j in range(24)) / 24.0
-                vol_mom = (cur_vol / avg_vol - 1.0) if avg_vol > 0 else 0.0
-
-        return [mom_1w, mom_1d, mom_2d, mr_4h, rvol, funding, basis, vol_mom, 1.0]
+        return [mom_1w, mom_1d, mr_4h, funding, basis, 1.0]
 
     def _update_models(self, dataset: MarketDataset, idx: int) -> None:
         """
