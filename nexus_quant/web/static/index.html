@@ -1,1294 +1,2307 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>NEXUS Quant — R&D Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<style>
-/* ─── CSS Variables ─────────────────────────────────────── */
-:root {
-  --bg:      #0d1117;
-  --surface: #161b22;
-  --surface2:#1c2128;
-  --border:  #30363d;
-  --accent:  #58a6ff;
-  --green:   #3fb950;
-  --red:     #f85149;
-  --yellow:  #d29922;
-  --purple:  #bc8cff;
-  --text:    #c9d1d9;
-  --muted:   #8b949e;
-  --radius:  8px;
-}
-
-/* ─── Reset & Base ──────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 14px; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  min-height: 100vh;
-  line-height: 1.5;
-}
-
-/* ─── Header ────────────────────────────────────────────── */
-header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  height: 52px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.header-logo {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: -.3px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  white-space: nowrap;
-}
-.header-logo svg { flex-shrink: 0; }
-.header-sub {
-  color: var(--muted);
-  font-size: 11px;
-  border-left: 1px solid var(--border);
-  padding-left: 14px;
-  white-space: nowrap;
-}
-
-/* ─── Live Indicator ─────────────────────────────────────── */
-.live-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--muted);
-  margin-left: auto;
-}
-.live-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--muted);
-  flex-shrink: 0;
-  transition: background .3s;
-}
-.live-dot.live {
-  background: var(--green);
-  animation: pulse-dot 2s infinite;
-}
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: .35; }
-}
-.live-label { transition: color .3s; }
-.live-dot.live + .live-label { color: var(--green); }
-
-/* ─── Tabs ───────────────────────────────────────────────── */
-nav {
-  display: flex;
-  gap: 2px;
-  margin-left: 20px;
-}
-.tab-btn {
-  background: none;
-  border: none;
-  color: var(--muted);
-  padding: 6px 13px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  font-family: inherit;
-  font-weight: 500;
-  transition: background .13s, color .13s;
-  white-space: nowrap;
-}
-.tab-btn:hover { background: rgba(88,166,255,.08); color: var(--text); }
-.tab-btn.active {
-  background: rgba(88,166,255,.15);
-  color: var(--accent);
-}
-
-/* ─── Main ───────────────────────────────────────────────── */
-main {
-  padding: 20px 24px 40px;
-  max-width: 1440px;
-  margin: 0 auto;
-}
-
-/* ─── Page visibility ─────────────────────────────────────── */
-.page { display: none; }
-.page.active { display: block; }
-
-/* ─── Grid helpers ────────────────────────────────────────── */
-.grid { display: grid; gap: 14px; }
-.g2 { grid-template-columns: repeat(2, 1fr); }
-.g3 { grid-template-columns: repeat(3, 1fr); }
-.g4 { grid-template-columns: repeat(4, 1fr); }
-.g6 { grid-template-columns: repeat(6, 1fr); }
-@media (max-width: 1100px) { .g6 { grid-template-columns: repeat(3,1fr); } .g4 { grid-template-columns: repeat(2,1fr); } }
-@media (max-width: 750px)  { .g6,.g4,.g3,.g2 { grid-template-columns: 1fr; } }
-
-/* ─── Card ───────────────────────────────────────────────── */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-}
-.card-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* ─── KPI Card ───────────────────────────────────────────── */
-.kpi { padding: 14px 16px; }
-.kpi .kpi-label {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-.kpi .kpi-value {
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1;
-  transition: color .2s, background .15s;
-  border-radius: 4px;
-}
-.kpi .kpi-value.flash {
-  background: rgba(210,153,34,.18);
-  animation: kpi-flash .6s ease forwards;
-}
-@keyframes kpi-flash {
-  0%   { background: rgba(210,153,34,.25); }
-  100% { background: transparent; }
-}
-.kpi .kpi-sub {
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 4px;
-}
-
-/* ─── Badges ─────────────────────────────────────────────── */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.badge-green  { background: rgba(63,185,80,.15);  color: var(--green); }
-.badge-red    { background: rgba(248,81,73,.15);  color: var(--red); }
-.badge-yellow { background: rgba(210,153,34,.15); color: var(--yellow); }
-.badge-blue   { background: rgba(88,166,255,.15); color: var(--accent); }
-.badge-purple { background: rgba(188,140,255,.15);color: var(--purple); }
-.badge-gray   { background: rgba(139,148,158,.12);color: var(--muted); }
-.badge-lg { font-size: 13px; padding: 4px 12px; }
-
-/* ─── Chart containers ───────────────────────────────────── */
-.chart-box { position: relative; }
-.h200 { height: 200px; }
-.h260 { height: 260px; }
-.h320 { height: 320px; }
-.h360 { height: 360px; }
-
-/* ─── Table ──────────────────────────────────────────────── */
-.tbl-wrap { overflow-x: auto; }
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-th {
-  color: var(--muted);
-  text-align: left;
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--border);
-  font-weight: 500;
-  white-space: nowrap;
-}
-td {
-  padding: 7px 10px;
-  border-bottom: 1px solid rgba(48,54,61,.5);
-  white-space: nowrap;
-}
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(88,166,255,.03); }
-
-/* ─── Alert panel ────────────────────────────────────────── */
-.alert-panel {
-  background: rgba(210,153,34,.08);
-  border: 1px solid rgba(210,153,34,.3);
-  border-radius: var(--radius);
-  padding: 12px 16px;
-  margin-bottom: 14px;
-}
-.alert-panel .alert-title {
-  color: var(--yellow);
-  font-weight: 600;
-  font-size: 12px;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.alert-panel .alert-count {
-  background: rgba(210,153,34,.25);
-  color: var(--yellow);
-  border-radius: 10px;
-  padding: 0 7px;
-  font-size: 11px;
-}
-.alert-item {
-  font-size: 11px;
-  color: var(--text);
-  padding: 3px 0;
-  border-bottom: 1px solid rgba(210,153,34,.1);
-}
-.alert-item:last-child { border-bottom: none; }
-.alert-none {
-  font-size: 12px;
-  color: var(--green);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* ─── Section spacing ─────────────────────────────────────── */
-.section { margin-bottom: 14px; }
-.section:last-child { margin-bottom: 0; }
-
-/* ─── Row flex ───────────────────────────────────────────── */
-.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-
-/* ─── Inputs ─────────────────────────────────────────────── */
-input[type="text"] {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-family: inherit;
-  width: 280px;
-  transition: border-color .15s;
-}
-input[type="text"]:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-/* ─── Buttons ─────────────────────────────────────────────── */
-.btn {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  padding: 5px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 11px;
-  font-family: inherit;
-  transition: border-color .15s, color .15s;
-}
-.btn:hover { border-color: var(--accent); color: var(--accent); }
-
-/* ─── Empty / loading states ─────────────────────────────── */
-.empty {
-  color: var(--muted);
-  font-size: 12px;
-  padding: 28px;
-  text-align: center;
-}
-
-/* ─── Memory cards ───────────────────────────────────────── */
-.mem-item {
-  border-bottom: 1px solid var(--border);
-  padding: 10px 0;
-}
-.mem-item:last-child { border-bottom: none; }
-.mem-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 4px;
-}
-.tag {
-  background: rgba(88,166,255,.1);
-  color: var(--accent);
-  border-radius: 4px;
-  padding: 1px 6px;
-  font-size: 10px;
-}
-.mem-content {
-  font-size: 12px;
-  color: var(--text);
-  line-height: 1.5;
-  word-break: break-word;
-}
-
-/* ─── Separator line ─────────────────────────────────────── */
-.sep { height: 1px; background: var(--border); margin: 14px 0; }
-
-/* ─── Stability score large ──────────────────────────────── */
-.stability-score {
-  font-size: 48px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-/* ─── Scrollbar ──────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--muted); }
-</style>
-</head>
-<body>
-
-<!-- ═══════════════════════════════════════════════════════════
-     HEADER
-════════════════════════════════════════════════════════════ -->
-<header>
-  <div class="header-logo">
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <polygon points="9,1 17,5.5 17,12.5 9,17 1,12.5 1,5.5" stroke="#58a6ff" stroke-width="1.4" fill="rgba(88,166,255,.1)"/>
-      <polygon points="9,4.5 14,7.5 14,12 9,14.5 4,12 4,7.5" fill="#58a6ff" opacity=".35"/>
-    </svg>
-    NEXUS Quant
-  </div>
-  <div class="header-sub">R&D Monitoring Dashboard</div>
-  <nav>
-    <button class="tab-btn active" data-page="overview">Overview</button>
-    <button class="tab-btn" data-page="walkforward">Walk-Forward</button>
-    <button class="tab-btn" data-page="risk">Risk</button>
-    <button class="tab-btn" data-page="ledger">Ledger &amp; Alerts</button>
-    <button class="tab-btn" data-page="memory">Memory</button>
-    <button class="tab-btn" data-tab="chat">💬 Chat</button>
-  </nav>
-  <div class="live-badge" id="live-badge">
-    <div class="live-dot" id="live-dot"></div>
-    <span class="live-label" id="live-label">Connecting…</span>
-  </div>
-</header>
-
-<main>
-
-<!-- ═══════════════════════════════════════════════════════════
-     TAB 1: OVERVIEW
-════════════════════════════════════════════════════════════ -->
-<div id="page-overview" class="page active">
-
-  <!-- KPI Row -->
-  <div class="section grid g6" id="kpi-row">
-    <div class="card kpi"><div class="kpi-label">Sharpe Ratio</div><div class="kpi-value" id="kpi-sharpe">—</div><div class="kpi-sub">annualised</div></div>
-    <div class="card kpi"><div class="kpi-label">Calmar Ratio</div><div class="kpi-value" id="kpi-calmar">—</div><div class="kpi-sub">CAGR / Max DD</div></div>
-    <div class="card kpi"><div class="kpi-label">Max Drawdown</div><div class="kpi-value" id="kpi-mdd" style="color:var(--red)">—</div><div class="kpi-sub">peak-to-trough</div></div>
-    <div class="card kpi"><div class="kpi-label">CAGR</div><div class="kpi-value" id="kpi-cagr">—</div><div class="kpi-sub">annualised return</div></div>
-    <div class="card kpi"><div class="kpi-label">Win Rate</div><div class="kpi-value" id="kpi-winrate">—</div><div class="kpi-sub">trades positive</div></div>
-    <div class="card kpi" style="display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:6px">
-      <div class="kpi-label">Verdict</div>
-      <div id="kpi-verdict"><span class="badge badge-gray badge-lg">—</span></div>
-      <div class="kpi-sub" id="kpi-run-name">—</div>
-    </div>
-  </div>
-
-  <!-- Row 1: Equity Curve (full width) -->
-  <div class="section card">
-    <div class="card-title">
-      Equity Curve
-      <span id="equity-bars" style="color:var(--muted);font-weight:400">—</span>
-    </div>
-    <div class="chart-box h320"><canvas id="equityChart"></canvas></div>
-  </div>
-
-  <!-- Row 2: Return Distribution + Strategy Comparison -->
-  <div class="section grid g2">
-    <div class="card">
-      <div class="card-title">Return Distribution</div>
-      <div class="chart-box h260"><canvas id="returnDistChart"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-title">
-        Strategy Comparison
-        <span style="color:var(--muted);font-weight:400;font-size:10px">Sharpe per run</span>
-      </div>
-      <div class="chart-box h260"><canvas id="strategyCompChart"></canvas></div>
-    </div>
-  </div>
-
-</div><!-- /overview -->
-
-
-<!-- ═══════════════════════════════════════════════════════════
-     TAB 2: WALK-FORWARD
-════════════════════════════════════════════════════════════ -->
-<div id="page-walkforward" class="page">
-
-  <!-- Stability summary -->
-  <div class="section card" id="wf-stability-card">
-    <div class="card-title">Walk-Forward Stability</div>
-    <div class="grid g4" id="wf-stability-kpis">
-      <div class="empty">Loading…</div>
-    </div>
-  </div>
-
-  <!-- Sharpe bar chart (full width) -->
-  <div class="section card">
-    <div class="card-title">Sharpe per Window <span style="color:var(--muted);font-weight:400">(green=positive, red=negative)</span></div>
-    <div class="chart-box h260"><canvas id="wfSharpeChart"></canvas></div>
-  </div>
-
-  <!-- Window detail table -->
-  <div class="section card">
-    <div class="card-title row-between">
-      <span>Window Detail</span>
-      <span id="wf-window-count" class="badge badge-blue">0 windows</span>
-    </div>
-    <div class="tbl-wrap">
-      <table id="wf-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Train Sharpe</th>
-            <th>Test Sharpe</th>
-            <th>CAGR</th>
-            <th>Max DD</th>
-            <th>Win Rate</th>
-            <th>Stability</th>
-          </tr>
-        </thead>
-        <tbody><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-</div><!-- /walkforward -->
-
-
-<!-- ═══════════════════════════════════════════════════════════
-     TAB 3: RISK
-════════════════════════════════════════════════════════════ -->
-<div id="page-risk" class="page">
-
-  <!-- Risk KPI row -->
-  <div class="section grid g6" id="risk-kpi-row">
-    <div class="card kpi"><div class="kpi-label">VaR 95%</div><div class="kpi-value" id="risk-var95" style="color:var(--yellow)">—</div><div class="kpi-sub">historical</div></div>
-    <div class="card kpi"><div class="kpi-label">VaR 99%</div><div class="kpi-value" id="risk-var99" style="color:var(--red)">—</div><div class="kpi-sub">historical</div></div>
-    <div class="card kpi"><div class="kpi-label">CVaR 95%</div><div class="kpi-value" id="risk-cvar95" style="color:var(--red)">—</div><div class="kpi-sub">expected shortfall</div></div>
-    <div class="card kpi"><div class="kpi-label">Ann. Volatility</div><div class="kpi-value" id="risk-vol">—</div><div class="kpi-sub">annualised</div></div>
-    <div class="card kpi"><div class="kpi-label">Skewness</div><div class="kpi-value" id="risk-skew">—</div><div class="kpi-sub">return distribution</div></div>
-    <div class="card kpi"><div class="kpi-label">Kurtosis</div><div class="kpi-value" id="risk-kurt">—</div><div class="kpi-sub">excess kurtosis</div></div>
-  </div>
-
-  <!-- Regime + Tail Risk -->
-  <div class="section grid g2">
-    <div class="card">
-      <div class="card-title">Market Regime</div>
-      <div id="regime-badge-wrap" style="margin-bottom:14px">
-        <span class="badge badge-gray badge-lg" id="regime-badge">Unknown</span>
-      </div>
-      <div id="regime-details" style="display:grid;gap:8px;font-size:12px">
-        <div class="empty">Loading…</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Tail Risk Profile</div>
-      <div id="tail-stats" style="display:grid;gap:8px;font-size:12px">
-        <div class="empty">Loading…</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Rolling VaR chart (if data available) -->
-  <div class="section card" id="rolling-var-card">
-    <div class="card-title">Drawdown Profile</div>
-    <div class="chart-box h200"><canvas id="drawdownChart"></canvas></div>
-  </div>
-
-</div><!-- /risk -->
-
-
-<!-- ═══════════════════════════════════════════════════════════
-     TAB 4: LEDGER & ALERTS
-════════════════════════════════════════════════════════════ -->
-<div id="page-ledger" class="page">
-
-  <!-- Alert panel -->
-  <div id="alert-panel" class="section alert-panel">
-    <div class="alert-title">
-      Anomaly Monitor
-      <span class="alert-count" id="alert-count">0</span>
-    </div>
-    <div id="alert-list"><div class="empty">Loading…</div></div>
-  </div>
-
-  <!-- Ledger table -->
-  <div class="section card">
-    <div class="card-title row-between">
-      <div class="row">
-        <span>Recent Ledger Events</span>
-        <div class="live-badge" style="margin-left:4px">
-          <div class="live-dot live" id="ledger-live-dot"></div>
-          <span class="live-label" style="color:var(--green)">Live</span>
-        </div>
-      </div>
-      <button class="btn" onclick="loadLedger()">Refresh</button>
-    </div>
-    <div class="tbl-wrap">
-      <table id="ledger-table">
-        <thead>
-          <tr>
-            <th>Timestamp</th>
-            <th>Kind</th>
-            <th>Run</th>
-            <th>Sharpe</th>
-            <th>Max DD</th>
-            <th>Verdict</th>
-            <th>Accepted</th>
-          </tr>
-        </thead>
-        <tbody><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-</div><!-- /ledger -->
-
-
-<!-- ═══════════════════════════════════════════════════════════
-     TAB 5: MEMORY
-════════════════════════════════════════════════════════════ -->
-<div id="page-memory" class="page">
-
-  <div class="section card">
-    <div class="card-title row-between" style="margin-bottom:14px">
-      <span>Memory Store</span>
-      <div class="row">
-        <input type="text" id="mem-search" placeholder="Search memory items…" oninput="debounceMemSearch()"/>
-        <button class="btn" onclick="loadMemory()">Search</button>
-        <button class="btn" onclick="document.getElementById('mem-search').value=''; loadMemory()">Clear</button>
-      </div>
-    </div>
-    <div id="memory-list"><div class="empty">Loading…</div></div>
-  </div>
-
-</div><!-- /memory -->
-
-<!-- ═══════════════════════════════════════════════════════════
-     TAB 6: CHAT
-════════════════════════════════════════════════════════════ -->
-<div id="page-chat" class="page">
-
-  <div class="tab-panel" id="chat">
-    <div class="card" style="max-width:800px;margin:0 auto">
-      <div style="padding:16px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:12px">
-        <div style="width:40px;height:40px;background:linear-gradient(135deg,#58a6ff,#bc8cff);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px">🧠</div>
-        <div>
-          <div style="font-weight:600;color:#c9d1d9" id="chat-nexus-name">NEXUS</div>
-          <div style="font-size:12px;color:#8b949e"><span id="chat-nexus-mood">● Initializing</span> — <span id="chat-nexus-goal">No active goals</span></div>
-        </div>
-      </div>
-      <div id="chat-messages" style="height:380px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
-        <div style="background:#1c2128;border-radius:12px 12px 12px 4px;padding:12px 16px;max-width:80%;color:#c9d1d9;font-size:14px;line-height:1.5">
-          Hello! I am NEXUS, your autonomous quantitative research AI. Ask me about strategies, performance, risk, or what I am planning next.
-        </div>
-      </div>
-      <div style="padding:12px 16px;border-top:1px solid #30363d;display:flex;gap:8px">
-        <input id="chat-input" type="text" placeholder="Ask NEXUS anything..." style="flex:1;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px 14px;color:#c9d1d9;font-size:14px;outline:none" />
-        <button id="chat-send" onclick="sendChatMessage()" style="background:#58a6ff;color:#0d1117;border:none;border-radius:8px;padding:10px 20px;font-weight:600;cursor:pointer">Send</button>
-      </div>
-    </div>
-  </div>
-
-</div><!-- /chat -->
-
-</main>
-
-<script>
-// ═══════════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════════
-const CHARTS = {};
-let sseSource = null;
-let memDebounceTimer = null;
-let autoRefreshInterval = null;
-let currentPage = 'overview';
-
-// ═══════════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════════
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const page = btn.dataset.page || btn.dataset.tab;
-    if (!page) return;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    const pageEl = document.getElementById('page-' + page);
-    if (pageEl) pageEl.classList.add('active');
-    currentPage = page;
-    if (LOAD_MAP[page]) LOAD_MAP[page]();
-  });
-});
-
-const LOAD_MAP = {
-  overview:    loadOverview,
-  walkforward: loadWalkForward,
-  risk:        loadRisk,
-  ledger:      () => { loadLedger(); loadAnomalies(); },
-  memory:      loadMemory,
-  chat:        loadChatIdentity,
-};
-
-// ═══════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════
-function fmt(v, d=2) {
-  if (v == null || v === undefined || isNaN(+v)) return '—';
-  return (+v).toFixed(d);
-}
-function pct(v, d=1) {
-  if (v == null || v === undefined || isNaN(+v)) return '—';
-  return ((+v) * 100).toFixed(d) + '%';
-}
-function abs_pct(v, d=1) {
-  if (v == null || v === undefined || isNaN(+v)) return '—';
-  return (Math.abs(+v) * 100).toFixed(d) + '%';
-}
-function ts(str) {
-  if (!str) return '—';
-  return String(str).replace('T', ' ').slice(0, 19);
-}
-function badge(cls, text) {
-  return `<span class="badge badge-${cls}">${text}</span>`;
-}
-function verdictBadge(v) {
-  if (v === true  || v === 'pass') return badge('green',  'PASS');
-  if (v === false || v === 'fail') return badge('red',    'FAIL');
-  return badge('gray', '—');
-}
-function verdictBadgeLg(v) {
-  if (v === true  || v === 'pass') return badge('green badge-lg',  'PASS');
-  if (v === false || v === 'fail') return badge('red badge-lg',    'FAIL');
-  return badge('gray badge-lg', '—');
-}
-function regimeBadge(r) {
-  const map = {
-    trending:  ['blue',   'Trending'],
-    ranging:   ['yellow', 'Ranging'],
-    volatile:  ['red',    'Volatile'],
-    unknown:   ['gray',   'Unknown'],
-  };
-  const [cls, label] = map[r] || ['gray', r || 'Unknown'];
-  return badge(cls + ' badge-lg', label);
-}
-function colorFor(sharpe) {
-  if (sharpe == null || isNaN(sharpe)) return 'var(--muted)';
-  if (sharpe > 1.5) return 'var(--green)';
-  if (sharpe > 0.5) return 'var(--accent)';
-  if (sharpe > 0)   return 'var(--yellow)';
-  return 'var(--red)';
-}
-function flashKpi(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.remove('flash');
-  void el.offsetWidth; // reflow
-  el.classList.add('flash');
-  setTimeout(() => el.classList.remove('flash'), 700);
-}
-function setKpi(id, val) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (el.textContent !== val) {
-    el.textContent = val;
-    flashKpi(id);
-  }
-}
-
-// Safe fetch wrapper
-async function apiFetch(url) {
-  try {
-    const r = await fetch(url);
-    if (!r.ok) return null;
-    return await r.json();
-  } catch { return null; }
-}
-
-// ═══════════════════════════════════════════════════════════
-// CHART HELPERS
-// ═══════════════════════════════════════════════════════════
-function destroyChart(id) {
-  if (CHARTS[id]) { CHARTS[id].destroy(); delete CHARTS[id]; }
-}
-
-function makeLineChart(id, labels, datasets, opts={}) {
-  destroyChart(id);
-  const ctx = document.getElementById(id);
-  if (!ctx) return;
-  CHARTS[id] = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      animation: false,
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: datasets.length > 1, labels: { color: '#8b949e', boxWidth: 10, font: { size: 10 } } },
-        tooltip: {
-          backgroundColor: '#161b22',
-          borderColor: '#30363d',
-          borderWidth: 1,
-          titleColor: '#c9d1d9',
-          bodyColor: '#8b949e',
-          padding: 8,
-        },
-      },
-      scales: {
-        x: {
-          display: opts.xDisplay !== undefined ? opts.xDisplay : true,
-          ticks: { color: '#8b949e', font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 },
-          grid: { color: 'rgba(48,54,61,.5)' },
-        },
-        y: {
-          ticks: { color: '#8b949e', font: { size: 10 }, maxTicksLimit: 6 },
-          grid: { color: 'rgba(48,54,61,.5)' },
-        },
-      },
-      ...opts.chartOpts,
-    },
-  });
-}
-
-function makeBarChart(id, labels, data, colorFn, opts={}) {
-  destroyChart(id);
-  const ctx = document.getElementById(id);
-  if (!ctx) return;
-  const bgs = Array.isArray(colorFn) ? colorFn : data.map(colorFn);
-  CHARTS[id] = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        data,
-        backgroundColor: bgs,
-        borderRadius: 3,
-        borderWidth: 0,
-      }],
-    },
-    options: {
-      animation: false,
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#161b22',
-          borderColor: '#30363d',
-          borderWidth: 1,
-          titleColor: '#c9d1d9',
-          bodyColor: '#8b949e',
-          padding: 8,
-          callbacks: {
-            label: ctx => {
-              const v = ctx.parsed.y;
-              return opts.tooltipFmt ? opts.tooltipFmt(v) : v.toFixed(3);
-            },
-          },
-        },
-      },
-      scales: {
-        x: {
-          display: opts.xDisplay !== undefined ? opts.xDisplay : true,
-          ticks: { color: '#8b949e', font: { size: 10 }, maxRotation: 45 },
-          grid: { color: 'rgba(48,54,61,.3)' },
-        },
-        y: {
-          ticks: { color: '#8b949e', font: { size: 10 }, maxTicksLimit: 6 },
-          grid: { color: 'rgba(48,54,61,.5)' },
-        },
-      },
-    },
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
-// TAB 1: OVERVIEW
-// ═══════════════════════════════════════════════════════════
-async function loadOverview() {
-  const [wisdom, equity, runs] = await Promise.all([
-    apiFetch('/api/wisdom'),
-    apiFetch('/api/equity'),
-    apiFetch('/api/runs'),
-  ]);
-
-  const recent  = (wisdom || {}).recent || {};
-  const metrics = recent.metrics || {};
-  const verdict = recent.verdict || {};
-  const runName = recent.run_name || '—';
-
-  // KPIs
-  const sharpe  = metrics.sharpe;
-  const calmar  = metrics.calmar;
-  const mdd     = metrics.max_drawdown;
-  const cagr    = metrics.cagr;
-  const winRate = metrics.win_rate;
-
-  setKpi('kpi-sharpe',  fmt(sharpe));
-  setKpi('kpi-calmar',  fmt(calmar));
-  setKpi('kpi-mdd',     abs_pct(mdd));
-  setKpi('kpi-cagr',    pct(cagr));
-  setKpi('kpi-winrate', pct(winRate));
-
-  const sharpeEl = document.getElementById('kpi-sharpe');
-  if (sharpeEl) sharpeEl.style.color = colorFor(sharpe);
-
-  const verdictEl = document.getElementById('kpi-verdict');
-  if (verdictEl) verdictEl.innerHTML = verdictBadgeLg(verdict.pass);
-  const rnEl = document.getElementById('kpi-run-name');
-  if (rnEl) rnEl.textContent = runName;
-
-  // Equity curve
-  const eq  = (equity || {}).equity_curve || [];
-  const nBars = (equity || {}).n_bars || eq.length;
-  const barsEl = document.getElementById('equity-bars');
-  if (barsEl) barsEl.textContent = nBars ? nBars.toLocaleString() + ' bars' : '';
-
-  if (eq.length > 0) {
-    const step = Math.max(1, Math.floor(eq.length / 600));
-    const eqSampled = eq.filter((_, i) => i % step === 0);
-    const labels = eqSampled.map((_, i) => i * step);
-    makeLineChart('equityChart', labels, [{
-      data: eqSampled,
-      borderColor: '#3fb950',
-      backgroundColor: 'rgba(63,185,80,.06)',
-      borderWidth: 1.5,
-      pointRadius: 0,
-      fill: true,
-      tension: 0.1,
-    }], { xDisplay: false });
-  } else {
-    const ctx = document.getElementById('equityChart');
-    if (ctx) { const c = ctx.getContext('2d'); c.clearRect(0,0,ctx.width,ctx.height); }
-  }
-
-  // Return distribution histogram
-  const ret = (equity || {}).returns || [];
-  if (ret.length > 1) {
-    const N  = 40;
-    const mn = Math.min(...ret);
-    const mx = Math.max(...ret);
-    const bw = (mx - mn) / N || 0.0001;
-    const bins   = Array(N).fill(0);
-    const blabels = [];
-    for (let i = 0; i < N; i++) blabels.push(((mn + (i + 0.5) * bw) * 100).toFixed(2) + '%');
-    ret.forEach(r => {
-      const b = Math.min(N - 1, Math.floor((r - mn) / bw));
-      bins[b]++;
-    });
-    const binColors = bins.map((_, i) => {
-      const mid = mn + (i + 0.5) * bw;
-      return mid >= 0 ? 'rgba(63,185,80,.65)' : 'rgba(248,81,73,.55)';
-    });
-    makeBarChart('returnDistChart', blabels, bins, binColors, {
-      xDisplay: false,
-      tooltipFmt: v => v + ' bars',
-    });
-  }
-
-  // Strategy comparison (Sharpe per run)
-  if (Array.isArray(runs) && runs.length > 0) {
-    const sorted = [...runs].filter(r => r.sharpe != null).sort((a, b) => b.sharpe - a.sharpe).slice(0, 16);
-    const slabels = sorted.map(r => {
-      const name = r.run_name || r.strategy || '?';
-      return name.length > 20 ? name.slice(0, 18) + '…' : name;
-    });
-    const sdata = sorted.map(r => +(r.sharpe || 0));
-    const scolors = sdata.map(v => v >= 0 ? 'rgba(63,185,80,.7)' : 'rgba(248,81,73,.6)');
-    makeBarChart('strategyCompChart', slabels, sdata, scolors, {
-      tooltipFmt: v => fmt(v),
-    });
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// TAB 2: WALK-FORWARD
-// ═══════════════════════════════════════════════════════════
-async function loadWalkForward() {
-  const data = await apiFetch('/api/walk_forward');
-  const windows   = (data || {}).windows   || [];
-  const stability = (data || {}).stability || {};
-
-  // Stability KPIs
-  const stabKpis = [
-    { label: 'Windows',         val: stability.windows || windows.length || 0,  sub: 'rolling windows',      raw: null },
-    { label: '% Profitable',    val: pct(stability.fraction_profitable),          sub: 'CAGR > 0',             raw: +(stability.fraction_profitable||0) },
-    { label: '% Sharpe Pos.',   val: pct(stability.fraction_calmar_positive),     sub: 'Calmar > 0',           raw: null },
-    { label: '% MDD < 35%',     val: pct(stability.fraction_mdd_lt_0_35),         sub: 'controlled drawdown',  raw: null },
-  ];
-  document.getElementById('wf-stability-kpis').innerHTML = stabKpis.map(k => {
-    const color = k.raw != null ? (k.raw >= 0.6 ? 'var(--green)' : k.raw >= 0.4 ? 'var(--yellow)' : 'var(--red)') : 'var(--text)';
-    return `<div class="card kpi">
-      <div class="kpi-label">${k.label}</div>
-      <div class="kpi-value" style="color:${color}">${k.val}</div>
-      <div class="kpi-sub">${k.sub}</div>
-    </div>`;
-  }).join('');
-
-  const countEl = document.getElementById('wf-window-count');
-  if (countEl) countEl.textContent = windows.length + ' windows';
-
-  if (windows.length === 0) {
-    // Clear charts
-    destroyChart('wfSharpeChart');
-    document.querySelector('#wf-table tbody').innerHTML = '<tr><td colspan="7" class="empty">No walk-forward data</td></tr>';
-    return;
-  }
-
-  // Sharpe bar chart
-  const wlabels = windows.map((_, i) => 'W' + (i + 1));
-  const sharpes = windows.map(w => +(w.sharpe || 0));
-  const sharpeColors = sharpes.map(v => v >= 0 ? 'rgba(63,185,80,.75)' : 'rgba(248,81,73,.65)');
-  makeBarChart('wfSharpeChart', wlabels, sharpes, sharpeColors, { tooltipFmt: v => fmt(v) });
-
-  // Table
-  const tbody = windows.map((w, i) => {
-    const trainSharpe = w.train_sharpe != null ? fmt(w.train_sharpe) : fmt(w.sharpe);
-    const testSharpe  = w.test_sharpe  != null ? fmt(w.test_sharpe)  : '—';
-    const s = +(w.sharpe || 0);
-    const stabColor = s >= 1 ? 'var(--green)' : s >= 0 ? 'var(--yellow)' : 'var(--red)';
-    const stabText  = s >= 1 ? 'Stable' : s >= 0 ? 'Marginal' : 'Unstable';
-    return `<tr>
-      <td style="color:var(--muted)">${i + 1}</td>
-      <td style="color:${colorFor(+trainSharpe)}">${trainSharpe}</td>
-      <td style="color:${colorFor(+testSharpe)}">${testSharpe}</td>
-      <td>${pct(w.cagr)}</td>
-      <td style="color:var(--red)">${abs_pct(w.max_drawdown)}</td>
-      <td>${pct(w.win_rate)}</td>
-      <td>${badge(stabColor === 'var(--green)' ? 'green' : stabColor === 'var(--yellow)' ? 'yellow' : 'red', stabText)}</td>
-    </tr>`;
-  }).join('');
-  document.querySelector('#wf-table tbody').innerHTML = tbody;
-}
-
-// ═══════════════════════════════════════════════════════════
-// TAB 3: RISK
-// ═══════════════════════════════════════════════════════════
-async function loadRisk() {
-  const data = await apiFetch('/api/risk');
-  const v      = (data || {}).var    || {};
-  const regime = (data || {}).regime || {};
-
-  // KPIs
-  setKpi('risk-var95',  abs_pct(v.var_95));
-  setKpi('risk-var99',  abs_pct(v.var_99));
-  setKpi('risk-cvar95', abs_pct(v.cvar_95));
-  setKpi('risk-vol',    pct(v.annualised_vol));
-  setKpi('risk-skew',   fmt(v.skewness, 3));
-  setKpi('risk-kurt',   fmt(v.kurtosis, 3));
-
-  // Regime badge
-  const rn = regime.regime || 'unknown';
-  const regimeBadgeEl = document.getElementById('regime-badge');
-  if (regimeBadgeEl) regimeBadgeEl.outerHTML = `<div id="regime-badge-wrap">${regimeBadge(rn)}</div>`;
-
-  document.getElementById('regime-details').innerHTML = `
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span style="color:var(--muted)">Trend Strength</span>
-      <span>${fmt(regime.trend_strength, 4)}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span style="color:var(--muted)">Volatility Ratio (recent / long)</span>
-      <span>${fmt(regime.vol_ratio, 3)}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0">
-      <span style="color:var(--muted)">Autocorrelation (lag-1)</span>
-      <span>${fmt(regime.autocorr, 4)}</span>
-    </div>
-  `;
-
-  document.getElementById('tail-stats').innerHTML = `
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span style="color:var(--muted)">Worst Period Return</span>
-      <span style="color:var(--red)">${abs_pct(v.max_loss_1d)}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span style="color:var(--muted)">Mean Return / Bar</span>
-      <span>${pct(v.mean_return, 4)}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span style="color:var(--muted)">Approx. Sharpe</span>
-      <span style="color:${colorFor(v.sharpe_approx)}">${fmt(v.sharpe_approx)}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:6px 0">
-      <span style="color:var(--muted)">VaR 95% / 99% Ratio</span>
-      <span>${(v.var_95 && v.var_99) ? fmt(v.var_99 / v.var_95, 3) : '—'}</span>
-    </div>
-  `;
-
-  // Drawdown chart from equity
-  const eq = await apiFetch('/api/equity');
-  const equityCurve = (eq || {}).equity_curve || [];
-  if (equityCurve.length > 1) {
-    // Compute drawdown series
-    const step = Math.max(1, Math.floor(equityCurve.length / 600));
-    const sampled = equityCurve.filter((_, i) => i % step === 0);
-    let peak = sampled[0];
-    const dd = sampled.map(e => {
-      if (e > peak) peak = e;
-      return peak > 0 ? (e - peak) / peak : 0;
-    });
-    const lbls = sampled.map((_, i) => i * step);
-    makeLineChart('drawdownChart', lbls, [{
-      data: dd,
-      borderColor: '#f85149',
-      backgroundColor: 'rgba(248,81,73,.07)',
-      borderWidth: 1.2,
-      pointRadius: 0,
-      fill: true,
-      tension: 0.05,
-    }], { xDisplay: false });
-  }
-}
-
-// ═══════════════════════════════════════════════════════════
-// TAB 4: LEDGER & ALERTS
-// ═══════════════════════════════════════════════════════════
-async function loadAnomalies() {
-  const data = await apiFetch('/api/anomalies');
-  const anomalies = (data || {}).anomalies || [];
-  const count = (data || {}).count || 0;
-
-  const countEl = document.getElementById('alert-count');
-  if (countEl) countEl.textContent = count;
-
-  const listEl = document.getElementById('alert-list');
-  if (!listEl) return;
-
-  if (count === 0) {
-    listEl.innerHTML = '<div class="alert-none"><span style="color:var(--green)">✓</span> No anomalies detected in recent ledger</div>';
-    return;
-  }
-
-  listEl.innerHTML = anomalies.slice(0, 8).map(a => {
-    const payload = a.payload || {};
-    const flags = ['slippage_alert','drawdown_alert','drift_alert','funding_alert','regime_alert']
-      .filter(f => payload[f])
-      .join(', ');
-    return `<div class="alert-item">
-      <span style="color:var(--muted);font-size:10px">${ts(a.ts)}</span>
-      <span style="margin:0 6px;color:var(--muted)">|</span>
-      <span>${a.run_name || a.kind || '?'}</span>
-      ${flags ? `<span style="margin-left:6px;color:var(--yellow);font-size:10px">[${flags}]</span>` : ''}
-    </div>`;
-  }).join('');
-}
-
-async function loadLedger() {
-  const events = await apiFetch('/api/ledger');
-  const tbody = document.querySelector('#ledger-table tbody');
-  if (!tbody) return;
-
-  if (!Array.isArray(events) || events.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">No ledger events found</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = events.map(e => {
-    const m = e.metrics || {};
-    const kindBadgeCls = {
-      run:        'blue',
-      self_learn: 'purple',
-      anomaly:    'red',
-      schedule:   'yellow',
-    }[e.kind] || 'gray';
-    return `<tr>
-      <td style="color:var(--muted);font-size:11px">${ts(e.ts)}</td>
-      <td>${badge(kindBadgeCls, e.kind || '—')}</td>
-      <td style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis">${e.run_name || '—'}</td>
-      <td style="color:${colorFor(m.sharpe)}">${fmt(m.sharpe)}</td>
-      <td style="color:var(--red)">${abs_pct(m.max_drawdown)}</td>
-      <td>${verdictBadge(e.verdict)}</td>
-      <td>${e.accepted != null ? verdictBadge(e.accepted) : badge('gray','—')}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ═══════════════════════════════════════════════════════════
-// TAB 5: MEMORY
-// ═══════════════════════════════════════════════════════════
-function debounceMemSearch() {
-  clearTimeout(memDebounceTimer);
-  memDebounceTimer = setTimeout(loadMemory, 350);
-}
-
-async function loadMemory() {
-  const q   = (document.getElementById('mem-search') || {}).value || '';
-  const url = q ? `/api/memory?q=${encodeURIComponent(q)}&limit=40` : '/api/memory?limit=40';
-  const items = await apiFetch(url);
-  const listEl = document.getElementById('memory-list');
-  if (!listEl) return;
-
-  if (!Array.isArray(items) || items.length === 0) {
-    listEl.innerHTML = '<div class="empty">No memory items found' + (q ? ' for "' + q + '"' : '') + '</div>';
-    return;
-  }
-
-  listEl.innerHTML = items.map(it => {
-    const tags = (it.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
-    const kindCls = { insight: 'blue', param: 'purple', experiment: 'yellow', alert: 'red' }[it.kind] || 'gray';
-    return `<div class="mem-item">
-      <div class="mem-meta">
-        ${badge(kindCls, it.kind || '?')}
-        ${tags}
-        <span style="color:var(--muted);font-size:10px;margin-left:auto">${ts(it.ts)}</span>
-      </div>
-      <div class="mem-content">${it.content || ''}</div>
-    </div>`;
-  }).join('');
-}
-
-// ═══════════════════════════════════════════════════════════
-// SSE LIVE CONNECTION
-// ═══════════════════════════════════════════════════════════
-function connectSSE() {
-  const dot   = document.getElementById('live-dot');
-  const label = document.getElementById('live-label');
-
-  if (sseSource) { sseSource.close(); sseSource = null; }
-
-  try {
-    sseSource = new EventSource('/api/stream');
-
-    sseSource.onopen = () => {
-      dot.classList.add('live');
-      label.textContent = 'Live';
-    };
-
-    sseSource.onmessage = evt => {
-      try {
-        const d = JSON.parse(evt.data);
-        // Update KPIs on overview if visible
-        if (currentPage === 'overview') {
-          if (d.sharpe != null) setKpi('kpi-sharpe', fmt(d.sharpe));
-          if (d.mdd   != null) setKpi('kpi-mdd',     abs_pct(d.mdd));
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>NEXUS — Quantitative Research Dashboard</title>
+    <style>
+      :root {
+        /* Design system (required palette) */
+        --bg: #0a0c10;
+        --card: #111318;
+        --border: #21262d;
+        --accent: #4493f8;
+        --green: #2ea043;
+        --red: #da3633;
+        --yellow: #d29922;
+        --purple: #bc8cff;
+
+        /* Extended palette */
+        --text: #e6edf3;
+        --muted: #9ba3af;
+        --muted2: #6e7681;
+
+        --radius: 16px;
+        --radius-sm: 12px;
+
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+        --shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.35);
+
+        --glass: rgba(17, 19, 24, 0.72);
+        --glass-strong: rgba(17, 19, 24, 0.86);
+        --glass-border: rgba(33, 38, 45, 0.85);
+
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+          monospace;
+        --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+          "Apple Color Emoji", "Segoe UI Emoji";
+      }
+
+      /* Base / reset */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        font-family: var(--sans);
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        letter-spacing: -0.01em;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
+        overflow-x: hidden;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      button,
+      input,
+      textarea {
+        font: inherit;
+        color: inherit;
+      }
+
+      /* Ambient background (premium) */
+      .bg {
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        background:
+          radial-gradient(900px 600px at 18% 12%, rgba(68, 147, 248, 0.12), transparent 60%),
+          radial-gradient(800px 520px at 78% 28%, rgba(188, 140, 255, 0.10), transparent 55%),
+          radial-gradient(700px 460px at 70% 90%, rgba(46, 160, 67, 0.10), transparent 60%),
+          radial-gradient(600px 420px at 20% 92%, rgba(210, 153, 34, 0.10), transparent 65%);
+      }
+      .gridlines {
+        position: fixed;
+        inset: -2px;
+        z-index: -1;
+        opacity: 0.25;
+        background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 56px 56px;
+        mask-image: radial-gradient(ellipse at 50% 0%, rgba(0, 0, 0, 0.9), transparent 70%);
+      }
+
+      /* Header */
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        background: rgba(10, 12, 16, 0.65);
+        border-bottom: 1px solid rgba(33, 38, 45, 0.8);
+      }
+      .header-inner {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 14px 18px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 14px;
+        align-items: center;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 240px;
+      }
+      .logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        position: relative;
+        background: linear-gradient(135deg, rgba(68, 147, 248, 0.16), rgba(188, 140, 255, 0.10));
+        border: 1px solid rgba(68, 147, 248, 0.35);
+        box-shadow: 0 16px 40px rgba(68, 147, 248, 0.10);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+      .logo::after {
+        content: "";
+        position: absolute;
+        inset: -30%;
+        background: radial-gradient(circle at 40% 40%, rgba(68, 147, 248, 0.40), transparent 60%);
+        opacity: 0.0;
+        transform: scale(0.72);
+        animation: logoPulse 3.2s ease-in-out infinite;
+      }
+      @keyframes logoPulse {
+        0%,
+        100% {
+          opacity: 0.12;
+          transform: scale(0.78);
         }
-        // Heartbeat pulse
-        dot.classList.remove('live');
-        requestAnimationFrame(() => dot.classList.add('live'));
-      } catch {}
-    };
+        50% {
+          opacity: 0.55;
+          transform: scale(1);
+        }
+      }
+      .logo svg {
+        position: relative;
+        z-index: 1;
+        opacity: 0.95;
+      }
+      .brand-text {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        line-height: 1.1;
+      }
+      .brand-title {
+        font-weight: 780;
+        letter-spacing: 0.08em;
+        font-size: 13px;
+        text-transform: uppercase;
+        color: rgba(230, 237, 243, 0.95);
+      }
+      .brand-sub {
+        font-size: 12px;
+        color: var(--muted);
+      }
 
-    sseSource.onerror = () => {
-      dot.classList.remove('live');
-      label.textContent = 'Offline';
-      sseSource.close();
-      sseSource = null;
-      // Retry in 15 seconds
-      setTimeout(connectSSE, 15000);
-    };
-  } catch {
-    dot.classList.remove('live');
-    label.textContent = 'No SSE';
-  }
-}
+      /* Tabs */
+      .tabs {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        padding: 6px;
+        border-radius: 999px;
+        background: rgba(17, 19, 24, 0.40);
+        border: 1px solid rgba(33, 38, 45, 0.7);
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .tabs::-webkit-scrollbar {
+        display: none;
+      }
+      .tab-btn {
+        position: relative;
+        border: 0;
+        background: transparent;
+        padding: 10px 12px;
+        border-radius: 999px;
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 620;
+        white-space: nowrap;
+        transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+      }
+      .tab-btn:hover {
+        color: var(--text);
+        background: rgba(68, 147, 248, 0.08);
+      }
+      .tab-btn[aria-selected="true"] {
+        color: rgba(230, 237, 243, 0.98);
+      }
+      .tab-indicator {
+        position: absolute;
+        left: 0;
+        bottom: 3px;
+        height: 2px;
+        width: 0;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--accent), rgba(188, 140, 255, 0.9));
+        box-shadow: 0 0 0 1px rgba(68, 147, 248, 0.15), 0 10px 28px rgba(68, 147, 248, 0.22);
+        transform: translateX(0);
+        transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1), width 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        pointer-events: none;
+      }
 
-// ═══════════════════════════════════════════════════════════
-// AUTO-REFRESH (every 10s)
-// ═══════════════════════════════════════════════════════════
-function startAutoRefresh() {
-  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-  autoRefreshInterval = setInterval(() => {
-    const fn = LOAD_MAP[currentPage];
-    if (fn) fn();
-  }, 10000);
-}
+      /* Header right */
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: flex-end;
+        min-width: 240px;
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(33, 38, 45, 0.75);
+        background: rgba(17, 19, 24, 0.42);
+        color: var(--muted);
+        font-size: 12px;
+        user-select: none;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(110, 118, 129, 0.9);
+        box-shadow: 0 0 0 3px rgba(110, 118, 129, 0.12);
+      }
+      .status-dot.live {
+        background: var(--green);
+        box-shadow: 0 0 0 3px rgba(46, 160, 67, 0.18);
+        animation: pulseDot 1.8s ease-in-out infinite;
+      }
+      .status-dot.warn {
+        background: var(--yellow);
+        box-shadow: 0 0 0 3px rgba(210, 153, 34, 0.18);
+      }
+      .status-dot.down {
+        background: var(--red);
+        box-shadow: 0 0 0 3px rgba(218, 54, 51, 0.18);
+      }
+      @keyframes pulseDot {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(0.9);
+          opacity: 0.55;
+        }
+      }
+      .icon-btn {
+        border: 1px solid rgba(33, 38, 45, 0.75);
+        background: rgba(17, 19, 24, 0.42);
+        border-radius: 12px;
+        padding: 10px;
+        cursor: pointer;
+        display: inline-grid;
+        place-items: center;
+        transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+      }
+      .icon-btn:hover {
+        transform: translateY(-1px);
+        border-color: rgba(68, 147, 248, 0.65);
+        background: rgba(68, 147, 248, 0.08);
+      }
+      .icon-btn:active {
+        transform: translateY(0);
+      }
 
-// ═══════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  loadOverview();
-  connectSSE();
-  startAutoRefresh();
-});
+      /* Main */
+      .main {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 18px 18px 40px;
+      }
+      .page {
+        display: none;
+        animation: pageIn 260ms ease;
+      }
+      .page.active {
+        display: block;
+      }
+      @keyframes pageIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-async function sendChatMessage() {
-  const input = document.getElementById('chat-input');
-  const messages = document.getElementById('chat-messages');
-  const msg = input.value.trim();
-  if (!msg) return;
-  input.value = '';
-  // User bubble
-  const userDiv = document.createElement('div');
-  userDiv.style.cssText = 'background:#1a3a5c;border-radius:12px 12px 4px 12px;padding:12px 16px;max-width:80%;color:#c9d1d9;font-size:14px;align-self:flex-end;margin-left:auto;line-height:1.5';
-  userDiv.textContent = msg;
-  messages.appendChild(userDiv);
-  messages.scrollTop = messages.scrollHeight;
-  // Loading
-  const loadDiv = document.createElement('div');
-  loadDiv.id = 'chat-loading';
-  loadDiv.style.cssText = 'background:#1c2128;border-radius:12px;padding:12px 16px;max-width:80%;color:#8b949e;font-size:14px;font-style:italic';
-  loadDiv.textContent = 'NEXUS is thinking...';
-  messages.appendChild(loadDiv);
-  messages.scrollTop = messages.scrollHeight;
-  try {
-    const resp = await fetch('/api/chat', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
-    const data = await resp.json();
-    loadDiv.remove();
-    const nexusDiv = document.createElement('div');
-    nexusDiv.style.cssText = 'background:#1c2128;border-radius:12px 12px 12px 4px;padding:12px 16px;max-width:80%;color:#c9d1d9;font-size:14px;line-height:1.5;white-space:pre-wrap';
-    nexusDiv.textContent = data.response || 'No response.';
-    messages.appendChild(nexusDiv);
-    messages.scrollTop = messages.scrollHeight;
-  } catch(e) {
-    loadDiv.textContent = 'Error: ' + e.message;
-  }
-}
+      /* Cards */
+      .card {
+        background: var(--glass);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-soft);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      .card-inner {
+        padding: 16px;
+      }
+      .card:hover {
+        border-color: rgba(68, 147, 248, 0.35);
+      }
+      .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .card-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        font-size: 13px;
+      }
+      .card-sub {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(33, 38, 45, 0.8);
+        background: rgba(17, 19, 24, 0.40);
+        color: var(--muted);
+        font-size: 12px;
+        user-select: none;
+        white-space: nowrap;
+      }
+      .chip strong {
+        color: rgba(230, 237, 243, 0.95);
+        font-weight: 700;
+      }
+      .chip.accent {
+        border-color: rgba(68, 147, 248, 0.55);
+        background: rgba(68, 147, 248, 0.10);
+        color: rgba(230, 237, 243, 0.92);
+      }
+      .chip.good {
+        border-color: rgba(46, 160, 67, 0.55);
+        background: rgba(46, 160, 67, 0.10);
+        color: rgba(230, 237, 243, 0.92);
+      }
+      .chip.bad {
+        border-color: rgba(218, 54, 51, 0.55);
+        background: rgba(218, 54, 51, 0.10);
+        color: rgba(230, 237, 243, 0.92);
+      }
 
-// Load NEXUS identity for chat header
-async function loadChatIdentity() {
-  try {
-    const r = await fetch('/api/brain/identity');
-    const d = await r.json();
-    const moodMap = {focused:'🔵 Focused',exploring:'🟡 Exploring',concerned:'🔴 Concerned',satisfied:'🟢 Satisfied',initializing:'⚪ Initializing'};
-    document.getElementById('chat-nexus-mood').textContent = moodMap[d.mood] || d.mood || '⚪';
-    const goals = d.current_goals || [];
-    document.getElementById('chat-nexus-goal').textContent = goals.length ? goals[0] : 'No active goals';
-  } catch(e) {}
-}
+      .muted {
+        color: var(--muted);
+      }
+      .mono {
+        font-family: var(--mono);
+        letter-spacing: 0;
+      }
 
-// Enter key sends message
-document.addEventListener('DOMContentLoaded', function() {
-  const inp = document.getElementById('chat-input');
-  if (inp) inp.addEventListener('keypress', function(e) { if (e.key==='Enter') sendChatMessage(); });
-  loadChatIdentity();
-});
-</script>
-</body>
+      /* Grids */
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+      .grid.kpis {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+      .grid.two {
+        grid-template-columns: 1.55fr 0.85fr;
+      }
+      .grid.two-even {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      @media (max-width: 1100px) {
+        .grid.kpis {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .grid.two {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 560px) {
+        .header-inner {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        .brand,
+        .header-right {
+          min-width: 0;
+          justify-content: space-between;
+        }
+      }
+
+      /* KPI cards */
+      .kpi {
+        padding: 14px 14px 12px;
+      }
+      .kpi-label {
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 650;
+      }
+      .kpi-value {
+        margin-top: 8px;
+        font-size: 26px;
+        font-weight: 780;
+        letter-spacing: -0.02em;
+        line-height: 1.05;
+      }
+      .kpi-sub {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--muted2);
+      }
+      .flash {
+        animation: flash 520ms ease;
+      }
+      @keyframes flash {
+        0% {
+          background: rgba(210, 153, 34, 0.18);
+        }
+        100% {
+          background: transparent;
+        }
+      }
+
+      /* Charts */
+      .chart {
+        width: 100%;
+        height: 320px;
+      }
+      .chart.sm {
+        height: 260px;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .chart-legend {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 99px;
+        background: var(--muted2);
+      }
+
+      /* Tables */
+      .table-wrap {
+        overflow: auto;
+        border-radius: calc(var(--radius) - 6px);
+        border: 1px solid rgba(33, 38, 45, 0.7);
+        background: rgba(17, 19, 24, 0.40);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 12px 12px;
+        border-bottom: 1px solid rgba(33, 38, 45, 0.7);
+        white-space: nowrap;
+      }
+      th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: rgba(17, 19, 24, 0.75);
+        color: var(--muted);
+        font-weight: 650;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-size: 11px;
+      }
+      tr:hover td {
+        background: rgba(68, 147, 248, 0.05);
+      }
+      tr:last-child td {
+        border-bottom: 0;
+      }
+      .cell-win {
+        color: rgba(230, 237, 243, 0.95);
+        background: rgba(46, 160, 67, 0.08);
+      }
+      .cell-lose {
+        color: rgba(230, 237, 243, 0.95);
+        background: rgba(218, 54, 51, 0.08);
+      }
+      .row-nexus td {
+        background: rgba(68, 147, 248, 0.06);
+      }
+      .row-nexus:hover td {
+        background: rgba(68, 147, 248, 0.10);
+      }
+
+      /* Stars */
+      .stars {
+        display: inline-flex;
+        gap: 2px;
+        transform: translateY(1px);
+      }
+      .star {
+        width: 14px;
+        height: 14px;
+        opacity: 0.28;
+      }
+      .star.filled {
+        opacity: 1;
+        filter: drop-shadow(0 6px 12px rgba(210, 153, 34, 0.22));
+      }
+
+      /* Thinking card */
+      .thinking-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .brain {
+        width: 36px;
+        height: 36px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(188, 140, 255, 0.35);
+        background: rgba(188, 140, 255, 0.10);
+        position: relative;
+      }
+      .brain::after {
+        content: "";
+        position: absolute;
+        inset: -18%;
+        border-radius: 18px;
+        border: 1px solid rgba(188, 140, 255, 0.22);
+        opacity: 0.0;
+        transform: scale(0.86);
+        animation: brainPulse 2.6s ease-in-out infinite;
+      }
+      @keyframes brainPulse {
+        0%,
+        100% {
+          opacity: 0.10;
+          transform: scale(0.88);
+        }
+        50% {
+          opacity: 0.6;
+          transform: scale(1);
+        }
+      }
+      .thinking-title {
+        font-weight: 780;
+        letter-spacing: -0.02em;
+        font-size: 14px;
+      }
+      .thinking-body {
+        margin-top: 12px;
+        color: rgba(230, 237, 243, 0.92);
+        font-size: 13px;
+      }
+      .goals {
+        margin-top: 12px;
+        padding-left: 18px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .goals li {
+        margin: 7px 0;
+      }
+
+      /* Risk metrics grid */
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      @media (max-width: 1100px) {
+        .metrics-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .metric {
+        border: 1px solid rgba(33, 38, 45, 0.7);
+        background: rgba(17, 19, 24, 0.40);
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .metric .label {
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 650;
+      }
+      .metric .value {
+        margin-top: 8px;
+        font-weight: 780;
+        font-size: 16px;
+        letter-spacing: -0.02em;
+      }
+      .metric .hint {
+        margin-top: 6px;
+        color: var(--muted2);
+        font-size: 12px;
+      }
+
+      /* Inputs */
+      .input {
+        width: 100%;
+        border-radius: 12px;
+        padding: 10px 12px;
+        border: 1px solid rgba(33, 38, 45, 0.85);
+        background: rgba(17, 19, 24, 0.40);
+        outline: none;
+        transition: border-color 180ms ease, background 180ms ease;
+      }
+      .input:focus {
+        border-color: rgba(68, 147, 248, 0.75);
+        background: rgba(17, 19, 24, 0.55);
+      }
+
+      /* Chat */
+      .chat {
+        display: grid;
+        grid-template-columns: 1fr 0.45fr;
+        gap: 14px;
+      }
+      @media (max-width: 1100px) {
+        .chat {
+          grid-template-columns: 1fr;
+        }
+      }
+      .chat-messages {
+        height: 440px;
+        overflow: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .msg {
+        max-width: 86%;
+        border-radius: 16px;
+        padding: 12px 14px;
+        border: 1px solid rgba(33, 38, 45, 0.75);
+        background: rgba(17, 19, 24, 0.55);
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+        white-space: pre-wrap;
+        line-height: 1.55;
+        font-size: 13px;
+      }
+      .msg.user {
+        align-self: flex-end;
+        border-color: rgba(68, 147, 248, 0.55);
+        background: rgba(68, 147, 248, 0.12);
+      }
+      .msg.nexus {
+        align-self: flex-start;
+      }
+      .thinking-dots {
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
+      }
+      .thinking-dots span {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(155, 163, 175, 0.85);
+        display: inline-block;
+        animation: dots 1.2s infinite ease-in-out;
+      }
+      .thinking-dots span:nth-child(2) {
+        animation-delay: 0.15s;
+      }
+      .thinking-dots span:nth-child(3) {
+        animation-delay: 0.3s;
+      }
+      @keyframes dots {
+        0%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.45;
+        }
+        50% {
+          transform: translateY(-3px);
+          opacity: 1;
+        }
+      }
+      .chat-compose {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        padding: 12px 16px 16px;
+        border-top: 1px solid rgba(33, 38, 45, 0.7);
+      }
+      .send-btn {
+        border: 1px solid rgba(68, 147, 248, 0.75);
+        background: rgba(68, 147, 248, 0.14);
+        color: rgba(230, 237, 243, 0.95);
+        padding: 10px 14px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 720;
+        transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
+      }
+      .send-btn:hover {
+        transform: translateY(-1px);
+        background: rgba(68, 147, 248, 0.20);
+        border-color: rgba(68, 147, 248, 0.95);
+      }
+      .send-btn:active {
+        transform: translateY(0);
+      }
+
+      /* Reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+        .page,
+        .tab-indicator,
+        .logo::after,
+        .brain::after,
+        .status-dot.live,
+        .thinking-dots span {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+    <div class="gridlines" aria-hidden="true"></div>
+
+    <header class="header">
+      <div class="header-inner">
+        <div class="brand" aria-label="NEXUS dashboard">
+          <div class="logo" aria-hidden="true" title="NEXUS">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2.8 20 7.4v9.2l-8 4.6-8-4.6V7.4l8-4.6Z"
+                stroke="rgba(68,147,248,.9)"
+                stroke-width="1.6"
+              />
+              <path
+                d="M12 6.4 16.8 9v6L12 17.6 7.2 15V9L12 6.4Z"
+                fill="rgba(68,147,248,.35)"
+                stroke="rgba(188,140,255,.35)"
+                stroke-width="1.2"
+              />
+            </svg>
+          </div>
+          <div class="brand-text">
+            <div class="brand-title">NEXUS</div>
+            <div class="brand-sub">Quantitative Research Dashboard</div>
+          </div>
+        </div>
+
+        <nav class="tabs" id="tabs" role="tablist" aria-label="Dashboard tabs">
+          <button
+            class="tab-btn"
+            id="tabbtn-overview"
+            role="tab"
+            aria-selected="true"
+            aria-controls="page-overview"
+            data-tab="overview"
+          >
+            Overview
+          </button>
+          <button
+            class="tab-btn"
+            id="tabbtn-benchmark"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-benchmark"
+            data-tab="benchmark"
+          >
+            Benchmark
+          </button>
+          <button
+            class="tab-btn"
+            id="tabbtn-walkforward"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-walkforward"
+            data-tab="walkforward"
+          >
+            Walk-Forward
+          </button>
+          <button
+            class="tab-btn"
+            id="tabbtn-risk"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-risk"
+            data-tab="risk"
+          >
+            Risk
+          </button>
+          <button
+            class="tab-btn"
+            id="tabbtn-ledger"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-ledger"
+            data-tab="ledger"
+          >
+            Ledger
+          </button>
+          <button
+            class="tab-btn"
+            id="tabbtn-chat"
+            role="tab"
+            aria-selected="false"
+            aria-controls="page-chat"
+            data-tab="chat"
+          >
+            💬 Chat
+          </button>
+          <div class="tab-indicator" id="tab-indicator" aria-hidden="true"></div>
+        </nav>
+
+        <div class="header-right">
+          <div class="status" id="global-status" title="Last refresh status">
+            <span class="status-dot" id="global-status-dot"></span>
+            <span id="global-status-text">Connecting…</span>
+            <span class="mono muted" id="global-status-time"></span>
+          </div>
+          <button class="icon-btn" id="refresh-btn" title="Refresh now" aria-label="Refresh now">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M20 12a8 8 0 1 1-2.2-5.5"
+                stroke="rgba(230,237,243,.9)"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+              <path
+                d="M20 4v6h-6"
+                stroke="rgba(230,237,243,.9)"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- =========================================================
+        TAB 1 — Overview
+      ========================================================== -->
+      <section class="page active" id="page-overview" role="tabpanel" aria-labelledby="tabbtn-overview">
+        <div class="grid kpis" id="kpi-strip">
+          <div class="card kpi">
+            <div class="kpi-label">Sharpe</div>
+            <div class="kpi-value" id="kpi-sharpe">—</div>
+            <div class="kpi-sub">annualised</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-label">Calmar</div>
+            <div class="kpi-value" id="kpi-calmar">—</div>
+            <div class="kpi-sub">CAGR / Max DD</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-label">Max DD</div>
+            <div class="kpi-value" id="kpi-mdd" style="color: var(--red)">—</div>
+            <div class="kpi-sub">peak-to-trough</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-label">CAGR</div>
+            <div class="kpi-value" id="kpi-cagr">—</div>
+            <div class="kpi-sub">annualised return</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-label">Win Rate</div>
+            <div class="kpi-value" id="kpi-winrate">—</div>
+            <div class="kpi-sub">fraction positive</div>
+          </div>
+        </div>
+
+        <div style="height: 14px"></div>
+
+        <div class="grid two">
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Equity Curve</div>
+                  <div class="card-sub">
+                    Latest run: <span class="mono" id="ov-run-name">—</span> · Strategy:
+                    <span class="mono" id="ov-strategy">—</span>
+                  </div>
+                </div>
+                <div class="chip accent" id="ov-verdict-chip">Verdict: <strong>—</strong></div>
+              </div>
+              <div class="chart">
+                <canvas id="equityChart" aria-label="Equity curve chart"></canvas>
+              </div>
+              <div class="chart-legend">
+                <span class="legend-dot" style="background: var(--green)"></span>
+                <span class="muted">Equity</span>
+                <span class="muted">·</span>
+                <span class="muted">Bars:</span>
+                <span class="mono" id="ov-bars">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div class="thinking-head">
+                  <div class="brain" aria-hidden="true" title="NEXUS is thinking">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M9 21c-2.2 0-4-1.8-4-4v-1.2c-1.2-.8-2-2.1-2-3.7 0-1.7.9-3.2 2.3-4C5.7 5 7.7 3 10.2 3c1.1 0 2.1.3 3 .8 1-.5 2-.8 3.2-.8C19.9 3 22 5.1 22 7.6c0 1.2-.5 2.4-1.3 3.3.8.8 1.3 1.9 1.3 3.2 0 1.6-.8 2.9-2 3.7V17c0 2.2-1.8 4-4 4"
+                        stroke="rgba(230,237,243,.85)"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                      />
+                      <path
+                        d="M12 4.2v16.6"
+                        stroke="rgba(188,140,255,.65)"
+                        stroke-width="1.2"
+                        stroke-linecap="round"
+                        opacity="0.65"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="thinking-title">NEXUS is thinking</div>
+                    <div class="card-sub" id="brain-status">Loading identity…</div>
+                  </div>
+                </div>
+                <div class="chip" id="brain-mood">—</div>
+              </div>
+              <div class="thinking-body" id="brain-personality">
+                I am NEXUS - autonomous quant research AI. Currently —. Working toward: —
+              </div>
+              <ul class="goals" id="brain-goals">
+                <li>Loading goals…</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 14px"></div>
+
+        <div class="card">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Strategy Comparison</div>
+                <div class="card-sub">Recent run Sharpe leaderboard (top 14)</div>
+              </div>
+              <div class="chip" id="ov-leaderboard-chip">Runs: <strong id="ov-run-count">—</strong></div>
+            </div>
+            <div class="chart sm">
+              <canvas id="strategyChart" aria-label="Strategy comparison chart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+        TAB 2 — Benchmark
+      ========================================================== -->
+      <section class="page" id="page-benchmark" role="tabpanel" aria-labelledby="tabbtn-benchmark">
+        <div class="card">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Industry Benchmark Comparison</div>
+                <div class="card-sub">
+                  Green = NEXUS beats benchmark · Red = below benchmark · * Simulated rows are research-only
+                </div>
+              </div>
+              <div class="chip accent">NEXUS funding carry: <strong>Sharpe 14.97 · CAGR 272% · MDD 1.38% · Calmar 197</strong></div>
+            </div>
+            <div class="table-wrap">
+              <table id="benchmark-table" aria-label="Benchmark comparison table">
+                <thead>
+                  <tr>
+                    <th>Entity</th>
+                    <th>Strategy</th>
+                    <th>Sharpe</th>
+                    <th>Annual Return</th>
+                    <th>Max DD</th>
+                    <th>Calmar</th>
+                    <th>Volatility</th>
+                    <th>Rating</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="8" class="muted" style="padding: 18px">Loading benchmarks…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card-sub" style="margin-top: 12px">
+              * Simulated benchmarks for research comparison only
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+        TAB 3 — Walk-Forward
+      ========================================================== -->
+      <section class="page" id="page-walkforward" role="tabpanel" aria-labelledby="tabbtn-walkforward">
+        <div class="grid two-even">
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Stability Chart</div>
+                  <div class="card-sub">Sharpe per window (green positive, red negative)</div>
+                </div>
+                <div class="chip">Windows: <strong id="wf-window-count">—</strong></div>
+              </div>
+              <div class="chart sm">
+                <canvas id="wfChart" aria-label="Walk-forward stability chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Stability Summary</div>
+                  <div class="card-sub">Walk-forward robustness at a glance</div>
+                </div>
+              </div>
+              <div class="metrics-grid" id="wf-metrics">
+                <div class="metric"><div class="label">Loading</div><div class="value">—</div><div class="hint">—</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height: 14px"></div>
+
+        <div class="card">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Windows Table</div>
+                <div class="card-sub">Each row is a walk-forward window</div>
+              </div>
+              <div class="chip">Source: <strong class="mono">/api/walk_forward</strong></div>
+            </div>
+            <div class="table-wrap">
+              <table id="wf-table" aria-label="Walk-forward windows table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Sharpe</th>
+                    <th>CAGR</th>
+                    <th>Max DD</th>
+                    <th>Calmar</th>
+                    <th>Volatility</th>
+                    <th>Win Rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="7" class="muted" style="padding: 18px">Loading windows…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+        TAB 4 — Risk
+      ========================================================== -->
+      <section class="page" id="page-risk" role="tabpanel" aria-labelledby="tabbtn-risk">
+        <div class="grid two-even">
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">VaR / CVaR</div>
+                  <div class="card-sub">Historical tail risk from return series</div>
+                </div>
+                <div class="chip" id="risk-regime-chip">Regime: <strong id="risk-regime">—</strong></div>
+              </div>
+
+              <div class="table-wrap">
+                <table id="risk-var-table" aria-label="VaR CVaR table">
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      <th>Value</th>
+                      <th>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>VaR 95%</td>
+                      <td class="mono" id="var95">—</td>
+                      <td class="muted">Loss magnitude at 95% confidence</td>
+                    </tr>
+                    <tr>
+                      <td>VaR 99%</td>
+                      <td class="mono" id="var99">—</td>
+                      <td class="muted">More extreme tail cut</td>
+                    </tr>
+                    <tr>
+                      <td>CVaR 95%</td>
+                      <td class="mono" id="cvar95">—</td>
+                      <td class="muted">Expected shortfall in tail</td>
+                    </tr>
+                    <tr>
+                      <td>CVaR 99%</td>
+                      <td class="mono" id="cvar99">—</td>
+                      <td class="muted">Expected shortfall (extreme tail)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="card-sub" style="margin-top: 12px" id="risk-evidence">—</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Risk Metrics Grid</div>
+                  <div class="card-sub">Distribution stats and volatility</div>
+                </div>
+                <div class="chip">Source: <strong class="mono">/api/risk</strong></div>
+              </div>
+              <div class="metrics-grid" id="risk-grid">
+                <div class="metric"><div class="label">Loading</div><div class="value">—</div><div class="hint">—</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+        TAB 5 — Ledger
+      ========================================================== -->
+      <section class="page" id="page-ledger" role="tabpanel" aria-labelledby="tabbtn-ledger">
+        <div class="card">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">
+                  Events Ledger
+                  <span class="status-dot live" id="ledger-live-dot" style="margin-left: 6px"></span>
+                </div>
+                <div class="card-sub">Recent run events (polled) · Live dot pulses on refresh</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px">
+                <input class="input" id="ledger-filter" placeholder="Filter by run / strategy…" />
+                <div class="chip">Rows: <strong id="ledger-count">—</strong></div>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table id="ledger-table" aria-label="Ledger events table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Run</th>
+                    <th>Strategy</th>
+                    <th>Sharpe</th>
+                    <th>CAGR</th>
+                    <th>Max DD</th>
+                    <th>Verdict</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="7" class="muted" style="padding: 18px">Loading ledger…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="card-sub" style="margin-top: 12px">
+              Data source: <span class="mono">/api/runs</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+        TAB 6 — Chat
+      ========================================================== -->
+      <section class="page" id="page-chat" role="tabpanel" aria-labelledby="tabbtn-chat">
+        <div class="chat">
+          <div class="card">
+            <div class="card-inner" style="padding: 0">
+              <div class="card-inner" style="padding-bottom: 10px">
+                <div class="card-header" style="margin-bottom: 0">
+                  <div>
+                    <div class="card-title">NEXUS Chat</div>
+                    <div class="card-sub">
+                      Local research assistant using <span class="mono">/api/metrics</span>,
+                      <span class="mono">/api/risk</span>, <span class="mono">/api/walk_forward</span>,
+                      <span class="mono">/api/runs</span>, <span class="mono">/api/brain/identity</span>,
+                      <span class="mono">/api/brain/goals</span>
+                    </div>
+                  </div>
+                  <div class="chip" id="chat-mood-chip">—</div>
+                </div>
+              </div>
+
+              <div class="chat-messages" id="chat-messages" aria-label="Chat messages">
+                <div class="msg nexus">
+                  Ask things like:
+                  <span class="mono">sharpe</span>, <span class="mono">risk var</span>, <span class="mono">walk-forward</span>,
+                  <span class="mono">top runs</span>, <span class="mono">goals</span>.
+                </div>
+              </div>
+
+              <div class="chat-compose">
+                <textarea
+                  class="input"
+                  id="chat-input"
+                  rows="2"
+                  placeholder="Message NEXUS… (Enter to send, Shift+Enter for newline)"
+                ></textarea>
+                <button class="send-btn" onclick="sendChatMessage()">Send</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-inner">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Context</div>
+                  <div class="card-sub">Identity + active goals</div>
+                </div>
+              </div>
+              <div class="metric" style="margin-bottom: 10px">
+                <div class="label">Mood</div>
+                <div class="value" id="chat-mood">—</div>
+                <div class="hint" id="chat-status">—</div>
+              </div>
+              <div class="metric">
+                <div class="label">Active Goals</div>
+                <div class="value" id="chat-goal-count">—</div>
+                <div class="hint" id="chat-goals-preview">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // ==========================================================
+      // API: allowed endpoints (per requirement)
+      // ==========================================================
+      const API = Object.freeze({
+        metrics: "/api/metrics",
+        equity: "/api/equity",
+        risk: "/api/risk",
+        walkForward: "/api/walk_forward",
+        runs: "/api/runs",
+        brainIdentity: "/api/brain/identity",
+        brainGoals: "/api/brain/goals",
+      });
+
+      const state = {
+        metrics: null,
+        equity: null,
+        risk: null,
+        walkForward: null,
+        runs: null,
+        brainIdentity: null,
+        brainGoals: null,
+        lastOkAt: 0,
+      };
+
+      // ==========================================================
+      // Utils
+      // ==========================================================
+      function clamp(n, lo, hi) {
+        return Math.min(hi, Math.max(lo, n));
+      }
+      function isNum(v) {
+        return typeof v === "number" && Number.isFinite(v);
+      }
+      function fmtNum(v, d = 2) {
+        if (!isNum(v)) return "—";
+        return v.toFixed(d);
+      }
+      function fmtPct(v, d = 1) {
+        if (!isNum(v)) return "—";
+        return (v * 100).toFixed(d) + "%";
+      }
+      function fmtAbsPct(v, d = 2) {
+        if (!isNum(v)) return "—";
+        return (Math.abs(v) * 100).toFixed(d) + "%";
+      }
+      function fmtTs(sec) {
+        if (!isNum(sec)) return "—";
+        const d = new Date(sec * 1000);
+        return d.toISOString().replace("T", " ").slice(0, 19);
+      }
+      function setText(id, text) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.textContent !== text) {
+          el.textContent = text;
+          el.classList.remove("flash");
+          void el.offsetWidth;
+          el.classList.add("flash");
+          setTimeout(() => el.classList.remove("flash"), 560);
+        }
+      }
+      function setHTML(id, html) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = html;
+      }
+
+      function moodMeta(moodRaw) {
+        const mood = (moodRaw || "initializing").toString().toLowerCase();
+        const map = {
+          focused: { emoji: "🔵", label: "Focused", status: "Deep work: optimizing signals and constraints." },
+          exploring: { emoji: "🟡", label: "Exploring", status: "Exploring hypothesis space and new features." },
+          concerned: { emoji: "🔴", label: "Concerned", status: "Investigating risk / stability anomalies." },
+          satisfied: { emoji: "🟢", label: "Satisfied", status: "Locking in improvements and documenting results." },
+          initializing: { emoji: "⚪", label: "Initializing", status: "Booting research core and syncing artifacts." },
+        };
+        return map[mood] || { emoji: "⚪", label: moodRaw || "Unknown", status: "Standing by." };
+      }
+
+      function verdictChip(pass) {
+        if (pass === true) return { cls: "chip good", text: "Verdict: PASS" };
+        if (pass === false) return { cls: "chip bad", text: "Verdict: FAIL" };
+        return { cls: "chip", text: "Verdict: —" };
+      }
+
+      function ratingFromSharpe(sharpe) {
+        if (!isNum(sharpe)) return 0;
+        if (sharpe >= 3) return 5;
+        if (sharpe >= 2) return 4;
+        if (sharpe >= 1) return 3;
+        if (sharpe >= 0.5) return 2;
+        return 1;
+      }
+      function renderStars(rating) {
+        const r = clamp(Math.round(rating), 0, 5);
+        const starSvg = (filled) => `
+          <svg class="star ${filled ? "filled" : ""}" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 17.6 6.8 20.6l1.3-6.1L3.5 10l6.2-.6L12 3.8l2.3 5.6 6.2.6-4.6 4.5 1.3 6.1L12 17.6Z"
+              fill="${filled ? "rgba(210,153,34,.95)" : "rgba(210,153,34,.35)"}" />
+          </svg>`;
+        return `<span class="stars" aria-label="Rating: ${r} out of 5 stars">${[0, 1, 2, 3, 4].map((i) => starSvg(i < r)).join("")}</span>`;
+      }
+
+      async function fetchJSON(url, { timeoutMs = 9000 } = {}) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+          const r = await fetch(url, { signal: ctrl.signal, headers: { Accept: "application/json" } });
+          if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+          return await r.json();
+        } finally {
+          clearTimeout(t);
+        }
+      }
+
+      function setGlobalStatus(kind, text) {
+        const dot = document.getElementById("global-status-dot");
+        const label = document.getElementById("global-status-text");
+        if (!dot || !label) return;
+        dot.classList.remove("live", "warn", "down");
+        if (kind === "live") dot.classList.add("live");
+        if (kind === "warn") dot.classList.add("warn");
+        if (kind === "down") dot.classList.add("down");
+        label.textContent = text;
+        const tEl = document.getElementById("global-status-time");
+        if (tEl && state.lastOkAt) {
+          const secs = Math.max(0, Math.floor((Date.now() - state.lastOkAt) / 1000));
+          tEl.textContent = secs <= 1 ? "· now" : `· ${secs}s`;
+        } else if (tEl) {
+          tEl.textContent = "";
+        }
+      }
+
+      // ==========================================================
+      // Minimal charting (Canvas)
+      // ==========================================================
+      const CANVAS_FONT_SANS =
+        'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial';
+      const CANVAS_FONT_MONO =
+        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
+
+      function setupCanvas(canvas) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        const w = Math.max(1, Math.floor(rect.width * dpr));
+        const h = Math.max(1, Math.floor(rect.height * dpr));
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        const ctx = canvas.getContext("2d");
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { ctx, width: rect.width, height: rect.height };
+      }
+
+      function pathRoundRect(ctx, x, y, w, h, r) {
+        const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+        if (typeof ctx.roundRect === "function") {
+          ctx.roundRect(x, y, w, h, rr);
+          return;
+        }
+        ctx.moveTo(x + rr, y);
+        ctx.arcTo(x + w, y, x + w, y + h, rr);
+        ctx.arcTo(x + w, y + h, x, y + h, rr);
+        ctx.arcTo(x, y + h, x, y, rr);
+        ctx.arcTo(x, y, x + w, y, rr);
+        ctx.closePath();
+      }
+
+      function drawGrid(ctx, x, y, w, h) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(33,38,45,0.65)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const rows = 4;
+        for (let i = 0; i <= rows; i++) {
+          const yy = y + (h * i) / rows;
+          ctx.moveTo(x, yy);
+          ctx.lineTo(x + w, yy);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawLineChart(canvas, series, { line = "rgba(46,160,67,0.95)", fill = "rgba(46,160,67,0.10)" } = {}) {
+        if (!canvas) return;
+        const { ctx, width, height } = setupCanvas(canvas);
+        ctx.clearRect(0, 0, width, height);
+
+        if (!Array.isArray(series) || series.length < 2) {
+          ctx.fillStyle = "rgba(155,163,175,0.7)";
+          ctx.font = `12px ${CANVAS_FONT_SANS}`;
+          ctx.fillText("No data", 12, 20);
+          return;
+        }
+
+        const pad = 14;
+        const x0 = pad;
+        const y0 = pad;
+        const w = width - pad * 2;
+        const h = height - pad * 2;
+
+        drawGrid(ctx, x0, y0, w, h);
+
+        let min = Infinity,
+          max = -Infinity;
+        for (const v of series) {
+          if (!isNum(v)) continue;
+          min = Math.min(min, v);
+          max = Math.max(max, v);
+        }
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return;
+        if (min === max) {
+          min -= 1;
+          max += 1;
+        }
+        const scaleY = (v) => y0 + h - ((v - min) / (max - min)) * h;
+        const scaleX = (i) => x0 + (i / (series.length - 1)) * w;
+
+        // Fill
+        ctx.beginPath();
+        ctx.moveTo(scaleX(0), y0 + h);
+        for (let i = 0; i < series.length; i++) ctx.lineTo(scaleX(i), scaleY(series[i]));
+        ctx.lineTo(scaleX(series.length - 1), y0 + h);
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+
+        // Line
+        ctx.beginPath();
+        for (let i = 0; i < series.length; i++) {
+          const x = scaleX(i);
+          const y = scaleY(series[i]);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = line;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        // Last value tag
+        const last = series[series.length - 1];
+        if (isNum(last)) {
+          const lx = scaleX(series.length - 1);
+          const ly = scaleY(last);
+          ctx.fillStyle = "rgba(10,12,16,0.85)";
+          ctx.strokeStyle = "rgba(68,147,248,0.45)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          pathRoundRect(ctx, lx - 76, ly - 18, 72, 20, 8);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "rgba(230,237,243,0.95)";
+          ctx.font = `12px ${CANVAS_FONT_MONO}`;
+          ctx.fillText(fmtNum(last, 3), lx - 70, ly - 4);
+        }
+      }
+
+      function drawBarChart(canvas, labels, values) {
+        if (!canvas) return;
+        const { ctx, width, height } = setupCanvas(canvas);
+        ctx.clearRect(0, 0, width, height);
+
+        if (!Array.isArray(values) || values.length === 0) {
+          ctx.fillStyle = "rgba(155,163,175,0.7)";
+          ctx.font = `12px ${CANVAS_FONT_SANS}`;
+          ctx.fillText("No data", 12, 20);
+          return;
+        }
+
+        const pad = 14;
+        const x0 = pad;
+        const y0 = pad;
+        const w = width - pad * 2;
+        const h = height - pad * 2;
+        drawGrid(ctx, x0, y0, w, h);
+
+        let min = 0;
+        let max = 0;
+        for (const v of values) {
+          if (!isNum(v)) continue;
+          min = Math.min(min, v);
+          max = Math.max(max, v);
+        }
+        if (min === max) max += 1;
+
+        const n = values.length;
+        const gap = 6;
+        const barW = Math.max(6, (w - gap * (n - 1)) / n);
+        const scaleY = (v) => y0 + h - ((v - min) / (max - min)) * h;
+        const baselineY = scaleY(0);
+
+        for (let i = 0; i < n; i++) {
+          const v = values[i];
+          const x = x0 + i * (barW + gap);
+          const y = scaleY(v);
+          const top = Math.min(y, baselineY);
+          const barH = Math.abs(baselineY - y);
+          const good = v >= 0;
+          const color = good ? "rgba(46,160,67,0.78)" : "rgba(218,54,51,0.72)";
+          ctx.fillStyle = color;
+          ctx.strokeStyle = "rgba(33,38,45,0.65)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          pathRoundRect(ctx, x, top, barW, Math.max(2, barH), 6);
+          ctx.fill();
+
+          // Label (sparse)
+          const lbl = (labels && labels[i]) || "";
+          if (lbl && n <= 14) {
+            ctx.save();
+            ctx.translate(x + barW / 2, y0 + h + 6);
+            ctx.rotate(-0.35);
+            ctx.fillStyle = "rgba(155,163,175,0.85)";
+            ctx.font = `11px ${CANVAS_FONT_SANS}`;
+            ctx.textAlign = "right";
+            ctx.fillText(lbl.length > 18 ? lbl.slice(0, 16) + "…" : lbl, 0, 0);
+            ctx.restore();
+          }
+        }
+
+        // Baseline
+        ctx.strokeStyle = "rgba(110,118,129,0.65)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x0, baselineY);
+        ctx.lineTo(x0 + w, baselineY);
+        ctx.stroke();
+      }
+
+      // ==========================================================
+      // Data loaders
+      // ==========================================================
+      async function loadBrain() {
+        try {
+          const [identity, goals] = await Promise.all([fetchJSON(API.brainIdentity), fetchJSON(API.brainGoals)]);
+          state.brainIdentity = identity || {};
+          state.brainGoals = Array.isArray(goals) ? goals : [];
+
+          const meta = moodMeta(state.brainIdentity.mood);
+          setText("brain-mood", `${meta.emoji} ${meta.label}`);
+          setText("brain-status", meta.status);
+
+          const activeGoals = state.brainGoals.filter((g) => (g.status || "").toString().toLowerCase() === "active");
+          const goalTitles = activeGoals.map((g) => g.title).filter(Boolean);
+          const goalsShort = goalTitles.slice(0, 4);
+
+          setText(
+            "brain-personality",
+            `I am NEXUS - autonomous quant research AI. Currently ${meta.emoji} ${meta.label}. Working toward: ${
+              goalsShort.length ? goalsShort.join("; ") : "No active goals"
+            }`
+          );
+
+          const goalsEl = document.getElementById("brain-goals");
+          if (goalsEl) {
+            goalsEl.innerHTML = goalsShort.length
+              ? goalsShort.map((t) => `<li>${escapeHtml(t)}</li>`).join("")
+              : "<li>No active goals</li>";
+          }
+
+          // Chat side panel
+          setText("chat-mood", `${meta.emoji} ${meta.label}`);
+          setText("chat-status", meta.status);
+          setText("chat-mood-chip", `${meta.emoji} ${meta.label}`);
+          const activeCount = activeGoals.length;
+          setText("chat-goal-count", activeCount ? `${activeCount} active` : "0 active");
+          setText("chat-goals-preview", goalsShort.length ? goalsShort.join(" · ") : "No active goals");
+        } catch (e) {
+          setGlobalStatus("warn", "Brain offline");
+        }
+      }
+
+      async function loadOverview() {
+        setGlobalStatus("warn", "Refreshing…");
+        try {
+          const [metrics, equity, runs] = await Promise.all([
+            fetchJSON(API.metrics),
+            fetchJSON(API.equity),
+            fetchJSON(API.runs),
+          ]);
+
+          state.metrics = metrics || {};
+          state.equity = equity || {};
+          state.runs = Array.isArray(runs) ? runs : [];
+          state.lastOkAt = Date.now();
+          setGlobalStatus("live", "Live");
+
+          const s = (state.metrics || {}).summary || state.metrics || {};
+          setText("kpi-sharpe", fmtNum(s.sharpe));
+          setText("kpi-calmar", fmtNum(s.calmar));
+          setText("kpi-mdd", fmtAbsPct(s.max_drawdown));
+          setText("kpi-cagr", fmtPct(s.cagr));
+          setText("kpi-winrate", fmtPct(s.win_rate));
+
+          const run0 = state.runs[0] || {};
+          setText("ov-run-name", run0.run_name || "—");
+          setText("ov-strategy", run0.strategy || "—");
+          setText("ov-bars", isNum(state.equity.n_bars) ? state.equity.n_bars.toLocaleString() : "—");
+
+          const verdict = (state.metrics || {}).verdict || {};
+          const chip = verdictChip(verdict.pass);
+          const vEl = document.getElementById("ov-verdict-chip");
+          if (vEl) {
+            vEl.className = chip.cls;
+            vEl.innerHTML = `${chip.text.replace("Verdict:", "Verdict: <strong>")}</strong>`;
+          }
+
+          const eq = (state.equity || {}).equity_curve || [];
+          drawLineChart(document.getElementById("equityChart"), eq, {
+            line: "rgba(46,160,67,0.95)",
+            fill: "rgba(46,160,67,0.10)",
+          });
+
+          const top = state.runs
+            .filter((r) => isNum(r.sharpe))
+            .sort((a, b) => (b.sharpe || 0) - (a.sharpe || 0))
+            .slice(0, 14);
+          setText("ov-run-count", state.runs.length ? String(state.runs.length) : "0");
+          drawBarChart(
+            document.getElementById("strategyChart"),
+            top.map((r) => (r.run_name || r.strategy || "?").toString()),
+            top.map((r) => Number(r.sharpe || 0))
+          );
+        } catch (e) {
+          setGlobalStatus("down", "Offline");
+        }
+      }
+
+      async function loadBenchmark() {
+        try {
+          // Use /api/metrics to optionally populate BTC baseline; everything else is simulated.
+          const metrics = state.metrics || (await fetchJSON(API.metrics));
+          state.metrics = metrics || {};
+          state.lastOkAt = Date.now();
+          setGlobalStatus("live", "Live");
+
+          const btc = ((metrics || {}).baselines || {}).btc_buy_hold || null;
+
+          // Required: NEXUS funding carry row uses real data (hard-coded targets)
+          const nexus = {
+            entity: "NEXUS",
+            strategy: "Funding Carry",
+            sharpe: 14.97,
+            annual_return: 2.72,
+            max_dd: 0.0138,
+            calmar: 197,
+            volatility: 0.088,
+          };
+
+          const rows = [
+            nexus,
+            {
+              entity: "Medallion-like*",
+              strategy: "Stat Arb (Sim)",
+              sharpe: 5.2,
+              annual_return: 0.65,
+              max_dd: 0.012,
+              calmar: 54,
+              volatility: 0.06,
+            },
+            {
+              entity: "Renaissance Sim*",
+              strategy: "Multi-Signal (Sim)",
+              sharpe: 3.1,
+              annual_return: 0.36,
+              max_dd: 0.08,
+              calmar: 4.5,
+              volatility: 0.12,
+            },
+            {
+              entity: "Top Hedge Fund*",
+              strategy: "Macro (Sim)",
+              sharpe: 1.6,
+              annual_return: 0.18,
+              max_dd: 0.22,
+              calmar: 0.82,
+              volatility: 0.15,
+            },
+            {
+              entity: "Buy-and-Hold BTC",
+              strategy: "BTC Spot",
+              sharpe: btc ? btc.sharpe : 0.7,
+              annual_return: btc ? btc.cagr : 0.45,
+              max_dd: btc ? btc.max_drawdown : 0.75,
+              calmar: btc ? btc.calmar : 0.6,
+              volatility: btc ? btc.volatility : 0.75,
+            },
+            {
+              entity: "S&P500",
+              strategy: "US Equities",
+              sharpe: 0.65,
+              annual_return: 0.10,
+              max_dd: 0.55,
+              calmar: 0.18,
+              volatility: 0.16,
+            },
+          ];
+
+          const tbody = document.querySelector("#benchmark-table tbody");
+          if (!tbody) return;
+
+          const beatHigher = (nexusV, benchV) => (isNum(nexusV) && isNum(benchV) ? nexusV >= benchV : false);
+          const beatLower = (nexusV, benchV) => (isNum(nexusV) && isNum(benchV) ? nexusV <= benchV : false);
+
+          tbody.innerHTML = rows
+            .map((r) => {
+              const isNexus = r.entity === "NEXUS";
+              const sharpeCls = isNexus ? "" : beatHigher(nexus.sharpe, r.sharpe) ? "cell-win" : "cell-lose";
+              const retCls = isNexus ? "" : beatHigher(nexus.annual_return, r.annual_return) ? "cell-win" : "cell-lose";
+              const ddCls = isNexus ? "" : beatLower(nexus.max_dd, r.max_dd) ? "cell-win" : "cell-lose";
+              const calmarCls = isNexus ? "" : beatHigher(nexus.calmar, r.calmar) ? "cell-win" : "cell-lose";
+              const volCls = isNexus ? "" : beatLower(nexus.volatility, r.volatility) ? "cell-win" : "cell-lose";
+              const rating = ratingFromSharpe(r.sharpe);
+              const ratingCls = isNexus ? "" : beatHigher(ratingFromSharpe(nexus.sharpe), rating) ? "cell-win" : "cell-lose";
+
+              return `<tr class="${isNexus ? "row-nexus" : ""}">
+                <td>${escapeHtml(r.entity)}</td>
+                <td class="mono">${escapeHtml(r.strategy)}</td>
+                <td class="${sharpeCls} mono">${fmtNum(r.sharpe)}</td>
+                <td class="${retCls} mono">${fmtPct(r.annual_return)}</td>
+                <td class="${ddCls} mono">${fmtAbsPct(r.max_dd)}</td>
+                <td class="${calmarCls} mono">${fmtNum(r.calmar, 0)}</td>
+                <td class="${volCls} mono">${fmtPct(r.volatility)}</td>
+                <td class="${ratingCls}">${renderStars(rating)}</td>
+              </tr>`;
+            })
+            .join("");
+        } catch (e) {
+          setGlobalStatus("down", "Offline");
+        }
+      }
+
+      async function loadWalkForward() {
+        setGlobalStatus("warn", "Refreshing…");
+        try {
+          const wf = await fetchJSON(API.walkForward);
+          state.walkForward = wf || {};
+          state.lastOkAt = Date.now();
+          setGlobalStatus("live", "Live");
+
+          const windows = Array.isArray(state.walkForward.windows) ? state.walkForward.windows : [];
+          const stability = state.walkForward.stability || {};
+          setText("wf-window-count", String(stability.windows || windows.length || 0));
+
+          // Chart
+          const sharpeSeries = windows.map((w) => (isNum(w.sharpe) ? w.sharpe : 0));
+          drawBarChart(
+            document.getElementById("wfChart"),
+            windows.map((_, i) => `W${i + 1}`),
+            sharpeSeries
+          );
+
+          // Summary tiles
+          const prof = isNum(stability.fraction_profitable)
+            ? stability.fraction_profitable
+            : windows.length
+              ? windows.filter((w) => isNum(w.cagr) && w.cagr > 0).length / windows.length
+              : null;
+          const calmarPos = isNum(stability.fraction_calmar_positive)
+            ? stability.fraction_calmar_positive
+            : windows.length
+              ? windows.filter((w) => isNum(w.calmar) && w.calmar > 0).length / windows.length
+              : null;
+          const mddLt = isNum(stability.fraction_mdd_lt_0_35)
+            ? stability.fraction_mdd_lt_0_35
+            : windows.length
+              ? windows.filter((w) => isNum(w.max_drawdown) && w.max_drawdown < 0.35).length / windows.length
+              : null;
+          const sharpeMed = median(windows.map((w) => (isNum(w.sharpe) ? w.sharpe : null)).filter(isNum));
+
+          const wfMetrics = [
+            { label: "Windows", value: stability.windows || windows.length || 0, hint: "rolling segments" },
+            { label: "% Profitable", value: isNum(prof) ? fmtPct(prof) : "—", hint: "CAGR > 0" },
+            { label: "% Calmar +", value: isNum(calmarPos) ? fmtPct(calmarPos) : "—", hint: "Calmar > 0" },
+            { label: "% MDD < 35%", value: isNum(mddLt) ? fmtPct(mddLt) : "—", hint: "risk constraint" },
+            { label: "Median Sharpe", value: isNum(sharpeMed) ? fmtNum(sharpeMed) : "—", hint: "central tendency" },
+            { label: "Sharpe Range", value: windows.length ? `${fmtNum(Math.min(...sharpeSeries))} → ${fmtNum(Math.max(...sharpeSeries))}` : "—", hint: "window dispersion" },
+          ];
+          const wfEl = document.getElementById("wf-metrics");
+          if (wfEl) {
+            wfEl.innerHTML = wfMetrics
+              .map(
+                (m) => `<div class="metric">
+                  <div class="label">${escapeHtml(m.label)}</div>
+                  <div class="value">${escapeHtml(String(m.value))}</div>
+                  <div class="hint">${escapeHtml(m.hint)}</div>
+                </div>`
+              )
+              .join("");
+          }
+
+          // Table
+          const tbody = document.querySelector("#wf-table tbody");
+          if (tbody) {
+            if (!windows.length) {
+              tbody.innerHTML = `<tr><td colspan="7" class="muted" style="padding:18px">No walk-forward windows found</td></tr>`;
+            } else {
+              tbody.innerHTML = windows
+                .map((w, idx) => {
+                  return `<tr>
+                    <td class="mono">${idx + 1}</td>
+                    <td class="mono" style="color:${colorSharpe(w.sharpe)}">${fmtNum(w.sharpe)}</td>
+                    <td class="mono">${fmtPct(w.cagr)}</td>
+                    <td class="mono" style="color:var(--red)">${fmtAbsPct(w.max_drawdown)}</td>
+                    <td class="mono">${fmtNum(w.calmar, 0)}</td>
+                    <td class="mono">${fmtPct(w.volatility)}</td>
+                    <td class="mono">${fmtPct(w.win_rate)}</td>
+                  </tr>`;
+                })
+                .join("");
+            }
+          }
+        } catch (e) {
+          setGlobalStatus("down", "Offline");
+        }
+      }
+
+      async function loadRisk() {
+        setGlobalStatus("warn", "Refreshing…");
+        try {
+          const data = await fetchJSON(API.risk);
+          state.risk = data || {};
+          state.lastOkAt = Date.now();
+          setGlobalStatus("live", "Live");
+
+          if (state.risk.error) {
+            setText("risk-regime", "Unknown");
+            setText("risk-evidence", String(state.risk.error));
+            return;
+          }
+
+          const varObj = state.risk.var || {};
+          const reg = state.risk.regime || {};
+          const r = (reg.regime || "unknown").toString();
+          const badge = {
+            trending: "chip accent",
+            ranging: "chip",
+            volatile: "chip bad",
+            unknown: "chip",
+          }[r] || "chip";
+          const chip = document.getElementById("risk-regime-chip");
+          if (chip) chip.className = badge;
+          setText("risk-regime", r.toUpperCase());
+          setText("risk-evidence", reg.evidence ? String(reg.evidence) : "—");
+
+          setText("var95", fmtAbsPct(-varObj.var_95));
+          setText("var99", fmtAbsPct(-varObj.var_99));
+          setText("cvar95", fmtAbsPct(-varObj.cvar_95));
+          setText("cvar99", fmtAbsPct(-varObj.cvar_99));
+
+          const grid = [
+            { label: "Annualised Vol", value: fmtPct(varObj.annualised_vol), hint: "std * sqrt(periods/year)" },
+            { label: "Skewness", value: fmtNum(varObj.skewness, 3), hint: "asymmetry of returns" },
+            { label: "Kurtosis", value: fmtNum(varObj.kurtosis, 3), hint: "tail heaviness (excess)" },
+            { label: "Mean Return", value: fmtPct(varObj.mean_return, 4), hint: "per-period mean" },
+            { label: "Sharpe (approx)", value: fmtNum(varObj.sharpe_approx, 2), hint: "rf=0 approx" },
+            { label: "Worst Period", value: fmtPct(varObj.max_loss_1d, 3), hint: "most negative return" },
+          ];
+          const el = document.getElementById("risk-grid");
+          if (el) {
+            el.innerHTML = grid
+              .map(
+                (m) => `<div class="metric">
+                  <div class="label">${escapeHtml(m.label)}</div>
+                  <div class="value">${escapeHtml(String(m.value))}</div>
+                  <div class="hint">${escapeHtml(m.hint)}</div>
+                </div>`
+              )
+              .join("");
+          }
+        } catch (e) {
+          setGlobalStatus("down", "Offline");
+        }
+      }
+
+      async function loadLedger() {
+        setGlobalStatus("warn", "Refreshing…");
+        try {
+          const runs = await fetchJSON(API.runs);
+          state.runs = Array.isArray(runs) ? runs : [];
+          state.lastOkAt = Date.now();
+          setGlobalStatus("live", "Live");
+
+          pulseLedgerDot();
+          renderLedgerTable();
+        } catch (e) {
+          setGlobalStatus("down", "Offline");
+        }
+      }
+
+      function pulseLedgerDot() {
+        const dot = document.getElementById("ledger-live-dot");
+        if (!dot) return;
+        dot.classList.remove("live");
+        void dot.offsetWidth;
+        dot.classList.add("live");
+      }
+
+      function renderLedgerTable() {
+        const tbody = document.querySelector("#ledger-table tbody");
+        if (!tbody) return;
+        const q = (document.getElementById("ledger-filter") || {}).value || "";
+        const query = q.toLowerCase().trim();
+
+        const rows = state.runs || [];
+        const filtered = !query
+          ? rows
+          : rows.filter((r) => {
+              const a = (r.run_name || "").toString().toLowerCase();
+              const b = (r.strategy || "").toString().toLowerCase();
+              return a.includes(query) || b.includes(query);
+            });
+
+        setText("ledger-count", String(filtered.length));
+        if (!filtered.length) {
+          tbody.innerHTML = `<tr><td colspan="7" class="muted" style="padding:18px">No matching runs</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = filtered
+          .map((r) => {
+            const verdict = r.verdict;
+            const vChip = verdict === true ? `<span class="chip good">PASS</span>` : verdict === false ? `<span class="chip bad">FAIL</span>` : `<span class="chip">—</span>`;
+            return `<tr>
+              <td class="mono muted">${fmtTs(r.ts)}</td>
+              <td class="mono">${escapeHtml((r.run_name || "—").toString())}</td>
+              <td class="mono muted">${escapeHtml((r.strategy || "—").toString())}</td>
+              <td class="mono" style="color:${colorSharpe(r.sharpe)}">${fmtNum(r.sharpe)}</td>
+              <td class="mono">${fmtPct(r.cagr)}</td>
+              <td class="mono" style="color:var(--red)">${fmtAbsPct(r.mdd)}</td>
+              <td>${vChip}</td>
+            </tr>`;
+          })
+          .join("");
+      }
+
+      function colorSharpe(s) {
+        if (!isNum(s)) return "rgba(155,163,175,0.9)";
+        if (s >= 2) return "var(--green)";
+        if (s >= 1) return "var(--accent)";
+        if (s >= 0) return "var(--yellow)";
+        return "var(--red)";
+      }
+
+      function median(nums) {
+        if (!Array.isArray(nums) || !nums.length) return null;
+        const sorted = [...nums].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      // ==========================================================
+      // Tabs + indicator
+      // ==========================================================
+      const TAB_LOADERS = {
+        overview: loadOverview,
+        benchmark: loadBenchmark,
+        walkforward: loadWalkForward,
+        risk: loadRisk,
+        ledger: loadLedger,
+        chat: loadBrain,
+      };
+
+      function setActiveTab(name) {
+        document.querySelectorAll(".tab-btn").forEach((b) => {
+          b.setAttribute("aria-selected", b.dataset.tab === name ? "true" : "false");
+        });
+        document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+        const page = document.getElementById("page-" + name);
+        if (page) page.classList.add("active");
+        moveIndicator();
+        if (TAB_LOADERS[name]) TAB_LOADERS[name]();
+      }
+
+      function moveIndicator() {
+        const nav = document.getElementById("tabs");
+        const ind = document.getElementById("tab-indicator");
+        const active = document.querySelector('.tab-btn[aria-selected="true"]');
+        if (!nav || !ind || !active) return;
+        const navRect = nav.getBoundingClientRect();
+        const r = active.getBoundingClientRect();
+        ind.style.width = `${r.width}px`;
+        ind.style.transform = `translateX(${Math.max(0, r.left - navRect.left)}px)`;
+      }
+
+      function initTabs() {
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.addEventListener("click", () => setActiveTab(btn.dataset.tab));
+          btn.addEventListener("keydown", (e) => {
+            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+            const tabs = [...document.querySelectorAll(".tab-btn")];
+            const idx = tabs.indexOf(btn);
+            if (idx < 0) return;
+            const next = e.key === "ArrowRight" ? tabs[idx + 1] || tabs[0] : tabs[idx - 1] || tabs[tabs.length - 1];
+            next.focus();
+            setActiveTab(next.dataset.tab);
+          });
+        });
+        window.addEventListener("resize", moveIndicator);
+      }
+
+      // ==========================================================
+      // Chat (keep sendChatMessage function)
+      // ==========================================================
+      function addChatBubble(role, text) {
+        const messages = document.getElementById("chat-messages");
+        if (!messages) return null;
+        const div = document.createElement("div");
+        div.className = `msg ${role === "user" ? "user" : "nexus"}`;
+        div.textContent = text;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        return div;
+      }
+
+      function addThinkingBubble() {
+        const messages = document.getElementById("chat-messages");
+        if (!messages) return null;
+        const div = document.createElement("div");
+        div.className = "msg nexus";
+        div.id = "chat-loading";
+        div.innerHTML = `NEXUS is thinking <span class="thinking-dots" aria-hidden="true"><span></span><span></span><span></span></span>`;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        return div;
+      }
+
+      async function generateNexusResponse(userMsg) {
+        const q = userMsg.toLowerCase();
+        const wants = (k) => q.includes(k);
+
+        if (wants("help") || q.trim() === "?") {
+          return [
+            "I can summarize the current run artifacts:",
+            "- metrics: sharpe, calmar, mdd, cagr, win rate",
+            "- risk: var/cvar + regime",
+            "- walk-forward: stability + window stats",
+            "- runs: recent leaderboard",
+            "Try: “sharpe”, “risk var”, “walk-forward summary”, “top runs”, “goals”.",
+          ].join("\n");
+        }
+
+        // Fast paths
+        if (wants("goal")) {
+          const goals = state.brainGoals || (await fetchJSON(API.brainGoals));
+          const active = (Array.isArray(goals) ? goals : []).filter((g) => (g.status || "").toLowerCase() === "active");
+          if (!active.length) return "No active goals found.";
+          return "Active goals:\n" + active.slice(0, 6).map((g) => `- ${g.title}`).join("\n");
+        }
+
+        if (wants("mood") || wants("identity")) {
+          const id = state.brainIdentity || (await fetchJSON(API.brainIdentity));
+          const meta = moodMeta(id.mood);
+          return `Identity: ${id.name || "NEXUS"}\nMood: ${meta.emoji} ${meta.label}\nStatus: ${meta.status}`;
+        }
+
+        if (wants("walk") || wants("forward") || wants("wf")) {
+          const wf = state.walkForward || (await fetchJSON(API.walkForward));
+          const windows = Array.isArray(wf.windows) ? wf.windows : [];
+          const stability = wf.stability || {};
+          const frac = isNum(stability.fraction_profitable) ? fmtPct(stability.fraction_profitable) : "—";
+          const n = stability.windows || windows.length || 0;
+          const med = median(windows.map((w) => w.sharpe).filter(isNum));
+          return `Walk-Forward: ${n} windows\n% profitable: ${frac}\nMedian Sharpe: ${isNum(med) ? fmtNum(med) : "—"}`;
+        }
+
+        if (wants("risk") || wants("var") || wants("cvar") || wants("regime")) {
+          const r = state.risk || (await fetchJSON(API.risk));
+          if (r.error) return `Risk error: ${r.error}`;
+          const v = r.var || {};
+          const reg = r.regime || {};
+          return [
+            `Regime: ${(reg.regime || "unknown").toString().toUpperCase()}`,
+            `VaR95: ${fmtAbsPct(-v.var_95)} · CVaR95: ${fmtAbsPct(-v.cvar_95)}`,
+            `VaR99: ${fmtAbsPct(-v.var_99)} · CVaR99: ${fmtAbsPct(-v.cvar_99)}`,
+            reg.evidence ? `Evidence: ${reg.evidence}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n");
+        }
+
+        if (wants("run") || wants("leaderboard") || wants("top")) {
+          const runs = state.runs || (await fetchJSON(API.runs));
+          const list = Array.isArray(runs) ? runs : [];
+          const top = list
+            .filter((r) => isNum(r.sharpe))
+            .sort((a, b) => (b.sharpe || 0) - (a.sharpe || 0))
+            .slice(0, 5);
+          if (!top.length) return "No runs found.";
+          return "Top runs by Sharpe:\n" + top.map((r) => `- ${r.run_name}: ${fmtNum(r.sharpe)}`).join("\n");
+        }
+
+        if (wants("sharpe") || wants("calmar") || wants("mdd") || wants("cagr") || wants("win")) {
+          const m = state.metrics || (await fetchJSON(API.metrics));
+          const s = (m || {}).summary || m || {};
+          return [
+            `Sharpe: ${fmtNum(s.sharpe)}`,
+            `Calmar: ${fmtNum(s.calmar)}`,
+            `Max DD: ${fmtAbsPct(s.max_drawdown)}`,
+            `CAGR: ${fmtPct(s.cagr)}`,
+            `Win Rate: ${fmtPct(s.win_rate)}`,
+          ].join("\n");
+        }
+
+        // Default: concise snapshot
+        const m = state.metrics || (await fetchJSON(API.metrics));
+        const s = (m || {}).summary || m || {};
+        const id = state.brainIdentity || (await fetchJSON(API.brainIdentity));
+        const meta = moodMeta(id.mood);
+        return `Snapshot: Sharpe ${fmtNum(s.sharpe)} · CAGR ${fmtPct(s.cagr)} · MDD ${fmtAbsPct(
+          s.max_drawdown
+        )}\nMood: ${meta.emoji} ${meta.label}\nTry: “risk var” or “top runs”.`;
+      }
+
+      async function sendChatMessage() {
+        const input = document.getElementById("chat-input");
+        const msg = (input && input.value ? input.value : "").trim();
+        if (!msg) return;
+        input.value = "";
+
+        addChatBubble("user", msg);
+        const loading = addThinkingBubble();
+
+        try {
+          const resp = await generateNexusResponse(msg);
+          if (loading) {
+            loading.removeAttribute("id");
+            loading.innerHTML = "";
+            loading.textContent = resp || "No response.";
+          } else {
+            addChatBubble("nexus", resp || "No response.");
+          }
+        } catch (e) {
+          if (loading) loading.textContent = "Error: " + (e && e.message ? e.message : String(e));
+        }
+      }
+
+      function initChatKeys() {
+        const inp = document.getElementById("chat-input");
+        if (!inp) return;
+        inp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendChatMessage();
+          }
+        });
+      }
+
+      // ==========================================================
+      // Auto refresh
+      // ==========================================================
+      function currentTab() {
+        const active = document.querySelector('.tab-btn[aria-selected="true"]');
+        return active ? active.dataset.tab : "overview";
+      }
+      async function refreshActive() {
+        const tab = currentTab();
+        if (TAB_LOADERS[tab]) TAB_LOADERS[tab]();
+        // Keep brain identity/goals reasonably fresh for Overview + Chat.
+        if (tab === "overview" || tab === "chat") loadBrain();
+      }
+
+      // ==========================================================
+      // Init
+      // ==========================================================
+      document.addEventListener("DOMContentLoaded", () => {
+        initTabs();
+        initChatKeys();
+        moveIndicator();
+
+        document.getElementById("refresh-btn").addEventListener("click", () => refreshActive());
+        document.getElementById("ledger-filter").addEventListener("input", () => renderLedgerTable());
+
+        // Initial load
+        loadBrain();
+        loadOverview();
+        loadBenchmark();
+
+        // Poll active tab every 12s
+        setInterval(refreshActive, 12000);
+      });
+    </script>
+  </body>
 </html>
