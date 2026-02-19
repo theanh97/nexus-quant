@@ -1397,6 +1397,110 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         except Exception as e:
             return JSONResponse([])
 
+    # ── Research API ───────────────────────────────────────────────────────
+
+    @app.get("/api/research/brief")
+    def api_research_brief() -> JSONResponse:
+        """Get latest daily research brief."""
+        brief_path = artifacts_dir / "brain" / "daily_brief.json"
+        if brief_path.exists():
+            try:
+                data = json.loads(brief_path.read_text("utf-8"))
+                return JSONResponse(data)
+            except Exception:
+                pass
+        return JSONResponse({"error": "No research brief yet. Run: python3 -m nexus_quant learn"})
+
+    @app.get("/api/research/sources")
+    def api_research_sources() -> JSONResponse:
+        """List all 56+ research sources with metadata."""
+        try:
+            from ..research.source_registry import SOURCES
+            by_cat: Dict[str, List] = {}
+            for s in SOURCES:
+                by_cat.setdefault(s["category"], []).append({
+                    "name": s["name"], "label": s["label"],
+                    "kind": s["kind"], "weight": s["weight"],
+                    "tags": s["tags"][:5],
+                })
+            return JSONResponse({
+                "total": len(SOURCES),
+                "by_category": {k: {"count": len(v), "sources": v} for k, v in by_cat.items()},
+            })
+        except Exception as e:
+            return JSONResponse({"error": str(e)})
+
+    @app.get("/api/research/sessions")
+    def api_research_sessions(limit: int = 10) -> JSONResponse:
+        """List recent research sessions."""
+        research_dir = artifacts_dir / "research"
+        if not research_dir.exists():
+            return JSONResponse([])
+        sessions = sorted(research_dir.glob("session_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)[:limit]
+        out = []
+        for s in sessions:
+            try:
+                data = json.loads(s.read_text("utf-8"))
+                out.append({
+                    "file": s.name,
+                    "ts": data.get("timestamp", ""),
+                    "sources_fetched": data.get("stats", {}).get("fetched_sources", 0),
+                    "total_items": data.get("stats", {}).get("total_items", 0),
+                    "hypotheses": len(data.get("hypotheses", [])),
+                    "top_hypothesis": (data.get("hypotheses") or [{}])[0].get("hypothesis", ""),
+                })
+            except Exception:
+                continue
+        return JSONResponse(out)
+
+    @app.get("/api/research/log")
+    def api_research_log(limit: int = 20) -> JSONResponse:
+        """Get research learning log."""
+        log_path = artifacts_dir / "research" / "research_log.jsonl"
+        return JSONResponse(_read_jsonl_tail(log_path, limit))
+
+    @app.get("/api/learning/stats")
+    def api_learning_stats() -> JSONResponse:
+        """Get accelerated learning engine stats."""
+        try:
+            from ..research.accelerated_learning import AcceleratedLearningEngine
+            engine = AcceleratedLearningEngine(artifacts_dir)
+            return JSONResponse(engine.summary_stats())
+        except Exception as e:
+            return JSONResponse({"error": str(e)})
+
+    @app.get("/api/learning/brief")
+    def api_learning_brief() -> JSONResponse:
+        """Get accelerated learning morning brief."""
+        try:
+            from ..research.accelerated_learning import AcceleratedLearningEngine
+            engine = AcceleratedLearningEngine(artifacts_dir)
+            return JSONResponse(engine.morning_brief())
+        except Exception as e:
+            return JSONResponse({"error": str(e)})
+
+    @app.get("/api/alpha_loop/champion")
+    def api_champion() -> JSONResponse:
+        """Get current champion strategy."""
+        champion_path = artifacts_dir / "champion.json"
+        if champion_path.exists():
+            try:
+                return JSONResponse(json.loads(champion_path.read_text("utf-8")))
+            except Exception:
+                pass
+        return JSONResponse({"error": "No champion yet"})
+
+    @app.get("/api/alpha_loop/rankings")
+    def api_rankings() -> JSONResponse:
+        """Get strategy rankings from all runs."""
+        try:
+            from ..orchestration.alpha_loop import AlphaLoop
+            from pathlib import Path as _Path
+            loop = AlphaLoop(artifacts_dir, _Path("."), interval_seconds=3600)
+            return JSONResponse(loop.compare_strategies()[:20])
+        except Exception as e:
+            return JSONResponse({"error": str(e)})
+
     # ── Serve static dashboard ─────────────────────────────────────────────
 
     @app.get("/", response_class=HTMLResponse)

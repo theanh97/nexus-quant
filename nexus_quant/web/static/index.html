@@ -75,6 +75,18 @@ td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--surface2)}
 
+/* Pitch step flow */
+.pitch-step{min-width:130px;max-width:160px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center;flex-shrink:0}
+.pitch-step-icon{font-size:1.6rem;margin-bottom:4px}
+.pitch-step-num{font-size:10px;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.08em}
+.pitch-step-title{font-size:12px;font-weight:700;color:var(--fg);margin:4px 0}
+.pitch-step-desc{font-size:11px;color:var(--fg-muted);line-height:1.4}
+.pitch-arrow{display:flex;align-items:center;font-size:20px;color:var(--accent);padding:0 6px;flex-shrink:0}
+/* Verification badges */
+.vbadge{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:13px}
+.vbadge.pass{background:#F0FDF4;border:1px solid #86EFAC}
+.vbadge.fail{background:#FFF5F5;border:1px solid #FCA5A5}
+.vbadge.warn{background:#FFFBEB;border:1px solid #FCD34D}
 /* Stat rows */
 .srow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}
 .srow:last-child{border-bottom:none}
@@ -182,6 +194,7 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
   <div class="tab" onclick="go('tasks')">✅ Tasks</div>
   <div class="tab" onclick="go('files')">📁 Files</div>
   <div class="tab" onclick="go('market')">📡 Market</div>
+  <div class="tab" onclick="go('pitch')">🎯 Pitch</div>
 </nav>
 
 <!-- KPI Strip -->
@@ -474,6 +487,130 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
   </div>
 </div>
 
+<!-- ═══ INVESTOR PITCH ═══ -->
+<div class="page" id="page-pitch">
+  <div class="rowb mb2">
+    <div class="section-title" style="margin-bottom:0">🎯 NEXUS Investor Pitch — Alpha Verification</div>
+    <div class="row">
+      <button class="btn btn-s btn-sm" onclick="loadPitch()">↻ Refresh</button>
+      <button class="btn btn-p btn-sm" onclick="window.open('/api/pitch/report','_blank')">⬇ Export PDF</button>
+    </div>
+  </div>
+
+  <!-- Hero KPIs -->
+  <div class="g4 mb2" id="pitch-kpis">
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#EFF6FF,#DBEAFE)">
+      <div style="font-size:11px;font-weight:600;color:#1D4ED8;text-transform:uppercase;letter-spacing:.05em">Champion Sharpe</div>
+      <div id="pt-sharpe" style="font-size:2.4rem;font-weight:700;color:#1E40AF;line-height:1.2">—</div>
+      <div style="font-size:11px;color:#6B7280">Annualized (1h bars, 8760 ppy)</div>
+    </div>
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#F0FDF4,#DCFCE7)">
+      <div style="font-size:11px;font-weight:600;color:#16A34A;text-transform:uppercase;letter-spacing:.05em">CAGR</div>
+      <div id="pt-cagr" style="font-size:2.4rem;font-weight:700;color:#15803D;line-height:1.2">—</div>
+      <div style="font-size:11px;color:#6B7280">Compound Annual Growth Rate</div>
+    </div>
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#FFF7ED,#FED7AA)">
+      <div style="font-size:11px;font-weight:600;color:#D97706;text-transform:uppercase;letter-spacing:.05em">Max Drawdown</div>
+      <div id="pt-mdd" style="font-size:2.4rem;font-weight:700;color:#B45309;line-height:1.2">—</div>
+      <div style="font-size:11px;color:#6B7280">Maximum Drawdown</div>
+    </div>
+    <div class="card" style="text-align:center;background:linear-gradient(135deg,#F5F3FF,#EDE9FE)">
+      <div style="font-size:11px;font-weight:600;color:#7C3AED;text-transform:uppercase;letter-spacing:.05em">Sources Monitored</div>
+      <div id="pt-sources" style="font-size:2.4rem;font-weight:700;color:#6D28D9;line-height:1.2">72</div>
+      <div style="font-size:11px;color:#6B7280">Academic, Blogs, Forums, Crypto</div>
+    </div>
+  </div>
+
+  <!-- Alpha vs Benchmarks chart -->
+  <div class="card mb2">
+    <div class="ctitle">📊 NEXUS vs Benchmarks — Equity Curve (2024)</div>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:12px">
+      Real Binance data · 1h bars · 8,784 bars · 10 symbols · Full transaction costs (0.04% maker)
+    </div>
+    <canvas id="pt-equity" height="300"></canvas>
+    <div id="pt-bench-compare" class="mt2"></div>
+  </div>
+
+  <!-- Strategy Rankings -->
+  <div class="g2 mb2">
+    <div class="card">
+      <div class="ctitle">🏆 Strategy Leaderboard</div>
+      <div id="pt-rankings"><div class="empty">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">🔬 Scientific Verification</div>
+      <div id="pt-verification"><div class="empty">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- How NEXUS Thinks — Decision Flow -->
+  <div class="card mb2">
+    <div class="ctitle">🧠 How NEXUS Makes Decisions</div>
+    <div style="background:#F8FAFC;border-radius:10px;padding:20px;margin-top:8px;font-size:13px">
+      <div style="display:flex;align-items:stretch;gap:0;overflow-x:auto">
+        <div class="pitch-step">
+          <div class="pitch-step-icon">📡</div>
+          <div class="pitch-step-num">1</div>
+          <div class="pitch-step-title">RESEARCH</div>
+          <div class="pitch-step-desc">Read 72+ sources daily: arXiv, Reddit r/algotrading, quant blogs, crypto news, ML papers</div>
+        </div>
+        <div class="pitch-arrow">→</div>
+        <div class="pitch-step">
+          <div class="pitch-step-icon">💡</div>
+          <div class="pitch-step-num">2</div>
+          <div class="pitch-step-title">HYPOTHESIZE</div>
+          <div class="pitch-step-desc">Extract actionable trading hypotheses using keyword matching + Bayesian prior beliefs</div>
+        </div>
+        <div class="pitch-arrow">→</div>
+        <div class="pitch-step">
+          <div class="pitch-step-icon">⚗️</div>
+          <div class="pitch-step-num">3</div>
+          <div class="pitch-step-title">APPLY</div>
+          <div class="pitch-step-desc">Run backtests on real Binance data with full transaction costs, slippage, and funding rates</div>
+        </div>
+        <div class="pitch-arrow">→</div>
+        <div class="pitch-step">
+          <div class="pitch-step-icon">📊</div>
+          <div class="pitch-step-num">4</div>
+          <div class="pitch-step-title">EVALUATE</div>
+          <div class="pitch-step-desc">Compare Sharpe, CAGR, Calmar vs champion. Walk-forward out-of-sample validation</div>
+        </div>
+        <div class="pitch-arrow">→</div>
+        <div class="pitch-step">
+          <div class="pitch-step-icon">🧠</div>
+          <div class="pitch-step-num">5</div>
+          <div class="pitch-step-title">ADAPT</div>
+          <div class="pitch-step-desc">Update Bayesian beliefs, spaced repetition deck, meta-learner. Promote champion if improved</div>
+        </div>
+        <div class="pitch-arrow">→</div>
+        <div class="pitch-step" style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE)">
+          <div class="pitch-step-icon">♾️</div>
+          <div class="pitch-step-num">∞</div>
+          <div class="pitch-step-title">REPEAT</div>
+          <div class="pitch-step-desc">Runs 24/7. Every cycle the system becomes smarter. Knowledge compounds over time.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accelerated Learning Stats -->
+  <div class="card mb2">
+    <div class="ctitle">⚡ Accelerated Learning Engine Status</div>
+    <div class="g3 mt2" id="pt-learning"><div class="empty">Loading...</div></div>
+  </div>
+
+  <!-- Disclaimer -->
+  <div class="card" style="background:#FFFBEB;border:1px solid #FCD34D">
+    <div style="font-size:12px;color:#92400E;line-height:1.6">
+      <strong>⚠️ Scientific Disclaimer:</strong> All backtest results are in-sample on historical data (2024).
+      Past performance does not guarantee future results. Walk-forward validation is performed to reduce
+      look-ahead bias, but all systematic strategies carry risk of regime change. Transaction costs
+      include Binance VIP-0 taker fees (0.04%), 3bps slippage, and funding rate payments.
+      No personal financial advice is provided. NEXUS is a research platform, not a live trading system.
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -494,7 +631,7 @@ function toast(m,d=3){const t=$('toast');t.textContent=m;t.classList.add('show')
 function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB';}
 
 // ─── Tab system ───
-const TABS=['overview','chat','benchmark','performance','risk','research','tasks','files','market'];
+const TABS=['overview','chat','benchmark','performance','risk','research','tasks','files','market','pitch'];
 let _tab='overview';
 function go(name){
   $$('.tab').forEach((t,i)=>{t.classList[TABS[i]===name?'add':'remove']('active');});
@@ -934,9 +1071,111 @@ function loadMarket(){
 }
 
 // ─── Tab loader map ───
+// ─── Pitch / Investor tab ───
+let _ptChart=null;
+function loadPitch(){
+  // Load champion metrics
+  jx('/api/alpha_loop/champion').then(d=>{
+    if(d.error){html('pt-sharpe','—');return;}
+    const s=d.corrected_sharpe||d.summary?.sharpe||0;
+    const c=d.summary?.cagr||0;
+    const m=d.summary?.max_drawdown||0;
+    set('pt-sharpe',(+s).toFixed(3));
+    set('pt-cagr',pct(c));
+    set('pt-mdd',pct(m));
+  }).catch(()=>{
+    // Fallback: load from metrics API
+    jx('/api/metrics').then(d=>{
+      const s=d.summary?.sharpe||d.sharpe||0;
+      const c=d.summary?.cagr||d.cagr||0;
+      const m=d.summary?.max_drawdown||d.max_drawdown||0;
+      set('pt-sharpe',(+s).toFixed(3));
+      set('pt-cagr',pct(c));
+      set('pt-mdd',pct(m));
+    }).catch(()=>{});
+  });
+
+  // Load strategy rankings
+  jx('/api/alpha_loop/rankings').then(rows=>{
+    if(!rows||rows.error){html('pt-rankings','<div class="empty">No rankings yet</div>');return;}
+    const tbl=rows.slice(0,8).map((r,i)=>{
+      const medal=['🥇','🥈','🥉'][i]||`${i+1}.`;
+      const sh=n2(r.corrected_sharpe||r.sharpe,3);
+      const pass=r.verdict_pass?'<span class="bdg bg-g">PASS</span>':'<span class="bdg bg-r">FAIL</span>';
+      return `<tr><td>${medal} ${esc(r.run_name||r.strategy||'')}</td><td><strong class="pos">${sh}</strong></td><td>${pct(r.cagr)}</td><td>${pct(r.max_drawdown)}</td><td>${pass}</td></tr>`;
+    }).join('');
+    html('pt-rankings',`<table><thead><tr><th>Strategy</th><th>Sharpe</th><th>CAGR</th><th>MDD</th><th>Verdict</th></tr></thead><tbody>${tbl}</tbody></table>`);
+  }).catch(()=>html('pt-rankings','<div class="empty">Run a backtest first</div>'));
+
+  // Scientific verification
+  jx('/api/metrics').then(d=>{
+    const v=d.verdict||{};
+    const b=d.bias_check||{};
+    const wf=d.walk_forward||{};
+    const checks=[
+      {label:'Walk-Forward Out-of-Sample',pass:!!wf.windows,detail:wf.windows?`${wf.windows} windows`:'Not run yet'},
+      {label:'Benchmark Verdict',pass:!!v.pass,detail:v.reason||'—'},
+      {label:'Bias Check',pass:!(b.flags?.length>0),detail:b.flags?.length?`${b.flags.length} flags: ${(b.flags||[]).slice(0,2).join(', ')}`:'No bias flags detected'},
+      {label:'Min Trades',pass:(d.summary?.num_trades||0)>30,detail:`${d.summary?.num_trades||0} trades`},
+      {label:'Periods per Year',pass:!!(d.meta?.periods_per_year===8760||d.benchmark?.annualization?.periods_per_year===8760),detail:`${d.meta?.periods_per_year||d.benchmark?.annualization?.periods_per_year||'?'} (1h bars need 8760)`},
+    ];
+    html('pt-verification',checks.map(c=>`
+      <div class="vbadge ${c.pass?'pass':'warn'}">
+        <span>${c.pass?'✅':'⚠️'}</span>
+        <div><strong>${esc(c.label)}</strong><div style="font-size:11px;color:#6B7280">${esc(c.detail)}</div></div>
+      </div>`).join(''));
+  }).catch(()=>html('pt-verification','<div class="empty">Load a backtest result</div>'));
+
+  // Equity curve vs benchmarks
+  jx('/api/equity').then(d=>{
+    const eq=d.equity||d.equity_curve||[];
+    const bm=d.benchmarks||{};
+    if(!eq.length){html('pt-bench-compare','<div class="empty">No equity data</div>');return;}
+    const ctx=document.getElementById('pt-equity');
+    if(!ctx)return;
+    const n=eq.length;
+    const labels=eq.map((_,i)=>i);
+    const nexusNorm=eq.map(v=>+v/eq[0]);
+
+    // Build datasets
+    const datasets=[{label:'NEXUS Champion',data:nexusNorm,borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.07)',fill:true,tension:.4,borderWidth:2.5}];
+    if(bm.btc_hold){
+      const b=bm.btc_hold;datasets.push({label:'BTC B&H',data:b.map(v=>+v/b[0]),borderColor:'#F59E0B',borderWidth:1.5,fill:false,tension:.3,pointRadius:0});
+    }
+    if(bm.eth_hold){
+      const b=bm.eth_hold;datasets.push({label:'ETH B&H',data:b.map(v=>+v/b[0]),borderColor:'#8B5CF6',borderWidth:1.5,fill:false,tension:.3,pointRadius:0});
+    }
+    if(_ptChart)_ptChart.destroy();
+    _ptChart=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,plugins:{legend:{position:'top'},tooltip:{mode:'index',intersect:false}},scales:{y:{title:{display:true,text:'Normalized Return'},ticks:{callback:v=>`${((v-1)*100).toFixed(0)}%`}},x:{ticks:{maxTicksLimit:12}}}}});
+
+    // Summary table
+    const nexusFinal=nexusNorm[n-1];
+    let rows=`<tr><td><strong style="color:#2563EB">NEXUS Champion</strong></td><td class="pos"><strong>+${((nexusFinal-1)*100).toFixed(1)}%</strong></td><td colspan="2">See KPIs above</td></tr>`;
+    if(bm.btc_hold){
+      const f=+bm.btc_hold[n-1]/+bm.btc_hold[0];
+      rows+=`<tr><td>BTC Buy & Hold</td><td class="${f>1?'pos':'neg'}">${f>1?'+':''}${((f-1)*100).toFixed(1)}%</td><td colspan="2">Pure crypto exposure</td></tr>`;
+    }
+    if(bm.eth_hold){
+      const f=+bm.eth_hold[n-1]/+bm.eth_hold[0];
+      rows+=`<tr><td>ETH Buy & Hold</td><td class="${f>1?'pos':'neg'}">${f>1?'+':''}${((f-1)*100).toFixed(1)}%</td><td colspan="2">Pure crypto exposure</td></tr>`;
+    }
+    html('pt-bench-compare',`<table><thead><tr><th>Strategy</th><th>Total Return</th><th>Notes</th><th></th></tr></thead><tbody>${rows}</tbody></table>`);
+  }).catch(()=>{});
+
+  // Learning stats
+  jx('/api/learning/stats').then(d=>{
+    if(d.error){html('pt-learning','<div class="empty">Learning engine initializing...</div>');return;}
+    html('pt-learning',`
+      <div class="card" style="text-align:center"><div class="ctitle">Hypotheses Tracked</div><div style="font-size:2rem;font-weight:700;color:var(--accent)">${d.total_hypotheses_tracked||0}</div></div>
+      <div class="card" style="text-align:center"><div class="ctitle">Learning Velocity</div><div style="font-size:2rem;font-weight:700;color:var(--green)">${(+(d.learning_velocity||0)*100).toFixed(1)}%</div></div>
+      <div class="card" style="text-align:center"><div class="ctitle">Due for Review</div><div style="font-size:2rem;font-weight:700;color:var(--yellow)">${d.hypotheses_due_today||0}</div></div>
+    `);
+  }).catch(()=>html('pt-learning','<div class="empty">Learning stats unavailable</div>'));
+}
+
 const LOADERS={
   overview:loadOv,chat:loadChat,benchmark:loadBM,performance:loadPerf,
-  risk:loadRisk,research:loadResearch,tasks:loadTasks,files:loadFiles,market:loadMarket
+  risk:loadRisk,research:loadResearch,tasks:loadTasks,files:loadFiles,market:loadMarket,pitch:loadPitch
 };
 
 // ─── Auto refresh ───
