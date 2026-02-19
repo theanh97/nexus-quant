@@ -89,7 +89,15 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
     result = engine.run(dataset=dataset, strategy=strategy, seed=seed)
     result.code_fingerprint = code_fp
 
-    bench_cfg = BenchmarkConfig.from_dict(cfg.get("benchmark") or {})
+    # Auto-detect periods_per_year from bar_interval (critical for correct Sharpe/CAGR)
+    _bar_iv = str((cfg.get("data") or {}).get("bar_interval") or "1d").lower()
+    _ppy_map = {"1m": 525600.0, "5m": 105120.0, "15m": 35040.0, "30m": 17520.0,
+                "1h": 8760.0, "2h": 4380.0, "4h": 2190.0, "8h": 1095.0, "1d": 365.0, "1w": 52.0}
+    _auto_ppy = _ppy_map.get(_bar_iv, 365.0)
+    _bench_dict = dict(cfg.get("benchmark") or {})
+    if "annualization" not in _bench_dict:
+        _bench_dict["annualization"] = {"periods_per_year": _auto_ppy}
+    bench_cfg = BenchmarkConfig.from_dict(_bench_dict)
     bench = run_benchmark_pack_v1(dataset=dataset, result=result, bench_cfg=bench_cfg)
 
     # Run bias checks
@@ -193,7 +201,13 @@ def improve_one(
     bt_cfg = BacktestConfig(costs=cost_model_from_config(costs_cfg, execution_cfg=exec_cfg, venue_cfg=venue_cfg))
     engine = BacktestEngine(bt_cfg)
 
-    bench_cfg = BenchmarkConfig.from_dict(cfg.get("benchmark") or {})
+    _bar_iv2 = str((cfg.get("data") or {}).get("bar_interval") or "1d").lower()
+    _auto_ppy2 = {"1m": 525600.0, "5m": 105120.0, "15m": 35040.0, "30m": 17520.0,
+                  "1h": 8760.0, "2h": 4380.0, "4h": 2190.0, "8h": 1095.0, "1d": 365.0, "1w": 52.0}.get(_bar_iv2, 365.0)
+    _bench_dict2 = dict(cfg.get("benchmark") or {})
+    if "annualization" not in _bench_dict2:
+        _bench_dict2["annualization"] = {"periods_per_year": _auto_ppy2}
+    bench_cfg = BenchmarkConfig.from_dict(_bench_dict2)
 
     improvement = improve_strategy_params(
         dataset=dataset,

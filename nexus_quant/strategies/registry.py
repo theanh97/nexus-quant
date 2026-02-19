@@ -8,6 +8,9 @@ from .momentum import MomentumCrossSectionV1Strategy
 from .mean_reversion import MeanReversionCrossSectionV1Strategy
 from .multi_factor import MultiFactorCrossSectionV1Strategy
 from .ml_factor import MLFactorCrossSectionV1Strategy
+from .ensemble import EnsembleV1Strategy
+from .tsmom import TimeSerisMomentumV1Strategy
+from .combined_carry_mom import CombinedCarryMomentumV1Strategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -24,5 +27,14 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
         return MultiFactorCrossSectionV1Strategy(params=params)
     if name == "ml_factor_xs_v1":
         return MLFactorCrossSectionV1Strategy(params=params)
+    if name == "tsmom_v1":
+        return TimeSerisMomentumV1Strategy(params=params)
+    if name == "combined_carry_mom_v1":
+        return CombinedCarryMomentumV1Strategy(params=params)
+
+    if name == "ensemble_v1":
+        sub_cfgs = params.pop("sub_strategies", [])
+        sub_strats = [make_strategy(sc) for sc in sub_cfgs]
+        return EnsembleV1Strategy(sub_strategies=sub_strats, params=params)
 
     raise ValueError(f"Unknown strategy: {name}")
