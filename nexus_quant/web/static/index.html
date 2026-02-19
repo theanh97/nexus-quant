@@ -140,6 +140,24 @@ tr:hover td{background:var(--surface2)}
 .sys-fill.ok{background:var(--green)}
 .sys-fill.warn{background:var(--yellow)}
 .sys-fill.crit{background:#EF4444}
+/* Debate */
+.debate-wrap{border:2px solid #6366f1;border-radius:10px;overflow:hidden;margin:4px 0}
+.debate-header{background:linear-gradient(90deg,#6366f1,#8b5cf6);color:#fff;padding:8px 12px;font-size:12px;font-weight:600}
+.debate-round{padding:0 12px;border-bottom:1px solid var(--border)}
+.debate-round-title{font-size:11px;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.04em;padding:6px 0 2px}
+.debate-contrib{padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.debate-contrib:last-child{border-bottom:none}
+.debate-model-tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-bottom:3px}
+.tag-glm{background:#e0f2fe;color:#0369a1}
+.tag-claude{background:#f3e8ff;color:#7c3aed}
+.tag-codex{background:#dcfce7;color:#166534}
+.tag-minimax{background:#fff7ed;color:#c2410c}
+.tag-synthesis{background:#1e1b4b;color:#e0e7ff}
+.debate-synthesis{padding:10px 12px;background:linear-gradient(135deg,#1e1b4b,#312e81);color:#e0e7ff;font-size:12px;line-height:1.6}
+.debate-actions{padding:8px 12px;background:#f8fafc;font-size:12px}
+.debate-action-item{padding:3px 0;color:var(--accent);font-weight:500}
+.debate-confidence{display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700;margin-top:6px}
+.debate-btn-active{background:linear-gradient(90deg,#6366f1,#8b5cf6)!important;color:#fff!important;border-color:#6366f1!important}
 
 /* Chat */
 .chat-wrap{display:grid;grid-template-columns:1fr 280px;gap:14px;height:calc(100vh - 200px);min-height:560px}
@@ -476,9 +494,15 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
             <option value="codex">🟢 GPT-5.2 (Codex)</option>
             <option value="minimax-2.5">🟠 MiniMax 2.5</option>
           </select>
+          <button class="btn btn-s btn-sm" id="debate-toggle-btn" onclick="toggleDebateMode()" title="Debate mode: all models discuss + critique each other" style="background:var(--surface);border:1px solid var(--border)">⚔️ Debate</button>
           <button class="btn btn-s btn-sm" onclick="copyLastAI()" title="Copy last AI response">Copy</button>
           <button class="btn btn-s btn-sm" onclick="clearChat()" title="Clear chat">Clear</button>
         </div>
+      </div>
+      <!-- Debate mode banner -->
+      <div id="debate-banner" style="display:none;padding:6px 12px;background:linear-gradient(90deg,#6366f1,#8b5cf6);color:#fff;font-size:11px;text-align:center">
+        ⚔️ <strong>Debate Mode ON</strong> — 4 models (GLM-5 + Claude + GPT-5.2 + MiniMax) will analyze, critique each other, then synthesize a verdict. Takes ~30-60s.
+        <button onclick="toggleDebateMode()" style="margin-left:8px;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:4px;padding:2px 8px;cursor:pointer;font-size:11px">✕ Off</button>
       </div>
       <!-- Quick chips -->
       <div class="chips">
@@ -490,6 +514,9 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
         <span class="chip" onclick="chip('Compare all Phase 30 experiments: 15sym=0.747, k=3=0.119, 48h rebal=0.844, carry50=0.349. Why did all modifications make things worse?')">📉 Phase 30 Findings</span>
         <span class="chip" onclick="chip('Based on current BTC funding rates and 48h price action, what is the cross-sectional signal ranking right now? Who is long candidate, who is short?')">🚦 Live Signal</span>
         <span class="chip" onclick="chip('Propose a new signal that does not require parameter optimization: open interest change, funding momentum, or basis convergence')">💡 New Signal Idea</span>
+        <span class="chip" onclick="loadDebateHistory()" style="background:linear-gradient(90deg,#6366f1,#8b5cf6);color:#fff">⚔️ Debate History</span>
+        <span class="chip" onclick="startDebate('Should we add open interest change as a signal? Pros, cons, overfitting risk, OOS expectation. Current alpha: carry+mom+MR Sharpe=1.01 OOS.')">🆚 Debate: OI Signal</span>
+        <span class="chip" onclick="startDebate('Is NexusAlpha V1 Sharpe=1.01 OOS genuinely good for a crypto long-short strategy? Compare to industry benchmarks. What are the main risks to this persisting in 2026?')">🆚 Debate: Alpha Quality</span>
       </div>
       <!-- Messages -->
       <div class="chat-msgs" id="chat-msgs">
@@ -1319,10 +1346,9 @@ function buildCtxPrefix(){
   return parts.join('; ');
 }
 
-function sendMsg(){
-  var inp=$('chat-in'),txt=inp.value.trim();if(!txt)return;
-  inp.value='';inp.style.height='40px';
-  addMsg('u',txt);
+function _sendMsgNormal(txt, inp){
+  if(!txt)return;
+  if(inp){inp.value='';inp.style.height='40px';}
   var ty=document.createElement('div');ty.className='cmsg a';ty.id='typing';
   ty.innerHTML='<div class="cbubble"><div class="spin"></div> Thinking...</div>';
   $('chat-msgs').appendChild(ty);ty.scrollIntoView({behavior:'smooth'});
@@ -1885,6 +1911,127 @@ function _updateEquityTail(tail){
   _eq.data.datasets[0].data=vals;
   _eq.data.labels=vals.map((_,i)=>i);
   _eq.update('none');
+}
+
+// ─── Multi-Model Debate ───
+let _debateMode = false;
+
+function toggleDebateMode(){
+  _debateMode = !_debateMode;
+  const btn = $('debate-toggle-btn');
+  const banner = $('debate-banner');
+  const ta = $('chat-in');
+  if(_debateMode){
+    if(btn){btn.classList.add('debate-btn-active');btn.textContent='⚔️ Debate ON';}
+    if(banner)banner.style.display='block';
+    if(ta)ta.placeholder='Ask any question — all 4 models will analyze + debate + synthesize (30-60s)...';
+  } else {
+    if(btn){btn.classList.remove('debate-btn-active');btn.textContent='⚔️ Debate';}
+    if(banner)banner.style.display='none';
+    if(ta)ta.placeholder='Ask NEXUS anything... (Enter to send, Shift+Enter for newline)';
+  }
+}
+
+function modelTag(model){
+  const m=(model||'').toLowerCase();
+  if(m.includes('glm'))return`<span class="debate-model-tag tag-glm">🤖 GLM-5</span>`;
+  if(m.includes('claude')||m.includes('sonnet')||m.includes('opus'))return`<span class="debate-model-tag tag-claude">🔵 Claude</span>`;
+  if(m.includes('codex')||m.includes('gpt'))return`<span class="debate-model-tag tag-codex">🟢 GPT-5.2</span>`;
+  if(m.includes('minimax'))return`<span class="debate-model-tag tag-minimax">🟠 MiniMax</span>`;
+  return`<span class="debate-model-tag" style="background:#f1f5f9">${escHtml(model)}</span>`;
+}
+
+function renderDebate(d){
+  if(!d||d.error)return`<div class="empty text-sm">Debate failed: ${escHtml(d&&d.error||'unknown error')}</div>`;
+  const contribs=d.contributions||[];
+  // Group by round
+  const r1=contribs.filter(c=>c.round===1||c.round==='analysis');
+  const r2=contribs.filter(c=>c.round===2||c.round==='critique');
+  const conf=d.consensus_score!=null?Math.round(d.consensus_score*100):50;
+  const confColor=conf>=70?'var(--green)':conf>=40?'var(--yellow)':'#EF4444';
+  let html=`<div class="debate-wrap">
+    <div class="debate-header">⚔️ Multi-Model Debate &nbsp;·&nbsp; ${escHtml(d.topic||'')}
+      <span class="debate-confidence" style="background:${confColor};color:#fff;float:right">Consensus: ${conf}%</span>
+    </div>`;
+  if(r1.length){
+    html+=`<div class="debate-round"><div class="debate-round-title">Round 1 — Independent Analysis</div>`;
+    r1.forEach(c=>{html+=`<div class="debate-contrib">${modelTag(c.model_name||c.model)}<div style="color:var(--fg);line-height:1.5;white-space:pre-wrap">${escHtml(c.content||'')}</div></div>`;});
+    html+=`</div>`;
+  }
+  if(r2.length){
+    html+=`<div class="debate-round"><div class="debate-round-title">Round 2 — Cross-Critique</div>`;
+    r2.forEach(c=>{html+=`<div class="debate-contrib">${modelTag(c.model_name||c.model)}<div style="color:var(--fg);line-height:1.5;white-space:pre-wrap">${escHtml(c.content||'')}</div></div>`;});
+    html+=`</div>`;
+  }
+  if(d.synthesis){
+    html+=`<div class="debate-synthesis"><span class="debate-model-tag tag-synthesis" style="margin-bottom:6px;display:inline-block">🧩 Synthesis</span><div style="white-space:pre-wrap">${escHtml(d.synthesis)}</div></div>`;
+  }
+  if(d.action_items&&d.action_items.length){
+    html+=`<div class="debate-actions"><strong style="font-size:11px;color:var(--fg-muted);text-transform:uppercase">Action Items</strong>`;
+    d.action_items.forEach((a,i)=>{html+=`<div class="debate-action-item">→ ${escHtml(a)}</div>`;});
+    html+=`</div>`;
+  }
+  html+=`</div>`;
+  return html;
+}
+
+function startDebate(topic){
+  const ta=$('chat-in');if(ta)ta.value=topic;
+  _debateMode=true;
+  const btn=$('debate-toggle-btn');const banner=$('debate-banner');
+  if(btn){btn.classList.add('debate-btn-active');btn.textContent='⚔️ Debate ON';}
+  if(banner)banner.style.display='block';
+  sendMsg();
+}
+
+function loadDebateHistory(){
+  jx('/api/debate_history?n=10').then(items=>{
+    if(!items||!items.length){addMsg('a','No debate history yet. Ask a question with Debate Mode ON.');return;}
+    let html='<strong>Recent Debates:</strong><br>';
+    items.slice(0,5).forEach((r,i)=>{
+      const conf=r.consensus_score!=null?Math.round(r.consensus_score*100)+'%':'?';
+      html+=`<div style="margin:6px 0;padding:6px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
+        <div style="font-weight:600;font-size:12px">${escHtml(r.topic||'?')}</div>
+        <div style="font-size:11px;color:var(--fg-muted)">Consensus: ${conf} · ${r.created_at||''}</div>
+        <div style="font-size:11px;margin-top:3px">${escHtml((r.synthesis||'').slice(0,120))}...</div>
+      </div>`;
+    });
+    addMsg('a',html,true);
+  }).catch(()=>addMsg('a','Debate history unavailable.'));
+}
+
+// sendMsg — supports both normal chat and debate mode
+function sendMsg(){
+  const ta=$('chat-in');
+  const msg=(ta?ta.value.trim():'');
+  if(!msg)return;
+  if(_debateMode){
+    // Debate mode: call /api/debate
+    addMsg('u',msg);
+    if(ta){ta.value='';autoGrowTA(ta);}
+    const thinkId='debate-thinking-'+Date.now();
+    addMsg('a',`<div id="${thinkId}" style="display:flex;align-items:center;gap:8px;color:var(--fg-muted);font-size:13px">
+      <div class="loading-dot"></div>
+      ⚔️ Calling 4 models in 3 rounds... (GLM-5 → Claude → GPT-5.2 → MiniMax → Synthesis)
+      <span style="font-size:11px">~30-60s</span>
+    </div>`,true);
+    fetch('/api/debate',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic:msg,context:'NexusAlpha V1 OOS Sharpe=1.01. Alpha=carry+mom+MR. 2021-2025 validated.'})})
+    .then(r=>r.json()).then(d=>{
+      const el=document.getElementById(thinkId);
+      const debHtml=renderDebate(d);
+      if(el){el.parentElement.innerHTML=`<div>${debHtml}</div><div class="cmsg-footer"><span class="cts">Debate · ${new Date().toLocaleTimeString()}</span><button class="copy-btn" onclick="copyBubble(this)">📋</button></div>`;}
+      else{addMsg('a',debHtml,true);}
+    }).catch(e=>{
+      const el=document.getElementById(thinkId);
+      const errMsg=`Debate failed: ${escHtml(String(e))}`;
+      if(el)el.parentElement.querySelector('.cbubble').innerHTML=errMsg;
+      else addMsg('a',errMsg,true);
+    });
+    return;
+  }
+  // Normal mode: original sendMsg logic
+  _sendMsgNormal(msg,ta);
 }
 
 // ─── Year Bar Chart (Overview) ───

@@ -1846,4 +1846,36 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 continue
         return JSONResponse(rows)
 
+    # ── Debate endpoints ──────────────────────────────────────────────────────
+    class DebateRequest(BaseModel):
+        topic: str = ""
+        context: str = ""
+        models: list = []
+
+    @app.post("/api/debate")
+    async def api_debate(body: DebateRequest) -> JSONResponse:
+        """Trigger a multi-model debate and return the result."""
+        try:
+            from ..brain.debate import get_engine
+            engine = get_engine()
+            topic = str(body.topic or "").strip()
+            if not topic:
+                return JSONResponse({"error": "topic required"}, status_code=400)
+            models = list(body.models) if body.models else ["glm-5", "claude-sonnet-4-6", "codex", "minimax-2.5"]
+            result = engine.quick_debate(topic=topic, context=str(body.context or ""))
+            return JSONResponse(result)
+        except Exception as e:
+            import traceback
+            return JSONResponse({"error": str(e), "trace": traceback.format_exc()[-500:]}, status_code=500)
+
+    @app.get("/api/debate_history")
+    async def api_debate_history(n: int = 20) -> JSONResponse:
+        """Return last N debate rounds."""
+        try:
+            from ..brain.debate import get_engine
+            engine = get_engine()
+            return JSONResponse(engine.get_history(n=n))
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
     uvicorn.run(app, host=host, port=port, log_level="warning")
