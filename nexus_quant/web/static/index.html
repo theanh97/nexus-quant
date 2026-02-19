@@ -294,6 +294,7 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
   <div class="tab" onclick="go('files')">📁 Files</div>
   <div class="tab" onclick="go('market')">📡 Market</div>
   <div class="tab" onclick="go('pitch')">🎯 Pitch</div>
+  <div class="tab" onclick="go('logs')">📝 Logs</div>
   <div class="tab" onclick="go('console')">⚙️ Console</div>
 </nav>
 
@@ -932,6 +933,42 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
   </div>
 </div>
 
+<!-- ═══ LOGS (Analysis Journal) ═══ -->
+<div class="page" id="page-logs">
+  <div class="card" style="background:var(--info-bg,#EFF6FF);border:1px solid #BFDBFE;margin-bottom:16px">
+    <div style="font-weight:600;margin-bottom:6px">Analysis Journal</div>
+    <div class="text-sm text-muted" style="line-height:1.5">
+      Persistent record of all thinking, analysis, findings, decisions, and multi-model audit results.
+      These logs survive terminal sessions and provide a complete research history.
+    </div>
+  </div>
+  <!-- Filters -->
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <select id="log-filter-type" onchange="loadLogs()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:13px">
+      <option value="">All Types</option>
+      <option value="analysis">Analysis</option>
+      <option value="finding">Finding</option>
+      <option value="decision">Decision</option>
+      <option value="audit">Audit</option>
+    </select>
+    <select id="log-filter-source" onchange="loadLogs()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--fg);font-size:13px">
+      <option value="">All Sources</option>
+      <option value="claude">Claude</option>
+      <option value="gpt-5.2">GPT-5.2</option>
+      <option value="glm-5">GLM-5</option>
+      <option value="sonnet-4.6">Sonnet 4.6</option>
+      <option value="multi-model">Multi-Model</option>
+      <option value="user">User</option>
+    </select>
+    <button class="btn btn-s" onclick="loadLogs()" style="padding:6px 12px">Refresh</button>
+    <span id="log-count" class="text-sm text-muted" style="margin-left:auto"></span>
+  </div>
+  <!-- Log entries -->
+  <div id="logs-container" style="display:flex;flex-direction:column;gap:10px">
+    <div class="empty">Loading analysis logs...</div>
+  </div>
+</div>
+
 <!-- Toast -->
 <!-- ═══ CONSOLE ═══ -->
 <div class="page" id="page-console">
@@ -1048,7 +1085,7 @@ function toast(m,d=3){const t=$('toast');t.textContent=m;t.classList.add('show')
 function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB';}
 
 // ─── Tab system ───
-const TABS=['overview','chat','benchmark','performance','risk','research','tasks','files','market','pitch','console'];
+const TABS=['overview','chat','benchmark','performance','risk','research','tasks','files','market','pitch','logs','console'];
 let _tab='overview';
 function go(name){
   $$('.tab').forEach((t,i)=>{t.classList[TABS[i]===name?'add':'remove']('active');});
@@ -1898,10 +1935,75 @@ function loadPitch(){
   }).catch(()=>html('pt-learning','<div class="empty">Learning stats unavailable</div>'));
 }
 
+// ─── Analysis Logs (Research Journal) ───
+function loadLogs(){
+  const t=$('log-filter-type')?.value||'';
+  const s=$('log-filter-source')?.value||'';
+  let url='/api/analysis_log?n=200';
+  if(t)url+='&entry_type='+t;
+  if(s)url+='&source='+s;
+  jx(url).then(d=>{
+    const entries=(d.entries||[]).reverse();
+    set('log-count',entries.length+' entries');
+    if(!entries.length){html('logs-container','<div class="empty">No analysis log entries yet. Logs are created during research sessions.</div>');return;}
+    const typeIcon={analysis:'🔍',finding:'💡',decision:'✅',audit:'🤖'};
+    const typeColor={analysis:'#3B82F6',finding:'#F59E0B',decision:'#10B981',audit:'#8B5CF6'};
+    const sevColor={critical:'#EF4444',warning:'#F59E0B',info:'#6B7280'};
+    let h='';
+    for(const e of entries){
+      const icon=typeIcon[e.type]||'📝';
+      const color=typeColor[e.type]||'#6B7280';
+      const sev=e.severity?`<span style="color:${sevColor[e.severity]||'#6B7280'};font-size:11px;font-weight:600">[${e.severity.toUpperCase()}]</span>`:'';
+      const ts=e.ts?new Date(e.ts).toLocaleString():'';
+      const src=e.source||'';
+      const tags=(e.tags||[]).map(t=>`<span style="background:var(--border);padding:1px 6px;border-radius:10px;font-size:10px">${esc(t)}</span>`).join(' ');
+      // Format content: support markdown-like formatting
+      let content=esc(e.content||e.details||e.rationale||e.consensus||'');
+      content=content.replace(/\n/g,'<br>');
+      content=content.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+      content=content.replace(/`(.+?)`/g,'<code style="background:var(--border);padding:1px 4px;border-radius:3px;font-size:12px">$1</code>');
+      // For audit entries, show responses
+      let responses='';
+      if(e.type==='audit'&&e.responses){
+        responses='<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px">';
+        for(const[model,resp]of Object.entries(e.responses)){
+          const r=esc(String(resp)).replace(/\n/g,'<br>');
+          responses+=`<div style="margin-bottom:8px"><b style="color:var(--accent)">${esc(model)}:</b><div style="font-size:12px;margin-top:4px;padding:6px 10px;background:rgba(0,0,0,0.03);border-radius:6px">${r}</div></div>`;
+        }
+        responses+='</div>';
+      }
+      // Alternatives for decisions
+      let alts='';
+      if(e.alternatives&&e.alternatives.length){
+        alts='<div style="margin-top:6px;font-size:11px;color:var(--fg-muted)">Alternatives considered: '+e.alternatives.map(a=>esc(a)).join(', ')+'</div>';
+      }
+      h+=`<div class="card" style="border-left:3px solid ${color};padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:16px">${icon}</span>
+            <span style="font-weight:600;font-size:14px">${esc(e.title||'')}</span>
+            ${sev}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;padding:2px 8px;background:${color}22;color:${color};border-radius:10px;font-weight:500">${esc(src)}</span>
+            <span class="text-sm text-muted">${ts}</span>
+          </div>
+        </div>
+        <div style="font-size:13px;line-height:1.6;color:var(--fg)">${content}</div>
+        ${responses}${alts}
+        ${tags?'<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">'+tags+'</div>':''}
+      </div>`;
+    }
+    html('logs-container',h);
+  }).catch(e=>{
+    html('logs-container','<div class="empty">Error loading logs: '+esc(e.message)+'</div>');
+  });
+}
+
 const LOADERS={
   overview:loadOv,chat:loadChat,benchmark:loadBM,performance:loadPerf,
   risk:loadRisk,research:loadResearch,tasks:loadTasks,files:loadFiles,market:loadMarket,pitch:loadPitch,
-  console:refreshConsole
+  logs:loadLogs,console:refreshConsole
 };
 
 // ─── Auto refresh (fallback polling if SSE fails) ───

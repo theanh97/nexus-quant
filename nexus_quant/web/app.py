@@ -1932,4 +1932,43 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         except Exception as e:
             return JSONResponse({"error": str(e)}, status_code=500)
 
+    # ── Analysis Log (Research Journal) ──────────────────────────────
+    @app.get("/api/analysis_log")
+    async def api_analysis_log(
+        n: int = 100,
+        entry_type: str = "",
+        source: str = "",
+    ) -> JSONResponse:
+        """Return analysis log entries (thinking, findings, decisions, audits)."""
+        try:
+            from ..logs.writer import read_log
+            log_dir = artifacts_dir / "logs" if artifacts_dir else Path("artifacts/logs")
+            entries = read_log(
+                log_dir=log_dir,
+                n=n,
+                entry_type=entry_type or None,
+                source=source or None,
+            )
+            return JSONResponse({"entries": entries, "total": len(entries)})
+        except Exception as e:
+            return JSONResponse({"entries": [], "error": str(e)})
+
+    @app.post("/api/analysis_log")
+    async def api_analysis_log_write(body: dict) -> JSONResponse:
+        """Write a new analysis log entry from the dashboard."""
+        try:
+            from ..logs.writer import log_analysis
+            log_dir = artifacts_dir / "logs" if artifacts_dir else Path("artifacts/logs")
+            entry = log_analysis(
+                content=body.get("content", ""),
+                source=body.get("source", "user"),
+                category=body.get("category", "note"),
+                title=body.get("title", ""),
+                tags=body.get("tags", []),
+                log_dir=log_dir,
+            )
+            return JSONResponse({"ok": True, "entry": entry})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
     uvicorn.run(app, host=host, port=port, log_level="warning")
