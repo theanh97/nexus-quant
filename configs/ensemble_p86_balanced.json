@@ -1,0 +1,90 @@
+{
+  "phase": 86,
+  "label": "p86_balanced_A-I460-I410-balanced",
+  "description": "Phase 86 BALANCED CHAMPION: A-I460-I410-balanced",
+  "avg_sharpe": 2.0065967761517385,
+  "min_sharpe": 1.4689612440927864,
+  "yby_sharpes": [
+    3.215,
+    1.476,
+    1.469,
+    2.394,
+    1.479
+  ],
+  "weights": {
+    "v1": 0.2682,
+    "i460": 0.1185,
+    "i410": 0.2056,
+    "i600": 0.1,
+    "f144": 0.3077
+  },
+  "strategy_params": {
+    "nexus_alpha_v1": {
+      "k_per_side": 2,
+      "w_carry": 0.35,
+      "w_mom": 0.45,
+      "w_confirm": 0.0,
+      "w_mean_reversion": 0.2,
+      "w_vol_momentum": 0.0,
+      "w_funding_trend": 0.0,
+      "momentum_lookback_bars": 336,
+      "mean_reversion_lookback_bars": 72,
+      "vol_lookback_bars": 168,
+      "target_portfolio_vol": 0.0,
+      "use_min_variance": false,
+      "target_gross_leverage": 0.35,
+      "min_gross_leverage": 0.05,
+      "max_gross_leverage": 0.65,
+      "rebalance_interval_bars": 60,
+      "strict_agreement": false
+    },
+    "idio_i437_k4": {
+      "k_per_side": 4,
+      "lookback_bars": 437,
+      "beta_window_bars": 168,
+      "vol_lookback_bars": 168,
+      "target_gross_leverage": 0.3,
+      "rebalance_interval_bars": 48
+    },
+    "idio_i460_k4": {
+      "k_per_side": 4,
+      "lookback_bars": 460,
+      "beta_window_bars": 168,
+      "vol_lookback_bars": 168,
+      "target_gross_leverage": 0.3,
+      "rebalance_interval_bars": 48
+    },
+    "idio_i474_k4": {
+      "k_per_side": 4,
+      "lookback_bars": 474,
+      "beta_window_bars": 168,
+      "vol_lookback_bars": 168,
+      "target_gross_leverage": 0.3,
+      "rebalance_interval_bars": 48
+    },
+    "idio_i410_k4": {
+      "k_per_side": 4,
+      "lookback_bars": 410,
+      "beta_window_bars": 168,
+      "vol_lookback_bars": 168,
+      "target_gross_leverage": 0.3,
+      "rebalance_interval_bars": 48
+    },
+    "idio_i600_k2": {
+      "k_per_side": 2,
+      "lookback_bars": 600,
+      "beta_window_bars": 168,
+      "vol_lookback_bars": 168,
+      "target_gross_leverage": 0.3,
+      "rebalance_interval_bars": 48
+    },
+    "fund_f144_k2": {
+      "k_per_side": 2,
+      "funding_lookback_bars": 144,
+      "direction": "contrarian",
+      "vol_lookback_bars": 168,
+      "target_gross_leverage": 0.25,
+      "rebalance_interval_bars": 24
+    }
+  }
+}

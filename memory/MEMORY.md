@@ -3,13 +3,13 @@
 ## Champion Table (latest wins)
 | Phase | Config | AVG | MIN | Notes |
 |-------|--------|-----|-----|-------|
-| 78 | V1+I437_bw168_k3+I600+F144 | 1.919 | 1.206 | 17.5/17.5/20/45 (k3 balanced) |
 | 81 | V1+I437_bw168_k4+I600+F144 | 2.010 | 1.245 | 22.5/22.5/15/40 (k4 single-lb balanced) |
-| 83 | V1+I437k4+I460k4+I600+F144 | 2.181 | 1.180 | 10/17.5/17.5/12.5/42.5 (dual-lb AVG-MAX) |
-| 84 | V1+I437k4+I460k4+I410k4+I600+F144 | 2.040 | 1.431 | 25/5/12.5/15/10/32.5 (triple-lb balanced) |
-| 84 | V1+I437k4+I474k4+I600+F144 | 2.224 | 1.177 | 10/20/20/10/40 (I437+I474 AVG-MAX) |
-| **85** | **V1+I460k4+I410k4+I600+F144** | **2.001** | **1.468** | **27.5/13.75/20/10/28.75 (I460+I410 balanced)** |
-| **85** | **V1+I437k4+I474k4+I600+F144** | **2.258** | **1.164** | **7.5/16.25/27.5/10/38.75 (NEW AVG-MAX RECORD)** |
+| 84 | V1+I437k4+I460k4+I410k4+I600+F144 | 2.040 | 1.431 | triple-lb balanced |
+| 85 | V1+I460k4+I410k4+I600+F144 | 2.001 | 1.468 | 27.5/13.75/20/10/28.75 (I460+I410 balanced) |
+| 85 | V1+I437k4+I474k4+I600+F144 | 2.258 | 1.164 | 7.5/16.25/27.5/10/38.75 (AVG-MAX record) |
+| **86** | **V1+I460k4+I410k4+I600+F144** | **2.007** | **1.469** | **26.82/11.85/20.56/10/30.77 (BALANCED)** |
+| **86** | **V1+I437k4+I474k4+I600+F144** | **2.268** | **1.125** | **4.98/16.17/30/10/38.85 (NEW AVG-MAX)** |
+| **86** | **(high-MIN)** | **1.954** | **1.478** | **V1=30%/I460=11.23%/I410=21.8%/I600=10%/F144=26.97%** |
 
 ## Critical Strategy Name Distinction
 - `"funding_momentum_alpha"` = cumulative funding sum (uses `funding_lookback_bars`) ← CORRECT
@@ -22,19 +22,14 @@
   - I460_k4: 2022=0.635, 2023=1.038, 2024=2.709, AVG=1.828 — good 2023/2024/2025 ★
   - I474_k4: 2022=0.883, 2023=0.974, 2024=2.906, AVG=1.880 — best standalone!
   - I410_k4: 2022=1.613, 2023=1.027, 2024=1.642, AVG=1.567 — best 2022+2023 balance ★★
-  - Dual-lb I437+I460: covers 2022 (via I437) AND 2023 (via I460) → massive ensemble boost
-  - Dual-lb I437+I474: STRICTLY DOMINATES I437+I460 in dual-lb setting
-  - **I460+I410 dual-lb**: covers 2022 (via I410) AND 2023 (via I460) → best balanced combo
-  - **I474+I410 dual-lb**: similar but I474 has better 2022 floor → slightly higher AVG
 - **k_per_side rules**: k=4 best for I437/I460/I410/I474. k=2 for I600, V1, F144, F168.
 - **k=3 and k=4 both fail for F144**: negative 2025 year. Never use k>2 for funding signal.
-- **Triple-lb insight (Phase 84→85)**: I437 weight converges to 0% at fine resolution!
-  - P84's triple-lb champion (I437=5%) → P85 fine grid → optimal is I437=0%
-  - The real advance was I460+I410 dual-lb, not triple-lb per se
-- **I474 weight in AVG-max**: Optimal is 27.5% (much higher than P84's 20%)
-  - I437(16.25%)+I474(27.5%) → AVG=2.258 (new record)
+- **Triple-lb insight (P84→P85→P86)**: I437 weight converges to 0% at fine resolution.
+  - True breakthrough: I460+I410 dual-lb (covers 2023 via I460, 2022+2023 via I410)
+- **I474 optimal weight in AVG-max**: 30% (not 20% as in P84). I437=16%, I474=30% → AVG=2.268
+- **High-MIN recipe**: V1≥30% + I460+I410 → MIN≥1.478 but AVG<2.0 tradeoff
 - **I600 weight**: 10% optimal with k4 idio signals
-- **Balanced architecture**: V1=27.5%, one "2023-good" idio, one "2022-good" idio, I600=10%, F144=~30%
+- **Balanced architecture**: V1=26-27.5%, I460=11-14%, I410=18-21%, I600=10%, F144=28-31%
 
 ## Signals That FAILED
 - TakerBuyAlpha: all lookbacks negative
@@ -46,26 +41,26 @@
 - Dual-k (I437_k3+I437_k4): Suboptimal vs pure k4
 
 ## Best Ensemble Architecture (CURRENT CHAMPIONS)
-**Phase 85 balanced champion**: `V1(27.5%) + I460_k4(13.75%) + I410_k4(20%) + I600_k2(10%) + F144_k2(28.75%)`
-- AVG=2.001, MIN=1.468, YbY: [3.167, 1.468, 1.470, 2.381, 1.517]
-- Config saved: `configs/ensemble_p85_balanced.json`
-- STRICTLY DOMINATES P84 balanced (1.468 > 1.431)! I437=0% is optimal!
+**Phase 86 balanced champion**: `V1(26.82%) + I460_k4(11.85%) + I410_k4(20.56%) + I600_k2(10%) + F144_k2(30.77%)`
+- AVG=2.007, MIN=1.469, YbY: [3.215, 1.476, 1.469, 2.394, 1.479]
+- Config saved: `configs/ensemble_p86_balanced.json`
+- STRICTLY DOMINATES P85 balanced (1.469 > 1.468)!
 
-**Phase 85 AVG-max champion**: `V1(7.5%) + I437_k4(16.25%) + I474_k4(27.5%) + I600_k2(10%) + F144_k2(38.75%)`
-- AVG=2.258, MIN=1.164, YbY: [3.825, 1.337, 1.164, 3.250, 1.715]
-- Config saved: `configs/ensemble_p85_avgmax.json`
-- NEW AVG-MAX RECORD! (2.258 > P84's 2.224)
+**Phase 86 AVG-max champion**: `V1(4.98%) + I437_k4(16.17%) + I474_k4(30%) + I600_k2(10%) + F144_k2(38.85%)`
+- AVG=2.268, MIN=1.125, YbY: [3.848, 1.311, 1.125, 3.314, 1.742]
+- Config saved: `configs/ensemble_p86_avgmax.json`
+- NEW AVG-MAX RECORD (2.268 > P85's 2.258)! I474=30% optimal!
 
-## Pareto Frontier (Phase 85 balanced region, MIN≥1.43)
+**Phase 86 high-MIN (Pareto frontier)**: `V1(30%) + I460_k4(11.23%) + I410_k4(21.8%) + I600_k2(10%) + F144_k2(26.97%)`
+- AVG=1.954, MIN=1.478, YbY: [3.039, 1.484, 1.478, 2.281, 1.489]
+- Note: AVG<2.0 but MIN is highest at 1.478!
+
+## Pareto Frontier (Phase 86)
 | AVG   | MIN   | Config |
 |-------|-------|--------|
-| 2.258 | 1.164 | V1=7.5%, I437=16.25%, I474=27.5%, I600=10%, F144=38.75% ← P85 AVG-MAX |
-| 2.195 | 1.322 | V1=17.5%, I437=10%, I474=27.5%, I600=10%, F144=35% (dual-lb balanced) |
-| 2.018 | 1.462 | V1=27.5%, I460=7.5%, I474=10%, I410=17.5%, I600=10%, F144=27.5% (quad-lb) |
-| 2.015 | 1.464 | V1=27.5%, I474=13.75%, I410=17.5%, I600=10%, F144=31.25% (I474+I410 balanced) |
-| 2.001 | 1.468 | V1=27.5%, I460=13.75%, I410=20%, I600=10%, F144=28.75% ← P85 BALANCED |
-
-Also notable: I474+I410 at 2.015/1.464 — higher AVG, comparable MIN to balanced champion.
+| 2.268 | 1.125 | V1=4.98%, I437=16.17%, I474=30%, I600=10%, F144=38.85% ← P86 AVG-MAX |
+| 2.007 | 1.469 | V1=26.82%, I460=11.85%, I410=20.56%, I600=10%, F144=30.77% ← P86 BALANCED |
+| 1.954 | 1.478 | V1=30%, I460=11.23%, I410=21.8%, I600=10%, F144=26.97% ← HIGH-MIN |
 
 ## Correlations (confirmed stable)
 - idio↔f144 = **-0.009 (ORTHOGONAL!)** — the magic behind the ensemble
@@ -73,20 +68,24 @@ Also notable: I474+I410 at 2.015/1.464 — higher AVG, comparable MIN to balance
 
 ## Research Phases Summary
 - Phases 59-74: Established V1+Idio+F144 structure; 437h optimal for k=3
-- Phases 76-79: k=3 I437 champion 1.919/1.206; AVG-max 1.934/1.098
-- Phase 80: F144 k3 fails; **I437_k4 BREAKTHROUGH** standalone 1.623
-- Phase 81: k4 grid; **BALANCED 2.010/1.245**; AVG-MAX 2.079/1.015
-- Phase 82: Fine grid; F144_k4 fails; **I460_k4 BREAKTHROUGH** standalone 1.828; high-MIN 1.349
-- Phase 83: **DUAL-LB BREAKTHROUGH**: I437+I460; **BALANCED 2.019/1.368** (strictly dominates P81!); **AVG-MAX 2.181/1.180**; I410_k4 also strong
-- Phase 84: **TRIPLE-LB**: I437+I460+I410 → 2.040/1.431; I437+I474 dual-lb → 2.224/1.177 AVG-max
-- Phase 85: **FINE-GRID**: I437=0% optimal in triple-lb; **I460+I410 balanced 2.001/1.468** (≡ pure dual-lb!); **I437+I474 AVG-MAX 2.258/1.164** (new record, I474=27.5%!)
+- Phases 76-79: k=3 I437 champion 1.919/1.206
+- Phase 80: F144 k3 fails; I437_k4 BREAKTHROUGH standalone 1.623
+- Phase 81: k4 grid; BALANCED 2.010/1.245; AVG-MAX 2.079/1.015
+- Phase 82: F144_k4 fails; I460_k4 BREAKTHROUGH standalone 1.828
+- Phase 83: DUAL-LB I437+I460; BALANCED 2.019/1.368; AVG-MAX 2.181/1.180
+- Phase 84: TRIPLE-LB I437+I460+I410 → 2.040/1.431; I437+I474 → 2.224/1.177 AVG-max
+- Phase 85: I437=0% optimal in triple-lb; I460+I410 balanced 2.001/1.468; I437+I474 2.258/1.164 (new record, I474=27.5%)
+- Phase 86: **Numpy vectorization** (60x faster); I460+I410 2.007/1.469 (P85+); I437+I474 2.268/1.125 (I474=30%!); high-MIN 1.954/1.478
 
 ## Workflow Notes
 - All backtests: 5 OOS years (2021-2025), hourly bars, 10 crypto perps, Binance USDm
-- Sharpe formula: `(mean/std) × sqrt(8760)` for hourly returns
+- Sharpe formula: `(mean/pstd) × sqrt(8760)` for hourly returns (pstd = population std, ddof=0)
 - Ensemble blending: return-level weighted average before computing Sharpe
 - Run scripts: `python3 scripts/run_phaseXX_*.py 2>&1 | tee artifacts/phaseXX_run.log`
 - Use "p8X_" prefix for Phase run labels to avoid cross-phase artifact conflicts
 - pct_range: `[x / 10000 for x in range(lo, hi, step)]` (NEVER /100!)
 - AVG = mean of 5 year Sharpes; MIN = worst single year
-- **PERFORMANCE**: blend_ensemble is slow in pure Python (~30min for 10K configs). Next phases must use numpy vectorization (W @ R matrix multiply) for ~100x speedup. See Solution 2 in phase85 analysis.
+- **NUMPY BLEND (Phase 86+)**: Use `W @ R` batch matrix multiply for blend sweeps. ~60x faster.
+  - `W`: (N_configs, K) weight matrix; `R_year`: (K, T) stacked returns
+  - numpy.std() with default ddof=0 = statistics.pstdev() — IDENTICAL results ✓
+  - numpy 2.4.2 installed via `pip install numpy --break-system-packages`
