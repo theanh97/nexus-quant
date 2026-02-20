@@ -109,8 +109,10 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
 
     app = FastAPI(title="NEXUS Quant Dashboard", version="1.0.0")
     static_dir = Path(__file__).parent / "static"
-    # FORCE RESOLVE TO OUR NEW GENERATED LOCAL DIRECTORY TO AVOID OS PERMISSION ERRORS
-    artifacts_dir = Path("nexus_quant/artifacts").resolve()
+    
+    # FORCE RESOLVE TO PREVENT CWD OR CLI OVERRIDES FROM HITTING LOCKED SYSTEM ARTIFACTS
+    artifacts_dir = Path(__file__).parent.parent / "artifacts"
+    artifacts_dir = artifacts_dir.resolve()
 
     def _repo_root() -> Path:
         return Path(__file__).resolve().parents[2]
@@ -2383,6 +2385,19 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         except Exception:
             pass
         return JSONResponse(result)
+
+    # ── Signal Health ─────────────────────────────────────────────────
+    @app.get("/api/signals/health")
+    async def api_signals_health() -> JSONResponse:
+        """Return latest signal health report (Phase 123)."""
+        health_path = project_root / "artifacts" / "phase123" / "signal_health_report.json"
+        if not health_path.exists():
+            return JSONResponse({"available": False, "message": "No health report yet. Run Phase 123."})
+        try:
+            data = json.loads(health_path.read_text())
+            return JSONResponse({"available": True, **data})
+        except Exception as e:
+            return JSONResponse({"available": False, "error": str(e)})
 
     # ── Live Engine Status ────────────────────────────────────────────
     @app.get("/api/live/status")

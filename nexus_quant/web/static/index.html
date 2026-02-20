@@ -3937,6 +3937,12 @@
       <div id="sig-history" class="text-sm" style="max-height:300px;overflow-y:auto;font-family:monospace">No signals yet.</div>
     </div>
 
+    <!-- Signal Health Monitor -->
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin:0 0 12px">Signal Health Monitor (Phase 123)</h3>
+      <div id="sig-health" class="text-sm" style="font-family:monospace">Loading health report...</div>
+    </div>
+
     <!-- Quick Start Guide -->
     <div class="card" style="margin-top:16px;background:var(--info-bg,#EFF6FF);border:1px solid #BFDBFE">
       <h3 style="margin:0 0 8px">Quick Start</h3>
@@ -6955,6 +6961,48 @@
         } else {
           histEl.innerHTML = '<div class="text-muted">No signal history yet. Generate your first signal above.</div>';
         }
+
+        // Signal health monitor
+        try {
+          const healthRes = await fetch('/api/signals/health');
+          const hd = await healthRes.json();
+          const healthEl = document.getElementById('sig-health');
+          if (hd.available && hd.health) {
+            let hHtml = '<table style="width:100%;border-collapse:collapse">';
+            hHtml += '<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left">Signal</th><th>Status</th><th style="text-align:right">Avg Sharpe</th><th style="text-align:right">Recent (24-25)</th><th style="text-align:right">Trend</th><th style="text-align:right">Weight</th></tr>';
+            for (const [sk, info] of Object.entries(hd.health)) {
+              const sc = info.status === 'HEALTHY' ? '#16A34A' : info.status === 'DECLINING' ? '#F59E0B' : '#DC2626';
+              const icon = info.status === 'HEALTHY' ? '🟢' : info.status === 'DECLINING' ? '🟡' : '🔴';
+              hHtml += `<tr>`;
+              hHtml += `<td style="font-weight:600">${sk}</td>`;
+              hHtml += `<td style="color:${sc}">${icon} ${info.status}</td>`;
+              hHtml += `<td style="text-align:right">${info.avg_sharpe_all.toFixed(3)}</td>`;
+              hHtml += `<td style="text-align:right">${info.avg_sharpe_recent.toFixed(3)}</td>`;
+              hHtml += `<td style="text-align:right;color:${info.trend_pct >= 0 ? '#16A34A' : '#DC2626'}">${info.trend_pct >= 0 ? '+' : ''}${info.trend_pct.toFixed(1)}%</td>`;
+              hHtml += `<td style="text-align:right">${((hd.current_weights || {})[sk] || 0).toFixed(1)}%</td>`;
+              hHtml += '</tr>';
+            }
+            if (hd.contributions) {
+              const years = Object.keys(hd.contributions).sort();
+              hHtml += '<tr style="border-top:2px solid var(--border)"><td colspan="6" style="font-weight:600;padding-top:8px">Ensemble Sharpe by Year</td></tr>';
+              for (const y of years) {
+                const c = hd.contributions[y];
+                if (c && c.ensemble_sharpe !== undefined) {
+                  hHtml += `<tr><td>${y}</td><td colspan="5" style="text-align:right;font-weight:600">${c.ensemble_sharpe.toFixed(3)}</td></tr>`;
+                }
+              }
+            }
+            hHtml += '</table>';
+            if (hd.alerts && hd.alerts.length > 0) {
+              hHtml += '<div style="margin-top:8px;padding:6px 10px;background:var(--red-light);border-radius:6px;color:var(--red)">';
+              for (const a of hd.alerts) hHtml += `<div>${a}</div>`;
+              hHtml += '</div>';
+            }
+            healthEl.innerHTML = hHtml;
+          } else {
+            healthEl.textContent = hd.message || 'No health report available. Run Phase 123 analysis.';
+          }
+        } catch (e) { /* health is optional */ }
 
       } catch (e) {
         console.error('loadSignals error:', e);
