@@ -145,6 +145,14 @@ def _parse_args() -> argparse.Namespace:
     sig_p.add_argument("--interval", type=int, default=3600, help="Seconds between signals in loop mode (default: 3600)")
     sig_p.add_argument("--json", action="store_true", help="Output signal as JSON only (for piping)")
 
+    trade_p = sub.add_parser("trade", help="Live/paper trading — signal generation + order execution")
+    trade_p.add_argument("--mode", default="paper", choices=["paper", "dry_run", "testnet", "live"],
+                         help="Trading mode (default: paper)")
+    trade_p.add_argument("--config", default=None, help="Production config (default: auto-detect)")
+    trade_p.add_argument("--loop", action="store_true", help="Run continuously")
+    trade_p.add_argument("--interval", type=int, default=3600, help="Seconds between cycles (default: 3600)")
+    trade_p.add_argument("--max-cycles", type=int, default=0, help="Stop after N cycles (0=infinite)")
+
     return p.parse_args()
 
 
@@ -254,6 +262,21 @@ def main() -> int:
             print(json.dumps({"var": var, "regime": regime}, indent=2))
         else:
             print("No returns data found.")
+        return 0
+
+    if args.cmd == "trade":
+        from .live.runner import run_cycle, run_loop
+        if args.loop:
+            run_loop(
+                mode=args.mode,
+                config_path=args.config,
+                interval_seconds=args.interval,
+                max_cycles=args.max_cycles,
+            )
+        else:
+            result = run_cycle(mode=args.mode, config_path=args.config)
+            if getattr(args, "json", False):
+                print(json.dumps(result, indent=2, default=str))
         return 0
 
     if args.cmd == "signal":

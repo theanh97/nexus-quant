@@ -1,0 +1,1 @@
+{"mode": "paper", "timestamp": "2026-02-20T13:57:53.678013+00:00", "signal": {"gross_leverage": 0.25423469406295474, "net_exposure": -1.0408340855860843e-17, "vol_tilt_active": false, "vol_tilt_z": -1.4058556077411606, "n_trades": 0}, "risk_check": null, "orders": [{"mode": "paper", "note": "Signal logged, no execution"}], "error": null}

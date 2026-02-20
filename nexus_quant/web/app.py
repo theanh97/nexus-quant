@@ -109,6 +109,8 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
 
     app = FastAPI(title="NEXUS Quant Dashboard", version="1.0")
     static_dir = Path(__file__).parent / "static"
+    # FORCE RESOLVE TO OUR NEW GENERATED LOCAL DIRECTORY TO AVOID OS PERMISSION ERRORS
+    artifacts_dir = Path("nexus_quant/artifacts").resolve()
 
     def _repo_root() -> Path:
         return Path(__file__).resolve().parents[2]
@@ -2350,6 +2352,37 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             return JSONResponse({"ok": True, "signal": signal.to_dict()})
         except Exception as e:
             return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+    @app.get("/api/executor/status")
+    async def api_executor_status() -> JSONResponse:
+        """Return execution system status."""
+        import json as _json
+        exec_log = project_root / "artifacts" / "live" / "execution_log.jsonl"
+        runner_log = project_root / "artifacts" / "live" / "runner_log.jsonl"
+        result: dict = {
+            "executor_available": False,
+            "api_key_set": bool(os.environ.get("BINANCE_API_KEY")),
+            "testnet_key_set": False,
+            "execution_log_entries": 0,
+            "runner_log_entries": 0,
+            "last_cycle": None,
+        }
+        if exec_log.exists():
+            result["execution_log_entries"] = len(exec_log.read_text().strip().splitlines())
+        if runner_log.exists():
+            lines = runner_log.read_text().strip().splitlines()
+            result["runner_log_entries"] = len(lines)
+            if lines:
+                try:
+                    result["last_cycle"] = _json.loads(lines[-1])
+                except Exception:
+                    pass
+        try:
+            from ..live.binance_executor import BinanceExecutor
+            result["executor_available"] = True
+        except Exception:
+            pass
+        return JSONResponse(result)
 
     # ── Analysis Log (Research Journal) ──────────────────────────────
     @app.get("/api/analysis_log")
