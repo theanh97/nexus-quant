@@ -1,0 +1,229 @@
+{
+  "phase": 110,
+  "walk_forward": {
+    "fng_mom_14": [
+      {
+        "train": [
+          "2021",
+          "2022",
+          "2023"
+        ],
+        "test": [
+          "2024"
+        ],
+        "optimal_ratio": 0.7,
+        "test_sharpes": {
+          "2024": 2.1209
+        },
+        "test_deltas": {
+          "2024": -0.159
+        }
+      },
+      {
+        "train": [
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test": [
+          "2025"
+        ],
+        "optimal_ratio": 0.6,
+        "test_sharpes": {
+          "2025": 1.8897
+        },
+        "test_deltas": {
+          "2025": -0.0842
+        }
+      },
+      {
+        "train": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test": [
+          "2025"
+        ],
+        "optimal_ratio": 0.7,
+        "test_sharpes": {
+          "2025": 1.926
+        },
+        "test_deltas": {
+          "2025": -0.0479
+        }
+      },
+      {
+        "train": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "test": [
+          "2026_oos"
+        ],
+        "optimal_ratio": 0.7,
+        "test_sharpes": {
+          "2026_oos": 1.5778
+        },
+        "test_deltas": {
+          "2026_oos": 0.3099
+        }
+      }
+    ],
+    "composite_30": [
+      {
+        "train": [
+          "2021",
+          "2022",
+          "2023"
+        ],
+        "test": [
+          "2024"
+        ],
+        "optimal_ratio": 0.8,
+        "test_sharpes": {
+          "2024": 2.3193
+        },
+        "test_deltas": {
+          "2024": 0.0394
+        }
+      },
+      {
+        "train": [
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test": [
+          "2025"
+        ],
+        "optimal_ratio": 0.8,
+        "test_sharpes": {
+          "2025": 1.8916
+        },
+        "test_deltas": {
+          "2025": -0.0823
+        }
+      },
+      {
+        "train": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test": [
+          "2025"
+        ],
+        "optimal_ratio": 0.8,
+        "test_sharpes": {
+          "2025": 1.8916
+        },
+        "test_deltas": {
+          "2025": -0.0823
+        }
+      },
+      {
+        "train": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "test": [
+          "2026_oos"
+        ],
+        "optimal_ratio": 0.8,
+        "test_sharpes": {
+          "2026_oos": 1.6224
+        },
+        "test_deltas": {
+          "2026_oos": 0.3545
+        }
+      }
+    ],
+    "combined_fng_composite": [
+      {
+        "train": [
+          "2021",
+          "2022",
+          "2023"
+        ],
+        "test": [
+          "2024"
+        ],
+        "optimal_ratio": 0.6,
+        "test_sharpes": {
+          "2024": 1.8556
+        },
+        "test_deltas": {
+          "2024": -0.4243
+        }
+      },
+      {
+        "train": [
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test": [
+          "2025"
+        ],
+        "optimal_ratio": 0.6,
+        "test_sharpes": {
+          "2025": 1.8922
+        },
+        "test_deltas": {
+          "2025": -0.0817
+        }
+      },
+      {
+        "train": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test": [
+          "2025"
+        ],
+        "optimal_ratio": 0.6,
+        "test_sharpes": {
+          "2025": 1.8922
+        },
+        "test_deltas": {
+          "2025": -0.0817
+        }
+      },
+      {
+        "train": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "test": [
+          "2026_oos"
+        ],
+        "optimal_ratio": 0.6,
+        "test_sharpes": {
+          "2026_oos": 1.6377
+        },
+        "test_deltas": {
+          "2026_oos": 0.3698
+        }
+      }
+    ]
+  },
+  "validated": [
+    "composite_30"
+  ],
+  "verdict": "VALIDATED: ['composite_30']",
+  "elapsed_seconds": 45.4
+}
