@@ -1,0 +1,330 @@
+{
+  "phase": 134,
+  "description": "Realized Vol Term Structure Alpha",
+  "elapsed_seconds": 93.9,
+  "ratio_configs": {
+    "24h_168h": [
+      24,
+      168
+    ],
+    "48h_168h": [
+      48,
+      168
+    ],
+    "72h_168h": [
+      72,
+      168
+    ],
+    "24h_336h": [
+      24,
+      336
+    ],
+    "48h_336h": [
+      48,
+      336
+    ]
+  },
+  "best_ratio": "72h_168h",
+  "regime_analysis": {
+    "24h_168h": {
+      "2021": {
+        "full_sharpe": 1.6744,
+        "inverted_sharpe": 2.6005,
+        "normal_sharpe": 1.0552,
+        "delta_normal_minus_inv": -1.5453,
+        "pct_inverted": 35.6
+      },
+      "2022": {
+        "full_sharpe": 1.496,
+        "inverted_sharpe": 3.8999,
+        "normal_sharpe": -0.1703,
+        "delta_normal_minus_inv": -4.0702,
+        "pct_inverted": 35.0
+      },
+      "2023": {
+        "full_sharpe": 1.3221,
+        "inverted_sharpe": 0.365,
+        "normal_sharpe": 1.9663,
+        "delta_normal_minus_inv": 1.6013,
+        "pct_inverted": 34.1
+      },
+      "2024": {
+        "full_sharpe": 2.2707,
+        "inverted_sharpe": 1.7587,
+        "normal_sharpe": 2.69,
+        "delta_normal_minus_inv": 0.9313,
+        "pct_inverted": 38.4
+      },
+      "2025": {
+        "full_sharpe": 1.8981,
+        "inverted_sharpe": 2.5723,
+        "normal_sharpe": 1.3354,
+        "delta_normal_minus_inv": -1.2369,
+        "pct_inverted": 41.3
+      }
+    },
+    "48h_168h": {
+      "2021": {
+        "full_sharpe": 1.6744,
+        "inverted_sharpe": 3.75,
+        "normal_sharpe": 0.0563,
+        "delta_normal_minus_inv": -3.6937,
+        "pct_inverted": 39.7
+      },
+      "2022": {
+        "full_sharpe": 1.496,
+        "inverted_sharpe": 2.7837,
+        "normal_sharpe": 0.4505,
+        "delta_normal_minus_inv": -2.3332,
+        "pct_inverted": 39.1
+      },
+      "2023": {
+        "full_sharpe": 1.3221,
+        "inverted_sharpe": 0.5623,
+        "normal_sharpe": 1.9345,
+        "delta_normal_minus_inv": 1.3722,
+        "pct_inverted": 41.5
+      },
+      "2024": {
+        "full_sharpe": 2.2707,
+        "inverted_sharpe": 2.4252,
+        "normal_sharpe": 2.1552,
+        "delta_normal_minus_inv": -0.27,
+        "pct_inverted": 41.8
+      },
+      "2025": {
+        "full_sharpe": 1.8981,
+        "inverted_sharpe": 0.4602,
+        "normal_sharpe": 3.2816,
+        "delta_normal_minus_inv": 2.8214,
+        "pct_inverted": 46.6
+      }
+    },
+    "72h_168h": {
+      "2021": {
+        "full_sharpe": 1.6744,
+        "inverted_sharpe": 3.5382,
+        "normal_sharpe": 0.199,
+        "delta_normal_minus_inv": -3.3392,
+        "pct_inverted": 40.8
+      },
+      "2022": {
+        "full_sharpe": 1.496,
+        "inverted_sharpe": 2.6059,
+        "normal_sharpe": 0.3963,
+        "delta_normal_minus_inv": -2.2096,
+        "pct_inverted": 43.5
+      },
+      "2023": {
+        "full_sharpe": 1.3221,
+        "inverted_sharpe": -0.1819,
+        "normal_sharpe": 2.8096,
+        "delta_normal_minus_inv": 2.9915,
+        "pct_inverted": 46.1
+      },
+      "2024": {
+        "full_sharpe": 2.2707,
+        "inverted_sharpe": 2.171,
+        "normal_sharpe": 2.3754,
+        "delta_normal_minus_inv": 0.2044,
+        "pct_inverted": 45.7
+      },
+      "2025": {
+        "full_sharpe": 1.8981,
+        "inverted_sharpe": 0.9754,
+        "normal_sharpe": 2.9498,
+        "delta_normal_minus_inv": 1.9744,
+        "pct_inverted": 48.3
+      }
+    },
+    "24h_336h": {
+      "2021": {
+        "full_sharpe": 1.6744,
+        "inverted_sharpe": 2.895,
+        "normal_sharpe": 0.9547,
+        "delta_normal_minus_inv": -1.9403,
+        "pct_inverted": 31.6
+      },
+      "2022": {
+        "full_sharpe": 1.496,
+        "inverted_sharpe": 4.4943,
+        "normal_sharpe": -0.2598,
+        "delta_normal_minus_inv": -4.7541,
+        "pct_inverted": 30.3
+      },
+      "2023": {
+        "full_sharpe": 1.3221,
+        "inverted_sharpe": 2.0589,
+        "normal_sharpe": 0.9465,
+        "delta_normal_minus_inv": -1.1124,
+        "pct_inverted": 30.2
+      },
+      "2024": {
+        "full_sharpe": 2.2707,
+        "inverted_sharpe": 0.7752,
+        "normal_sharpe": 3.4637,
+        "delta_normal_minus_inv": 2.6885,
+        "pct_inverted": 35.1
+      },
+      "2025": {
+        "full_sharpe": 1.8981,
+        "inverted_sharpe": 1.8246,
+        "normal_sharpe": 1.9728,
+        "delta_normal_minus_inv": 0.1482,
+        "pct_inverted": 35.8
+      }
+    },
+    "48h_336h": {
+      "2021": {
+        "full_sharpe": 1.6744,
+        "inverted_sharpe": 2.0239,
+        "normal_sharpe": 1.4562,
+        "delta_normal_minus_inv": -0.5677,
+        "pct_inverted": 34.7
+      },
+      "2022": {
+        "full_sharpe": 1.496,
+        "inverted_sharpe": 2.4885,
+        "normal_sharpe": 0.774,
+        "delta_normal_minus_inv": -1.7145,
+        "pct_inverted": 36.3
+      },
+      "2023": {
+        "full_sharpe": 1.3221,
+        "inverted_sharpe": 1.6696,
+        "normal_sharpe": 1.1134,
+        "delta_normal_minus_inv": -0.5562,
+        "pct_inverted": 35.6
+      },
+      "2024": {
+        "full_sharpe": 2.2707,
+        "inverted_sharpe": 2.0105,
+        "normal_sharpe": 2.5353,
+        "delta_normal_minus_inv": 0.5248,
+        "pct_inverted": 37.5
+      },
+      "2025": {
+        "full_sharpe": 1.8981,
+        "inverted_sharpe": 0.0399,
+        "normal_sharpe": 3.3694,
+        "delta_normal_minus_inv": 3.3295,
+        "pct_inverted": 40.0
+      }
+    }
+  },
+  "overlays": {
+    "baseline": {
+      "yearly": {
+        "2021": 1.6744,
+        "2022": 1.496,
+        "2023": 1.3221,
+        "2024": 2.2707,
+        "2025": 1.8981
+      },
+      "avg_sharpe": 1.7323,
+      "min_sharpe": 1.3221,
+      "obj": 1.5672
+    },
+    "reduce_inverted_50pct": {
+      "yearly": {
+        "2021": 1.1148,
+        "2022": 1.1197,
+        "2023": 1.7625,
+        "2024": 2.2307,
+        "2025": 2.1744
+      },
+      "avg_sharpe": 1.6804,
+      "min_sharpe": 1.1148,
+      "obj": 1.4367
+    },
+    "reduce_inverted_30pct": {
+      "yearly": {
+        "2021": 1.3863,
+        "2022": 1.3144,
+        "2023": 1.58,
+        "2024": 2.2791,
+        "2025": 2.0735
+      },
+      "avg_sharpe": 1.7267,
+      "min_sharpe": 1.3144,
+      "obj": 1.5352
+    },
+    "reduce_inverted_p75": {
+      "yearly": {
+        "2021": 1.353,
+        "2022": 1.4269,
+        "2023": 1.4273,
+        "2024": 2.4641,
+        "2025": 2.3114
+      },
+      "avg_sharpe": 1.7965,
+      "min_sharpe": 1.353,
+      "obj": 1.5536
+    },
+    "flat_inverted": {
+      "yearly": {
+        "2021": 0.1531,
+        "2022": 0.2979,
+        "2023": 2.0623,
+        "2024": 1.7504,
+        "2025": 2.1203
+      },
+      "avg_sharpe": 1.2768,
+      "min_sharpe": 0.1531,
+      "obj": 0.8424
+    },
+    "reduce_steep_inv_50pct": {
+      "yearly": {
+        "2021": 1.3689,
+        "2022": 1.5933,
+        "2023": 1.4857,
+        "2024": 2.3346,
+        "2025": 1.9904
+      },
+      "avg_sharpe": 1.7546,
+      "min_sharpe": 1.3689,
+      "obj": 1.5758
+    },
+    "reduce_steep_inv_flat": {
+      "yearly": {
+        "2021": 1.6744,
+        "2022": 1.496,
+        "2023": 1.3221,
+        "2024": 2.2707,
+        "2025": 1.8981
+      },
+      "avg_sharpe": 1.7323,
+      "min_sharpe": 1.3221,
+      "obj": 1.5672
+    },
+    "boost_normal_20pct": {
+      "yearly": {
+        "2021": 1.6542,
+        "2022": 1.5175,
+        "2023": 1.3592,
+        "2024": 2.3735,
+        "2025": 1.8742
+      },
+      "avg_sharpe": 1.7557,
+      "min_sharpe": 1.3592,
+      "obj": 1.5797
+    }
+  },
+  "best": {
+    "name": "boost_normal_20pct",
+    "yearly": {
+      "2021": 1.6542,
+      "2022": 1.5175,
+      "2023": 1.3592,
+      "2024": 2.3735,
+      "2025": 1.8742
+    },
+    "avg_sharpe": 1.7557,
+    "min_sharpe": 1.3592,
+    "obj": 1.5797
+  },
+  "improvement": 0.0125,
+  "verdict": "NO IMPROVEMENT \u2014 vol term structure overlay does not help",
+  "partial": false,
+  "timestamp": "2026-02-20T22:24:07"
+}
