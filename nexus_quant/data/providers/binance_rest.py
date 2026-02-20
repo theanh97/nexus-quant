@@ -19,11 +19,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import ssl
 import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+try:
+    import certifi
+    _SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    _SSL_CTX = None
 
 from ...utils.hashing import sha256_text
 from ...utils.time import parse_iso_utc
@@ -47,11 +54,11 @@ _FUNDING_MAX_LIMIT = 1000
 _POSITIONING_MAX_LIMIT = 500  # /futures/data/* endpoints max 500 rows
 
 # Rate limiting: seconds to sleep between HTTP requests
-_RATE_SLEEP = 0.1
+_RATE_SLEEP = 0.5
 
 # Retry configuration
-_MAX_RETRIES = 3
-_RETRY_BACKOFF_BASE = 1.0  # seconds; doubles each retry (1s, 2s, 4s)
+_MAX_RETRIES = 5
+_RETRY_BACKOFF_BASE = 2.0  # seconds; doubles each retry (2s, 4s, 8s, 16s, 32s)
 
 # Bar interval string -> seconds
 _INTERVAL_SECONDS: Dict[str, int] = {
@@ -96,7 +103,7 @@ def _fetch_json(url: str) -> Any:
     ValueError on HTTP errors.  Does NOT sleep — callers are responsible for
     rate limiting.
     """
-    with urllib.request.urlopen(url, timeout=30) as resp:
+    with urllib.request.urlopen(url, timeout=30, context=_SSL_CTX) as resp:
         body = resp.read()
     return json.loads(body.decode("utf-8"))
 

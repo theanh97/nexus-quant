@@ -24,6 +24,22 @@ from .low_vol_alpha import LowVolAlphaStrategy
 from .regime_switch_ensemble import RegimeSwitchEnsembleStrategy
 from .regime_mixer import RegimeMixerStrategy
 from .dispersion_alpha import DispersionAlphaStrategy
+from .lead_lag_alpha import LeadLagAlphaStrategy
+from .volume_reversal_alpha import VolumeReversalAlphaStrategy
+from .basis_momentum_alpha import BasisMomentumAlphaStrategy
+from .vol_breakout_alpha import VolBreakoutAlphaStrategy
+from .rs_acceleration_alpha import RSAccelerationAlphaStrategy
+from .taker_buy_alpha import TakerBuyAlphaStrategy
+from .funding_contrarian_alpha import FundingContrarianAlphaStrategy
+from .mean_reversion_funding_alpha import MeanReversionFundingAlphaStrategy
+from .hybrid_alpha import HybridAlphaStrategy
+from .multitf_momentum_alpha import MultiTFMomentumAlphaStrategy
+from .sharpe_ratio_alpha import SharpeRatioAlphaStrategy
+from .price_level_alpha import PriceLevelAlphaStrategy
+from .amihud_illiquidity_alpha import AmihudIlliquidityAlphaStrategy
+from .ewma_sharpe_alpha import EWMASharpeAlphaStrategy
+from .sortino_alpha import SortinoAlphaStrategy
+from .idio_momentum_alpha import IdioMomentumAlphaStrategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -82,6 +98,54 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
 
     if name == "dispersion_alpha":
         return DispersionAlphaStrategy(params=params)
+
+    if name == "lead_lag_alpha":
+        return LeadLagAlphaStrategy(params=params)
+
+    if name == "volume_reversal_alpha":
+        return VolumeReversalAlphaStrategy(params=params)
+
+    if name == "basis_momentum_alpha":
+        return BasisMomentumAlphaStrategy(params=params)
+
+    if name == "vol_breakout_alpha":
+        return VolBreakoutAlphaStrategy(params=params)
+
+    if name == "rs_acceleration_alpha":
+        return RSAccelerationAlphaStrategy(params=params)
+
+    if name == "taker_buy_alpha":
+        return TakerBuyAlphaStrategy(params=params)
+
+    if name == "funding_contrarian_alpha":
+        return FundingContrarianAlphaStrategy(params=params)
+
+    if name == "mr_funding_alpha":
+        return MeanReversionFundingAlphaStrategy(params=params)
+
+    if name == "hybrid_alpha":
+        return HybridAlphaStrategy(params=params)
+
+    if name == "multitf_momentum_alpha":
+        return MultiTFMomentumAlphaStrategy(params=params)
+
+    if name == "sharpe_ratio_alpha":
+        return SharpeRatioAlphaStrategy(params=params)
+
+    if name == "price_level_alpha":
+        return PriceLevelAlphaStrategy(params=params)
+
+    if name == "amihud_illiquidity_alpha":
+        return AmihudIlliquidityAlphaStrategy(params=params)
+
+    if name == "ewma_sharpe_alpha":
+        return EWMASharpeAlphaStrategy(params=params)
+
+    if name == "sortino_alpha":
+        return SortinoAlphaStrategy(params=params)
+
+    if name == "idio_momentum_alpha":
+        return IdioMomentumAlphaStrategy(params=params)
 
     if name == "ensemble_v1":
         sub_cfgs = params.pop("sub_strategies", [])
