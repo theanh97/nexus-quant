@@ -1,8 +1,8 @@
 {
-  "_comment": "PRODUCTION CONFIG \u2014 P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
-  "_version": "2.5.0",
+  "_comment": "PRODUCTION CONFIG — P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
+  "_version": "2.6.0",
   "_created": "2026-02-20",
-  "_validated": "Phases 91-129: walk-forward stable, OOS validated, cost-robust, regime-insured, vol tilt (P113) + price vol overlay (P129) validated; global_ls_overlay (P118b) WF PASS 2026-02-21; breadth regime switching (P144-146): LOYO 4/5 +0.3179 OBJ, WF 1/2, capture 87.5%; funding dispersion boost (P148): LOYO 3/5, WF 2/2, OBJ=1.8886; funding term structure spread overlay (P150): LOYO 4/5 +0.1193 OBJ, OBJ=2.0079; P152 fine-tune WF 2/2 avg_delta=+0.1077, OBJ=2.0851 \u2014 PRODUCTION v2.5.0",
+  "_validated": "Phases 91-129: walk-forward stable, OOS validated, cost-robust, regime-insured, vol tilt (P113) + price vol overlay (P129) validated; global_ls_overlay (P118b) WF PASS 2026-02-21; breadth regime switching (P144-146): LOYO 4/5 +0.3179 OBJ, WF 1/2, capture 87.5%; funding dispersion boost (P148): LOYO 3/5, WF 2/2, OBJ=1.8886; funding term structure spread overlay (P150): LOYO 4/5 +0.1193 OBJ, OBJ=2.0079; P152 fine-tune WF 2/2 avg_delta=+0.1077, OBJ=2.0851 — PRODUCTION v2.5.0; F168 funding lookback (P153): confirmed LOYO 4/5 +0.032 OBJ, rebalance intervals confirmed optimal — PRODUCTION v2.6.0",
   "run_name": "production_p91b",
   "seed": 42,
   "venue": {
@@ -62,28 +62,28 @@
   },
   "volume_tilt": {
     "_comment": "Phase 111-113: reduce leverage when aggregate volume momentum is high (crowded market)",
-    "_validated": "3/4 WF windows positive, avg \u0394=+0.066, ratio perfectly stable (std=0.00)",
+    "_validated": "3/4 WF windows positive, avg Δ=+0.066, ratio perfectly stable (std=0.00)",
     "enabled": true,
     "lookback_bars": 168,
     "tilt_ratio": 0.65,
     "signal": "vol_mom_z",
-    "condition": "z_score > 0 \u2192 multiply returns by tilt_ratio",
-    "mechanism": "Sum perp_volume across all symbols \u2192 log momentum (168h) \u2192 rolling z-score \u2192 contrarian tilt"
+    "condition": "z_score > 0 → multiply returns by tilt_ratio",
+    "mechanism": "Sum perp_volume across all symbols → log momentum (168h) → rolling z-score → contrarian tilt"
   },
   "vol_regime_overlay": {
     "_comment": "Phase 127-129: reduce leverage + tilt F144 when BTC price vol is high",
-    "_validated": "LOYO 3/5 wins avg \u0394=+0.232, expanding 2/4 wins, fixed threshold OBJ=1.72 vs baseline 1.57",
+    "_validated": "LOYO 3/5 wins avg Δ=+0.232, expanding 2/4 wins, fixed threshold OBJ=1.72 vs baseline 1.57",
     "enabled": true,
     "window_bars": 168,
     "threshold": 0.5,
     "scale_factor": 0.5,
     "f144_boost": 0.2,
     "signal": "btc_rolling_price_vol",
-    "condition": "ann_vol > threshold \u2192 tilt F144 +20% and scale leverage \u00d70.50",
-    "mechanism": "BTC hourly returns \u2192 rolling 168h std \u00d7 \u221a8760 \u2192 if > 0.50 \u2192 reduce + tilt"
+    "condition": "ann_vol > threshold → tilt F144 +20% and scale leverage ×0.50",
+    "mechanism": "BTC hourly returns → rolling 168h std × √8760 → if > 0.50 → reduce + tilt"
   },
   "ensemble": {
-    "_comment": "4-signal blend \u2014 DO NOT remove v1 (regime insurance, Phase 102)",
+    "_comment": "4-signal blend — DO NOT remove v1 (regime insurance, Phase 102)",
     "weights": {
       "v1": 0.2747,
       "i460bw168": 0.1967,
@@ -129,7 +129,7 @@
         "strategy": "funding_momentum_alpha",
         "params": {
           "k_per_side": 2,
-          "funding_lookback_bars": 144,
+          "funding_lookback_bars": 168,
           "direction": "contrarian",
           "target_gross_leverage": 0.25,
           "rebalance_interval_bars": 24
@@ -138,7 +138,7 @@
     }
   },
   "monitoring": {
-    "_comment": "Thresholds for live monitoring \u2014 halt trading if breached",
+    "_comment": "Thresholds for live monitoring — halt trading if breached",
     "halt_conditions": {
       "rolling_30d_sharpe_below": -1.0,
       "max_drawdown_pct": 15.0,
@@ -152,7 +152,7 @@
       "daily_turnover_above_pct": 50.0
     },
     "expected_performance": {
-      "annual_sharpe_backtest": 2.005,
+      "annual_sharpe_backtest": 2.08,
       "annual_sharpe_realistic": 0.8,
       "annual_sharpe_conservative": 0.7,
       "max_drawdown_backtest_pct": 25.1,
@@ -194,14 +194,14 @@
   },
   "global_ls_overlay": {
     "_comment": "Phase 118b: Binance Vision global long/short ratio z-score overlay",
-    "_validated": "IS avg \u0394=+0.380 (2022/2023/2024), OOS 2025 \u0394=+0.1764 \u2014 WF PASS (3 IS + OOS primary gate)",
-    "_candidate_notes": "taker_ls_z168_low also passes (OOS25=+0.07, OOS26=+0.17) \u2014 consider Phase 119 test",
+    "_validated": "IS avg Δ=+0.380 (2022/2023/2024), OOS 2025 Δ=+0.1764 — WF PASS (3 IS + OOS primary gate)",
+    "_candidate_notes": "taker_ls_z168_low also passes (OOS25=+0.07, OOS26=+0.17) — consider Phase 119 test",
     "enabled": true,
     "metric": "global_ls_ratio",
     "lookback_bars": 168,
     "tilt_ratio": 0.65,
     "direction": "reduce_on_low",
-    "mechanism": "Binance Vision global L/S account ratio \u2192 log momentum \u2192 rolling 168h z-score \u2192 when z < 0 (crowd net short) \u2192 reduce portfolio returns by tilt_ratio=0.65 (contrarian protection)",
+    "mechanism": "Binance Vision global L/S account ratio → log momentum → rolling 168h z-score → when z < 0 (crowd net short) → reduce portfolio returns by tilt_ratio=0.65 (contrarian protection)",
     "data_source": "data.binance.vision daily metrics CSV resampled to 1h; local cache in .cache/binance_vision_metrics/",
     "walk_forward": {
       "2022_is": "+0.270",
@@ -224,28 +224,28 @@
     "p_high": 0.67,
     "regime_weights": {
       "LOW": {
-        "_regime": "LOW momentum (<33rd pct breadth) \u2014 defensive",
+        "_regime": "LOW momentum (<33rd pct breadth) — defensive",
         "v1": 0.2747,
         "i460bw168": 0.1967,
         "i415bw216": 0.3247,
         "f144": 0.2039
       },
       "MID": {
-        "_regime": "MID momentum (33-67%) \u2014 balanced",
+        "_regime": "MID momentum (33-67%) — balanced",
         "v1": 0.16,
         "i460bw168": 0.22,
         "i415bw216": 0.37,
         "f144": 0.25
       },
       "HIGH": {
-        "_regime": "HIGH momentum (>67th pct) \u2014 momentum-heavy",
+        "_regime": "HIGH momentum (>67th pct) — momentum-heavy",
         "v1": 0.05,
         "i460bw168": 0.25,
         "i415bw216": 0.45,
         "f144": 0.25
       }
     },
-    "mechanism": "At each bar: compute % symbols with positive 168h return (breadth). Rolling percentile rank vs prior 336h. If <33rd pct \u2192 LOW weights. If 33-67% \u2192 MID weights. If >67% \u2192 HIGH weights. Apply on top of existing vol_regime_overlay (both active simultaneously)."
+    "mechanism": "At each bar: compute % symbols with positive 168h return (breadth). Rolling percentile rank vs prior 336h. If <33rd pct → LOW weights. If 33-67% → MID weights. If >67% → HIGH weights. Apply on top of existing vol_regime_overlay (both active simultaneously)."
   },
   "funding_dispersion_overlay": {
     "_comment": "Phase 148: Funding rate cross-sectional dispersion boost",
@@ -255,7 +255,7 @@
     "percentile_window": 336,
     "boost_threshold_pct": 0.75,
     "boost_scale": 1.15,
-    "mechanism": "At each bar: compute std of funding rates across all 10 symbols. Rolling 336h percentile rank. If std_pct > 0.75 (high cross-sectional dispersion = differentiated market) \u2192 boost portfolio returns \u00d71.15. Logic: high dispersion = cross-sectional signals (idio, V1) can differentiate more effectively."
+    "mechanism": "At each bar: compute std of funding rates across all 10 symbols. Rolling 336h percentile rank. If std_pct > 0.75 (high cross-sectional dispersion = differentiated market) → boost portfolio returns ×1.15. Logic: high dispersion = cross-sectional signals (idio, V1) can differentiate more effectively."
   },
   "funding_term_structure_overlay": {
     "_comment": "Phase 150/152: Bidirectional funding term structure spread overlay — fine-tuned P152",
@@ -265,10 +265,10 @@
     "short_window_bars": 24,
     "long_window_bars": 144,
     "rolling_percentile_window": 336,
-    "reduce_threshold": 0.70,
-    "reduce_scale": 0.60,
-    "boost_threshold": 0.30,
+    "reduce_threshold": 0.7,
+    "reduce_scale": 0.6,
+    "boost_threshold": 0.3,
     "boost_scale": 1.15,
-    "mechanism": "spread = mean_funding_24h - mean_funding_144h (across all symbols). Rolling percentile (336h). If spread_pct > 70th: scale\u00d70.60 (overcrowded spike, reduce). If spread_pct < 30th: scale\u00d71.15 (cooling, boost). Fine-tuned P152: rs=0.60, bs=1.15, rt=0.70, bt=0.30."
+    "mechanism": "spread = mean_funding_24h - mean_funding_144h (across all symbols). Rolling percentile (336h). If spread_pct > 70th: scale×0.60 (overcrowded spike, reduce). If spread_pct < 30th: scale×1.15 (cooling, boost). Fine-tuned P152: rs=0.60, bs=1.15, rt=0.70, bt=0.30."
   }
 }

@@ -1,0 +1,103 @@
+{
+  "phase": 153,
+  "description": "F168 confirmation on v2.5.0 + rebalance interval tuning",
+  "elapsed_seconds": 117.2,
+  "baseline_obj": 2.0851,
+  "test_a_f_lookback": {
+    "F144": {
+      "yearly": {
+        "2021": 3.1757,
+        "2022": 1.9217,
+        "2023": 1.5463,
+        "2024": 3.4343,
+        "2025": 2.0066
+      },
+      "obj": 2.0439
+    },
+    "F168": {
+      "yearly": {
+        "2021": 3.5591,
+        "2022": 1.9579,
+        "2023": 1.38,
+        "2024": 3.3825,
+        "2025": 2.2036
+      },
+      "obj": 2.0761
+    }
+  },
+  "test_b_rebalance": {
+    "prod_rebal": {
+      "yearly": {
+        "2021": 3.1757,
+        "2022": 1.9217,
+        "2023": 1.5463,
+        "2024": 3.4343,
+        "2025": 2.0066
+      },
+      "obj": 2.0439,
+      "rebal": {
+        "v1": 60,
+        "i460bw168": 48,
+        "i415bw216": 48,
+        "f144": 24
+      }
+    },
+    "v1_48_fast": {
+      "yearly": {
+        "2021": 2.7309,
+        "2022": 1.5313,
+        "2023": 1.379,
+        "2024": 3.4238,
+        "2025": 2.045
+      },
+      "obj": 1.8397,
+      "rebal": {
+        "v1": 48,
+        "i460bw168": 48,
+        "i415bw216": 48,
+        "f144": 24
+      }
+    },
+    "idio_36_fast": {
+      "yearly": {
+        "2021": 3.2827,
+        "2022": 2.103,
+        "2023": 1.1605,
+        "2024": 3.0729,
+        "2025": 1.7108
+      },
+      "obj": 1.8634,
+      "rebal": {
+        "v1": 60,
+        "i460bw168": 36,
+        "i415bw216": 36,
+        "f144": 24
+      }
+    },
+    "all_fast": {
+      "yearly": {
+        "2021": 2.8397,
+        "2022": 1.7195,
+        "2023": 0.9985,
+        "2024": 3.0565,
+        "2025": 1.7423
+      },
+      "obj": 1.6876,
+      "rebal": {
+        "v1": 48,
+        "i460bw168": 36,
+        "i415bw216": 36,
+        "f144": 24
+      }
+    }
+  },
+  "f168_obj": 2.0761,
+  "best_rebal": "prod_rebal",
+  "best_rebal_obj": 2.0439,
+  "f168_wins": true,
+  "rebal_wins": false,
+  "verdict": "NO IMPROVEMENT \u2014 F168 on v2.5.0 not better (2.0761 vs 2.0439). Rebal variants also no improvement. Current v2.5.0 is production-optimal.",
+  "next_phase_notes": "Phase 154: Explore new signal source. (a) Open Interest momentum \u2014 test if OI direction predicts return direction. (b) Taker buy volume ratio \u2014 aggregate direction signal. (c) Accept v2.5.0 and deploy.",
+  "partial": false,
+  "timestamp": "2026-02-21T01:21:31"
+}
