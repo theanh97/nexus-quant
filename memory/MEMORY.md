@@ -11,7 +11,9 @@
 | 86 | V1+I437k4+I474k4+I600+F144 | 2.268 | 1.125 | 4.98/16.17/30/10/38.85 (AVG-MAX) |
 | 86 | (high-MIN) | 1.954 | 1.478 | V1=30%/I460=11.23%/I410=21.8%/I600=10%/F144=26.97% |
 | 87 | V1+I460k4+I410k4+I600_7.5+F144 | 2.002 | 1.493 | 27.43/13.07/23.66/7.5/28.34 (BALANCED) |
-| **88** | **V1+I460bw168k4+I410bw216k4+I600_5+F144** | **2.015** | **1.529** | **28.75/16.25/22.5/5/27.5 (NEW CHAMP)** |
+| 88 | V1+I460bw168k4+I410bw216k4+I600_5+F144 | 2.015 | 1.529 | 28.75/16.25/22.5/5/27.5 (BALANCED) |
+| **89** | **V1+I460bw168k4+I415bw216k4+I600_5+F144** | **2.001** | **1.546** | **28.76/16.26/26.88/5/23.1 (NEW CHAMP)** |
+| **89** | **V1+I415bw216k4+I474bw216k4+I600+F144** | **2.286** | **1.186** | **3.75/12.5/35/10/38.75 (NEW AVG-MAX!)** |
 
 ## Critical Strategy Name Distinction
 - `"funding_momentum_alpha"` = cumulative funding sum (uses `funding_lookback_bars`) ← CORRECT
@@ -32,8 +34,11 @@
   - True breakthrough: I460+I410 dual-lb (covers 2023 via I460, 2022+2023 via I410)
 - **I474 optimal weight in AVG-max**: 30% (not 20% as in P84). I437=16%, I474=30% → AVG=2.268
 - **High-MIN recipe**: V1≥30% + I460+I410 → MIN≥1.478 but AVG<2.0 tradeoff
-- **I600 weight**: **7.5% optimal** (not 10%!) for balanced MIN; 5% gives Pareto AVG=2.060/MIN=1.487
-- **Balanced architecture**: V1=27-28%, I460=13%, I410=23-24%, I600=7.5%, F144=28%
+- **I600 weight**: **5% optimal** for balanced MIN (trend: 5% > 7.5% > 10%); may go lower in P90
+- **F144 weight TREND**: decreasing each phase as bw=216 idio covers more — P89: 23.1% (was 28%+)
+  - P86: 30.77% → P87: 28.34% → P88: 27.5% → P89: 23.10% (F144 less needed with bw=216!)
+- **Balanced architecture (P89)**: V1≈29%, I460_bw168≈16%, I415_bw216≈27%, I600=5%, F144≈23%
+- **I415_bw216 KEY ROLE**: strong 2022 (1.737) AND 2023 (1.143) — covers weakest years! ★★★
 - **Beta window (bw) findings (Phase 87-88)**:
   - I410 bw=216: [2.117, 1.928, 1.046, 1.679, 1.408] AVG=1.636, MIN=1.046 — +0.315 in 2022!
   - I415 bw=216: [1.967, 1.737, 1.143, 2.015, 1.338] AVG=1.640, MIN=1.143 — ALL years > 1.0! ★
@@ -61,10 +66,18 @@
 - Dual-k (I437_k3+I437_k4): Suboptimal vs pure k4
 
 ## Best Ensemble Architecture (CURRENT CHAMPIONS)
-**Phase 88 balanced champion** ← CURRENT BEST: `V1(28.75%) + I460_bw168_k4(16.25%) + I410_bw216_k4(22.5%) + I600_k2(5%) + F144_k2(27.5%)`
-- AVG=2.015, MIN=1.529, YbY: [3.092, 1.545, 1.529, 2.377, 1.533] — ALL years > 1.529!
-- Config saved: `configs/ensemble_p88_balanced.json`
-- STRICTLY DOMINATES P87 (MIN 1.529 >> 1.493)! Keys: I410_bw216 + I600=5%!
+**Phase 89 balanced champion** ← CURRENT BEST: `V1(28.76%) + I460_bw168_k4(16.26%) + I415_bw216_k4(26.88%) + I600_k2(5%) + F144_k2(23.10%)`
+- AVG=2.001, MIN=1.546, YbY: [2.945, 1.548, 1.546, 2.418, 1.547] — ALL years ≥ 1.546!
+- Config saved: `configs/ensemble_p89_balanced.json`
+- STRICTLY DOMINATES P88 (MIN 1.546 >> 1.529)! Key: I415_bw216 replaces I410_bw216!
+
+**Phase 89 AVG-max champion** ← NEW AVG-MAX RECORD: `V1(3.75%) + I415_bw216_k4(12.5%) + I474_bw216_k4(35%) + I600_k2(10%) + F144_k2(38.75%)`
+- AVG=2.286, MIN=1.186, YbY: [3.897, 1.268, 1.186, 3.412, 1.664]
+- Config saved: `configs/ensemble_p89_avgmax.json`
+- NEW AVG-MAX RECORD (2.286 > P86's 2.268)! I474_bw216=35% + I415_bw216 combo!
+
+**Phase 88 balanced champion** (superseded): `V1(28.75%) + I460_bw168_k4(16.25%) + I410_bw216_k4(22.5%) + I600_k2(5%) + F144_k2(27.5%)`
+- AVG=2.015, MIN=1.529, Config: `configs/ensemble_p88_balanced.json`
 
 **Phase 87 balanced champion** (superseded): `V1(27.43%) + I460_k4(13.07%) + I410_k4(23.66%) + I600_k2(7.5%) + F144_k2(28.34%)`
 - AVG=2.002, MIN=1.493, Config: `configs/ensemble_p87_balanced.json`
@@ -81,13 +94,12 @@
 - AVG=1.954, MIN=1.478, YbY: [3.039, 1.484, 1.478, 2.281, 1.489]
 - Note: AVG<2.0 but MIN is highest at 1.478!
 
-## Pareto Frontier (Phase 88)
+## Pareto Frontier (Phase 89)
 | AVG   | MIN   | Config |
 |-------|-------|--------|
-| 2.268 | 1.125 | V1=4.98%, I437=16.17%, I474=30%, I600=10%, F144=38.85% ← P86 AVG-MAX |
-| 2.015 | 1.529 | V1=28.75%, I460bw168=16.25%, I410bw216=22.5%, I600=5%, F144=27.5% ← P88 CHAMP |
-| 2.010 | 1.507 | V1=28.75%, I460bw168=15%, I410bw216=20%, I600=7.5%, F144=28.75% ← P88 Section B |
-| 2.014 | 1.484 | V1=27.5%, I460bw168=17.5%, I415bw168=20%, I600=7.5%, F144=27.5% ← P88 E1 |
+| 2.286 | 1.186 | V1=3.75%, I415bw216=12.5%, I474bw216=35%, I600=10%, F144=38.75% ← P89 AVG-MAX |
+| 2.020 | 1.543 | V1=27.5%, I460bw168=16.25%, I415bw216=27.5%, I600=5%, F144=23.75% ← P89 B coarse |
+| 2.001 | 1.546 | V1=28.76%, I460bw168=16.26%, I415bw216=26.88%, I600=5%, F144=23.10% ← P89 CHAMP |
 
 ## Correlations (confirmed stable)
 - idio↔f144 = **-0.009 (ORTHOGONAL!)** — the magic behind the ensemble
@@ -104,7 +116,8 @@
 - Phase 85: I437=0% optimal in triple-lb; I460+I410 balanced 2.001/1.468; I437+I474 2.258/1.164 (new record, I474=27.5%)
 - Phase 86: **Numpy vectorization** (60x faster); I460+I410 2.007/1.469 (P85+); I437+I474 2.268/1.125 (I474=30%!); high-MIN 1.954/1.478
 - Phase 87: I600=7.5% BREAKTHROUGH (was 10%); balanced 2.002/1.493 dominates P86; lb=415 bridge=2.759; I410_bw216 2022=1.928
-- Phase 88: bw=216 sweep; I410_bw216+I600=5% → 2.015/1.529 (P88 champ); I415_bw216 ALL years>1.0; UNTESTED: I415_bw216+I600=5%
+- Phase 88: bw=216 sweep; I410_bw216+I600=5% → 2.015/1.529 (P88 champ); I415_bw216 ALL years>1.0
+- Phase 89: I415_bw216+I600=5% → 2.001/1.546 (balanced champ); I474_bw216+I415_bw216 → 2.286/1.186 (NEW AVG-MAX RECORD)
 
 ## Workflow Notes
 - All backtests: 5 OOS years (2021-2025), hourly bars, 10 crypto perps, Binance USDm

@@ -1,0 +1,19 @@
+{
+  "phase": 89,
+  "section": "G1:I474bw216+I415bw216",
+  "type": "avg_max",
+  "avg_sharpe": 2.2855,
+  "min_sharpe": 1.1864,
+  "yby_sharpes": {"2021": 3.897, "2022": 1.268, "2023": 1.186, "2024": 3.412, "2025": 1.664},
+  "weights": {"v1": 0.0375, "i415bw216": 0.125, "i474bw216": 0.35, "i600": 0.10, "f144": 0.3875},
+  "signal_config": {
+    "notes": {
+      "V1":            "nexus_alpha_v1 k=2",
+      "I415_bw216_k4": "idio_momentum_alpha lb=415 bw=216 k=4",
+      "I474_bw216_k4": "idio_momentum_alpha lb=474 bw=216 k=4",
+      "I600_k2":       "idio_momentum_alpha lb=600 bw=168 k=2",
+      "F144_k2":       "funding_momentum_alpha lb=144 k=2",
+      "P89_insight":   "NEW AVG-MAX RECORD: 2.286 > P86 2.268; I474_bw216=35% + I415_bw216=12.5%"
+    }
+  }
+}

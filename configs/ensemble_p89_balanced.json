@@ -1,0 +1,39 @@
+{
+  "phase": 89,
+  "section": "B:I415bw216_fine_ultrafine",
+  "avg_sharpe": 2.0007,
+  "min_sharpe": 1.5463,
+  "yby_sharpes": {
+    "2021": 2.945,
+    "2022": 1.548,
+    "2023": 1.546,
+    "2024": 2.418,
+    "2025": 1.547
+  },
+  "weights": {
+    "v1": 0.2876,
+    "i460bw168": 0.1626,
+    "i415bw216": 0.2688,
+    "i600": 0.05,
+    "f144": 0.231
+  },
+  "signal_config": {
+    "strat_names": [
+      "v1",
+      "i460bw168",
+      "i415bw216",
+      "i600",
+      "f144"
+    ],
+    "notes": {
+      "I460_bw168_k4": "idio_momentum_alpha lb=460 bw=168 k=4",
+      "I460_bw216_k4": "idio_momentum_alpha lb=460 bw=216 k=4",
+      "I410_bw216_k4": "idio_momentum_alpha lb=410 bw=216 k=4",
+      "I415_bw216_k4": "idio_momentum_alpha lb=415 bw=216 k=4",
+      "I474_bw216_k4": "idio_momentum_alpha lb=474 bw=216 k=4",
+      "I600_k2": "idio_momentum_alpha lb=600 bw=168 k=2",
+      "F144_k2": "funding_momentum_alpha lb=144 k=2",
+      "V1": "nexus_alpha_v1 k=2"
+    }
+  }
+}
