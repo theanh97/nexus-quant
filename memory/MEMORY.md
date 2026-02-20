@@ -7,6 +7,7 @@
 | 84 | V1+I437k4+I460k4+I410k4+I600+F144 | 2.040 | 1.431 | triple-lb balanced |
 | **91b** | **V1+I460bw168k4+I415bw216k4+F144** | **2.010** | **1.576** | **27.47/19.67/32.47/20.39 — PROD BASE** |
 | **146** | **Breadth regime switching (3 weight sets)** | **2.156** | **1.577** | **OBJ=1.8945 — PRODUCTION v2.2.0** |
+| **158** | **Breadth lb=192 + p=0.35/0.65 + v2.7.0 stack** | **~2.34** | **1.966** | **OBJ=2.2095 LOYO 5/5 PERFECT — PRODUCTION v2.8.0** |
 
 ## Regime-Adaptive Weight Switching (P144-146) — CURRENT PRODUCTION
 **Production config v2.2.0 — breadth_regime_switching DEPLOYED**
@@ -77,4 +78,6 @@ P153: Calendar/day-of-week overlay — NO IMPROVEMENT (weekend carry alpha = don
 P154: Funding lookback sweep F72-F216 — F168 VALIDATED OBJ=2.1312 (Δ=+0.0461), LOYO 3/5 avg=+0.0794 | prod v2.6.0
 P155: Rebalance interval sweep V1/I460/I415 — CONFIRMED CURRENT OPTIMAL (V1=60/I460=48/I415=48); all 26 variants worse
 P156: Vol overlay fine-tune (thr/scale/boost) — VALIDATED scale=0.40+boost=0.15 OBJ=2.1448 (Δ=+0.0136), LOYO 4/5 | prod v2.7.0
-**Next: P157** — I460 beta window upgrade (bw=168→192/216) OR breadth lookback param sweep
+P157: I460 beta window sweep bw=144/168/192/216/240 — CONFIRMED bw=168 optimal (all variants worse)
+P158: Breadth classifier param sweep — **EXCEPTIONAL** lb=192 pw=336 p=0.35/0.65 OBJ=2.2095 (Δ=+0.0647), **LOYO 5/5 PERFECT** | prod v2.8.0
+**Next: P159** — Ensemble weight re-optimization (LOW/MID/HIGH regime weights w/ v2.8.0 baseline) OR V1 param tuning
