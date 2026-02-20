@@ -6,38 +6,38 @@ allowed-tools: [Bash, Read]
 
 # NEXUS Quick Status
 
-Run these checks and report a concise summary:
-
 ```bash
-cd "/Users/qtmobile/Desktop/Nexus - Quant Trading "
+# Works on any machine / any folder
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+cd "$PROJECT_ROOT"
 
-echo "=== GIT STATUS ==="
+echo "=== PROJECT: $PROJECT_ROOT ==="
+
+echo "=== GIT ==="
 git log --oneline -3
-git status -s | head -20
+git status -s | head -10
 
-echo ""
-echo "=== TERMINAL STATES ==="
+echo "=== TERMINALS ==="
 python3 -c "
+import sys; sys.path.insert(0, '.')
 from nexus_quant.orchestration.terminal_state import get_dashboard_summary
-import json
 s = get_dashboard_summary()
-print(f\"Running: {s['running']} | Stale: {s['stale']} | Dead: {s['dead']} | Blocked: {s['blocked']}\")
+print(f'Running:{s[\"running\"]} Stale:{s[\"stale\"]} Dead:{s[\"dead\"]} Blocked:{s[\"blocked\"]}')
 for t in s['terminals']:
-    print(f\"  {t['terminal_id']}: {t['status']} ({t.get('age_human','?')}) - {t.get('task','?')}\")
-for a in s['alerts']:
-    print(f\"  {a}\")
-" 2>/dev/null || echo "No terminal states found"
+    icon = {'running':'✅','stale':'⚠️','dead':'🔴','blocked':'🟡','completed':'✔️'}.get(t.get('status',''),'❓')
+    print(f'  {icon} {t[\"terminal_id\"]}: {t[\"status\"]} ({t.get(\"age_human\",\"?\")}) — {t.get(\"task\",\"?\")}')
+for a in s['alerts']: print(f'  {a}')
+" 2>/dev/null || echo "No states"
 
-echo ""
 echo "=== DASHBOARD ==="
-curl -s http://localhost:8080/api/system_status 2>/dev/null | python3 -m json.tool 2>/dev/null || echo "Dashboard not running"
+curl -s http://localhost:8080/api/system_status 2>/dev/null | python3 -c "
+import sys,json
+try: d=json.load(sys.stdin); print(f'UP v{d.get(\"version\",\"?\")}')
+except: print('DOWN')
+" || echo "DOWN"
 
-echo ""
 echo "=== LATEST SIGNAL ==="
-ls -lt artifacts/live/signal_*.json 2>/dev/null | head -1 || echo "No signals"
+ls -lt "$PROJECT_ROOT/artifacts/live/signal_"*.json 2>/dev/null | head -1 || echo "No signals"
 ```
 
-Report format:
-- One-line summary per section
-- Flag anything that needs attention
-- Vietnamese OK
+Report: one-line per section, flag issues, Vietnamese OK.

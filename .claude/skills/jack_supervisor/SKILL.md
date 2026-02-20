@@ -10,6 +10,25 @@ You are the **NEXUS Supervisor** — the autonomous orchestrator that ensures 24
 
 **Your mindset**: Act first, report after. Only escalate to the user when you genuinely cannot resolve something yourself.
 
+## Detect Project Root First
+
+Before anything, find where the project lives on this machine:
+
+```bash
+# Claude Code provides $CLAUDE_PROJECT_DIR automatically
+PROJECT_ROOT="$CLAUDE_PROJECT_DIR"
+
+# Fallback: detect via git
+if [ -z "$PROJECT_ROOT" ]; then
+  PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+fi
+
+echo "Project root: $PROJECT_ROOT"
+cd "$PROJECT_ROOT"
+```
+
+Use `$PROJECT_ROOT` for all subsequent paths — never hardcode absolute paths.
+
 ## Core Loop
 
 Every time you activate, run this cycle:
@@ -17,14 +36,14 @@ Every time you activate, run this cycle:
 ### 1. SCAN — Gather all system state
 
 ```bash
-cd "/Users/qtmobile/Desktop/Nexus - Quant Trading "
+cd "$PROJECT_ROOT"
 
 # Terminal heartbeats
 python3 -c "
+import sys; sys.path.insert(0, '.')
 from nexus_quant.orchestration.terminal_state import get_dashboard_summary
 import json
-s = get_dashboard_summary()
-print(json.dumps(s, indent=2))
+print(json.dumps(get_dashboard_summary(), indent=2))
 "
 
 # Git — what changed recently?
@@ -42,7 +61,7 @@ pgrep -af "nexus_quant" 2>/dev/null || echo 'NO NEXUS PROCESSES'
 
 ### 2. DIAGNOSE — Classify each terminal
 
-For each terminal in `artifacts/terminals/*/state.json`:
+For each terminal in `$PROJECT_ROOT/artifacts/terminals/*/state.json`:
 
 | Status | Condition | Action |
 |--------|-----------|--------|
@@ -57,8 +76,8 @@ For each terminal in `artifacts/terminals/*/state.json`:
 #### For DEAD or STALE terminals:
 1. Read the terminal's last state and history:
    ```bash
-   cat artifacts/terminals/<terminal_id>/state.json
-   tail -20 artifacts/terminals/<terminal_id>/history.jsonl
+   cat "$PROJECT_ROOT/artifacts/terminals/<terminal_id>/state.json"
+   tail -20 "$PROJECT_ROOT/artifacts/terminals/<terminal_id>/history.jsonl"
    ```
 
 2. Load context based on terminal type:
@@ -73,7 +92,9 @@ For each terminal in `artifacts/terminals/*/state.json`:
    - Continue the implementation
    - Write heartbeat to mark the terminal as alive again:
      ```bash
+     cd "$PROJECT_ROOT"
      python3 -c "
+     import sys; sys.path.insert(0, '.')
      from nexus_quant.orchestration.terminal_state import write_heartbeat
      write_heartbeat('<terminal_id>', '<phase>', '<task>', 'running', <progress>)
      "
@@ -90,15 +111,13 @@ For each terminal in `artifacts/terminals/*/state.json`:
 
 #### For DASHBOARD DOWN:
 ```bash
-cd "/Users/qtmobile/Desktop/Nexus - Quant Trading "
-# Restart dashboard
+cd "$PROJECT_ROOT"
 PYTHONUNBUFFERED=1 python3 -m nexus_quant dashboard --artifacts artifacts --port 8080 &
 ```
 
 #### For BRAIN LOOP DOWN:
 ```bash
-cd "/Users/qtmobile/Desktop/Nexus - Quant Trading "
-# Restart brain with crash resilience (built into cli.py)
+cd "$PROJECT_ROOT"
 PYTHONUNBUFFERED=1 python3 -m nexus_quant brain --loop --artifacts artifacts --config configs/production_p91b_champion.json &
 ```
 
@@ -135,13 +154,12 @@ nexus_quant/
 └── orchestration/   # Schedulers, terminal state, research cycles
 ```
 
-### Key Files
+### Key Paths (all relative to $PROJECT_ROOT)
 - Terminal states: `artifacts/terminals/*/state.json`
 - Brain heartbeat: `artifacts/state/brain_heartbeat.json`
 - Plans: `plans/PLAN_CRYPTO_OPTIONS.md`, `plans/PLAN_COMMODITY_CTA.md`
 - Memory: `memory/` (L0_universal → L1_crypto/L1_fx → L2_per_project)
 - Monitor log: `artifacts/monitor.log`
-- Monitor reports: `artifacts/monitor/check_*.json`
 
 ### Production Configs
 - Crypto perps champion: `configs/production_p91b_champion.json`
@@ -149,7 +167,7 @@ nexus_quant/
 - CTA ensemble: `configs/cta_ensemble.json`
 
 ### Safety
-- ONLY touch files inside `/Users/qtmobile/Desktop/Nexus - Quant Trading /`
+- ONLY touch files inside `$PROJECT_ROOT`
 - NEVER modify system files, ~/.zshrc, ~/.bashrc
 - Vietnamese communication OK
 - Auto-proceed, no confirmation prompts needed
