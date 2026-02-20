@@ -1,0 +1,88 @@
+{
+  "phase": 149,
+  "description": "Cross-Symbol Return Correlation Regime Overlay",
+  "hypothesis": "High avg pairwise corr \u2192 idio signals weaker \u2192 reduce leverage",
+  "elapsed_seconds": 31.5,
+  "baseline_obj": 1.8886,
+  "variant_results": {
+    "none": {
+      "yearly": {
+        "2021": 2.5426,
+        "2022": 1.8711,
+        "2023": 1.5181,
+        "2024": 3.0096,
+        "2025": 1.8517
+      },
+      "obj": 1.8886,
+      "delta": 0.0
+    },
+    "reduce_90pct": {
+      "yearly": {
+        "2021": 2.448,
+        "2022": 1.6446,
+        "2023": 1.5142,
+        "2024": 2.9466,
+        "2025": 1.767
+      },
+      "obj": 1.7909,
+      "delta": -0.0977
+    },
+    "reduce_75pct": {
+      "yearly": {
+        "2021": 2.5412,
+        "2022": 1.4692,
+        "2023": 1.592,
+        "2024": 2.8726,
+        "2025": 1.7405
+      },
+      "obj": 1.7638,
+      "delta": -0.1248
+    },
+    "boost_25pct": {
+      "yearly": {
+        "2021": 2.5339,
+        "2022": 1.8408,
+        "2023": 1.4978,
+        "2024": 2.9888,
+        "2025": 1.7888
+      },
+      "obj": 1.8561,
+      "delta": -0.0325
+    },
+    "combo_80_20": {
+      "yearly": {
+        "2021": 2.4895,
+        "2022": 1.39,
+        "2023": 1.5744,
+        "2024": 2.8012,
+        "2025": 1.668
+      },
+      "obj": 1.7068,
+      "delta": -0.1818
+    },
+    "smooth_z": {
+      "yearly": {
+        "2021": 2.5116,
+        "2022": 1.6329,
+        "2023": 1.487,
+        "2024": 2.8873,
+        "2025": 1.666
+      },
+      "obj": 1.7584,
+      "delta": -0.1302
+    }
+  },
+  "best_variant": "none",
+  "best_obj": 1.8886,
+  "loyo_results": [],
+  "loyo_wins": 0,
+  "loyo_avg_delta": 0.0,
+  "wf_results": [],
+  "wf_wins": 0,
+  "wf_avg_delta": 0.0,
+  "validated": false,
+  "verdict": "NO IMPROVEMENT \u2014 all correlation variants worse than baseline OBJ=1.8886. Cross-symbol correlation is not additive to existing ensemble.",
+  "next_phase_notes": "Phase 150: Explore new angle \u2014 realized skewness of cross-section as quality filter. When avg return skew is very negative (tail risk), reduce leverage. OR: pivot to universe expansion (test adding newer alts).",
+  "partial": false,
+  "timestamp": "2026-02-21T00:57:32"
+}
