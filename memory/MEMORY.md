@@ -75,4 +75,6 @@ P151: Universe expansion 10→15 symbols — NO IMPROVEMENT (15sym OBJ=1.29 vs 1
 P152: Full-stack WF + TS fine-tune — OBJ=2.0851 (rt=0.70,rs=0.60,bt=0.30,bs=1.15), WF 2/2 | prod v2.5.0
 P153: Calendar/day-of-week overlay — NO IMPROVEMENT (weekend carry alpha = don't reduce)
 P154: Funding lookback sweep F72-F216 — F168 VALIDATED OBJ=2.1312 (Δ=+0.0461), LOYO 3/5 avg=+0.0794 | prod v2.6.0
-**Next: P155** — Rebalance interval tuning (V1 60→48h, Idio 48→36h) OR I460 beta window bw=168→216
+P155: Rebalance interval sweep V1/I460/I415 — CONFIRMED CURRENT OPTIMAL (V1=60/I460=48/I415=48); all 26 variants worse
+P156: Vol overlay fine-tune (thr/scale/boost) — VALIDATED scale=0.40+boost=0.15 OBJ=2.1448 (Δ=+0.0136), LOYO 4/5 | prod v2.7.0
+**Next: P157** — I460 beta window upgrade (bw=168→192/216) OR breadth lookback param sweep

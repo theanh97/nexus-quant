@@ -1,6 +1,6 @@
 {
   "_comment": "PRODUCTION CONFIG — P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
-  "_version": "2.6.0",
+  "_version": "2.7.0",
   "_created": "2026-02-20",
   "_validated": "Phases 91-129: walk-forward stable, OOS validated, cost-robust, regime-insured, vol tilt (P113) + price vol overlay (P129) validated; global_ls_overlay (P118b) WF PASS 2026-02-21; breadth regime switching (P144-146): LOYO 4/5 +0.3179 OBJ, WF 1/2, capture 87.5%; funding dispersion boost (P148): LOYO 3/5, WF 2/2, OBJ=1.8886; funding term structure spread overlay (P150): LOYO 4/5 +0.1193 OBJ, OBJ=2.0079; P152 fine-tune WF 2/2 avg_delta=+0.1077, OBJ=2.0851 — PRODUCTION v2.5.0; F168 funding lookback (P153): confirmed LOYO 4/5 +0.032 OBJ, rebalance intervals confirmed optimal — PRODUCTION v2.6.0",
   "run_name": "production_p91b",
@@ -71,16 +71,16 @@
     "mechanism": "Sum perp_volume across all symbols → log momentum (168h) → rolling z-score → contrarian tilt"
   },
   "vol_regime_overlay": {
-    "_comment": "Phase 127-129: reduce leverage + tilt F144 when BTC price vol is high",
-    "_validated": "LOYO 3/5 wins avg Δ=+0.232, expanding 2/4 wins, fixed threshold OBJ=1.72 vs baseline 1.57",
+    "_comment": "Phase 127-129 + fine-tuned P156: reduce leverage + tilt F168 when BTC price vol is high",
+    "_validated": "P129 LOYO 3/5 wins avg Δ=+0.232; P156 fine-tune: scale 0.50→0.40 + boost 0.20→0.15, LOYO 4/5 OBJ=2.1448",
     "enabled": true,
     "window_bars": 168,
     "threshold": 0.5,
-    "scale_factor": 0.5,
-    "f144_boost": 0.2,
+    "scale_factor": 0.4,
+    "f144_boost": 0.15,
     "signal": "btc_rolling_price_vol",
-    "condition": "ann_vol > threshold → tilt F144 +20% and scale leverage ×0.50",
-    "mechanism": "BTC hourly returns → rolling 168h std × √8760 → if > 0.50 → reduce + tilt"
+    "condition": "ann_vol > 0.50 → tilt F168 +15% and scale leverage ×0.40",
+    "mechanism": "BTC hourly returns → rolling 168h std × √8760 → if > 0.50 → reduce ×0.40 + tilt F168 +15%. Fine-tuned P156: less aggressive = more alpha in vol regime."
   },
   "ensemble": {
     "_comment": "4-signal blend — DO NOT remove v1 (regime insurance, Phase 102)",
@@ -152,7 +152,7 @@
       "daily_turnover_above_pct": 50.0
     },
     "expected_performance": {
-      "annual_sharpe_backtest": 2.08,
+      "annual_sharpe_backtest": 2.14,
       "annual_sharpe_realistic": 0.8,
       "annual_sharpe_conservative": 0.7,
       "max_drawdown_backtest_pct": 25.1,
