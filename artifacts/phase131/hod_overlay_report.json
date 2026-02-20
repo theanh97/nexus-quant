@@ -1,0 +1,338 @@
+{
+  "phase": 131,
+  "description": "Hour-of-Day Overlay on Ensemble",
+  "elapsed_seconds": 15.8,
+  "variants": {
+    "baseline": {
+      "params": {
+        "bad_hours": [],
+        "scale": 1.0
+      },
+      "yearly": {
+        "2021": {
+          "sharpe": 1.6744,
+          "reduced_pct": 0.0
+        },
+        "2022": {
+          "sharpe": 1.496,
+          "reduced_pct": 0.0
+        },
+        "2023": {
+          "sharpe": 1.3221,
+          "reduced_pct": 0.0
+        },
+        "2024": {
+          "sharpe": 2.2707,
+          "reduced_pct": 0.0
+        },
+        "2025": {
+          "sharpe": 1.8981,
+          "reduced_pct": 0.0
+        }
+      },
+      "avg_sharpe": 1.7323,
+      "min_sharpe": 1.3221,
+      "obj": 1.5672
+    },
+    "reduce_12_14": {
+      "params": {
+        "bad_hours": [
+          12,
+          13,
+          14
+        ],
+        "scale": 0.5
+      },
+      "yearly": {
+        "2021": {
+          "sharpe": 1.3438,
+          "reduced_pct": 12.5
+        },
+        "2022": {
+          "sharpe": 1.4352,
+          "reduced_pct": 12.5
+        },
+        "2023": {
+          "sharpe": 1.4089,
+          "reduced_pct": 12.5
+        },
+        "2024": {
+          "sharpe": 2.3726,
+          "reduced_pct": 12.5
+        },
+        "2025": {
+          "sharpe": 1.912,
+          "reduced_pct": 12.5
+        }
+      },
+      "avg_sharpe": 1.6945,
+      "min_sharpe": 1.3438,
+      "obj": 1.4972
+    },
+    "reduce_12_15": {
+      "params": {
+        "bad_hours": [
+          12,
+          13,
+          14,
+          15
+        ],
+        "scale": 0.5
+      },
+      "yearly": {
+        "2021": {
+          "sharpe": 1.2822,
+          "reduced_pct": 16.7
+        },
+        "2022": {
+          "sharpe": 1.5143,
+          "reduced_pct": 16.7
+        },
+        "2023": {
+          "sharpe": 1.5446,
+          "reduced_pct": 16.7
+        },
+        "2024": {
+          "sharpe": 2.4264,
+          "reduced_pct": 16.7
+        },
+        "2025": {
+          "sharpe": 1.775,
+          "reduced_pct": 16.7
+        }
+      },
+      "avg_sharpe": 1.7085,
+      "min_sharpe": 1.2822,
+      "obj": 1.5128
+    },
+    "reduce_12_14_30pct": {
+      "params": {
+        "bad_hours": [
+          12,
+          13,
+          14
+        ],
+        "scale": 0.7
+      },
+      "yearly": {
+        "2021": {
+          "sharpe": 1.4894,
+          "reduced_pct": 12.5
+        },
+        "2022": {
+          "sharpe": 1.4653,
+          "reduced_pct": 12.5
+        },
+        "2023": {
+          "sharpe": 1.3777,
+          "reduced_pct": 12.5
+        },
+        "2024": {
+          "sharpe": 2.34,
+          "reduced_pct": 12.5
+        },
+        "2025": {
+          "sharpe": 1.9144,
+          "reduced_pct": 12.5
+        }
+      },
+      "avg_sharpe": 1.7174,
+      "min_sharpe": 1.3777,
+      "obj": 1.5361
+    },
+    "flat_12_14": {
+      "params": {
+        "bad_hours": [
+          12,
+          13,
+          14
+        ],
+        "scale": 0.0
+      },
+      "yearly": {
+        "2021": {
+          "sharpe": 0.9135,
+          "reduced_pct": 12.5
+        },
+        "2022": {
+          "sharpe": 1.3251,
+          "reduced_pct": 12.5
+        },
+        "2023": {
+          "sharpe": 1.4595,
+          "reduced_pct": 12.5
+        },
+        "2024": {
+          "sharpe": 2.3939,
+          "reduced_pct": 12.5
+        },
+        "2025": {
+          "sharpe": 1.8512,
+          "reduced_pct": 12.5
+        }
+      },
+      "avg_sharpe": 1.5886,
+      "min_sharpe": 0.9135,
+      "obj": 1.3377
+    },
+    "flat_12_15": {
+      "params": {
+        "bad_hours": [
+          12,
+          13,
+          14,
+          15
+        ],
+        "scale": 0.0
+      },
+      "yearly": {
+        "2021": {
+          "sharpe": 0.758,
+          "reduced_pct": 16.7
+        },
+        "2022": {
+          "sharpe": 1.4632,
+          "reduced_pct": 16.7
+        },
+        "2023": {
+          "sharpe": 1.7107,
+          "reduced_pct": 16.7
+        },
+        "2024": {
+          "sharpe": 2.4703,
+          "reduced_pct": 16.7
+        },
+        "2025": {
+          "sharpe": 1.5404,
+          "reduced_pct": 16.7
+        }
+      },
+      "avg_sharpe": 1.5885,
+      "min_sharpe": 0.758,
+      "obj": 1.3146
+    },
+    "reduce_worst5": {
+      "params": {
+        "bad_hours": [
+          12,
+          13,
+          14,
+          19,
+          23
+        ],
+        "scale": 0.5
+      },
+      "yearly": {
+        "2021": {
+          "sharpe": 1.2657,
+          "reduced_pct": 20.8
+        },
+        "2022": {
+          "sharpe": 1.5226,
+          "reduced_pct": 20.8
+        },
+        "2023": {
+          "sharpe": 1.562,
+          "reduced_pct": 20.8
+        },
+        "2024": {
+          "sharpe": 2.2093,
+          "reduced_pct": 20.8
+        },
+        "2025": {
+          "sharpe": 2.0496,
+          "reduced_pct": 20.8
+        }
+      },
+      "avg_sharpe": 1.7218,
+      "min_sharpe": 1.2657,
+      "obj": 1.546
+    },
+    "reduce_us_session": {
+      "params": {
+        "bad_hours": [
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19
+        ],
+        "scale": 0.7
+      },
+      "yearly": {
+        "2021": {
+          "sharpe": 1.2285,
+          "reduced_pct": 29.2
+        },
+        "2022": {
+          "sharpe": 1.1026,
+          "reduced_pct": 29.2
+        },
+        "2023": {
+          "sharpe": 1.3565,
+          "reduced_pct": 29.2
+        },
+        "2024": {
+          "sharpe": 2.0203,
+          "reduced_pct": 29.2
+        },
+        "2025": {
+          "sharpe": 1.8042,
+          "reduced_pct": 29.2
+        }
+      },
+      "avg_sharpe": 1.5024,
+      "min_sharpe": 1.1026,
+      "obj": 1.327
+    }
+  },
+  "best_variant": {
+    "name": "reduce_worst5",
+    "params": {
+      "bad_hours": [
+        12,
+        13,
+        14,
+        19,
+        23
+      ],
+      "scale": 0.5
+    },
+    "yearly": {
+      "2021": {
+        "sharpe": 1.2657,
+        "reduced_pct": 20.8
+      },
+      "2022": {
+        "sharpe": 1.5226,
+        "reduced_pct": 20.8
+      },
+      "2023": {
+        "sharpe": 1.562,
+        "reduced_pct": 20.8
+      },
+      "2024": {
+        "sharpe": 2.2093,
+        "reduced_pct": 20.8
+      },
+      "2025": {
+        "sharpe": 2.0496,
+        "reduced_pct": 20.8
+      }
+    },
+    "avg_sharpe": 1.7218,
+    "min_sharpe": 1.2657,
+    "obj": 1.546
+  },
+  "improvement": -0.0212,
+  "loyo": {
+    "results": [],
+    "wins": "0/5",
+    "avg_delta": 0
+  },
+  "verdict": "NO IMPROVEMENT \u2014 HOD overlay does not help the ensemble",
+  "partial": false,
+  "timestamp": "2026-02-20T22:12:08"
+}
