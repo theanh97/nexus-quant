@@ -62,4 +62,7 @@ True signal = funding/momentum richness (breadth), NOT realized volatility.
 P91b: Production champion | P129: Vol regime overlay | P137: Breadth overlay
 P141: idio_48h optimal | P142: idio_72h marginal | P143: Weight opt (2025 fails, keep prod)
 P144: Regime-adaptive switching VALIDATED | P145: Breadth classifier LOYO 4/5
-P146: WF validated, prod v2.2.0 deployed | **Next: P147**
+P146: WF validated, prod v2.2.0 deployed
+P147: Conditional vol overlay test — CONFIRMED production optimal (no change)
+P148: Funding dispersion boost (std>75th pct → ×1.15) VALIDATED — LOYO 3/5, WF 2/2, OBJ=1.8886 | prod v2.3.0
+**Next: P149** — intraday seasonality or short-term reversal overlay

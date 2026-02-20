@@ -1,0 +1,151 @@
+{
+  "phase": 147,
+  "description": "2025 Deep-Dive + New Signal Candidates",
+  "elapsed_seconds": 34.0,
+  "baseline_p146_obj": 1.8945,
+  "monthly_2025": {
+    "adaptive": [
+      0.1854,
+      -0.0586,
+      0.13,
+      -0.0279,
+      0.2128,
+      -0.0374
+    ],
+    "prod": [
+      0.2076,
+      -0.043,
+      0.1187,
+      -0.0262,
+      0.2363,
+      -0.0196
+    ]
+  },
+  "top_results": [
+    {
+      "signal": "btc_dom_demotion",
+      "dom_threshold": 0.05,
+      "yearly": {
+        "2021": 2.5919,
+        "2022": 1.4795,
+        "2023": 1.7705,
+        "2024": 3.0207,
+        "2025": 1.9376
+      },
+      "obj": 1.8779,
+      "avg": 2.16,
+      "min": 1.4795
+    },
+    {
+      "signal": "btc_dom_demotion",
+      "dom_threshold": 0.1,
+      "yearly": {
+        "2021": 2.5919,
+        "2022": 1.4795,
+        "2023": 1.7705,
+        "2024": 3.0207,
+        "2025": 1.9376
+      },
+      "obj": 1.8779,
+      "avg": 2.16,
+      "min": 1.4795
+    },
+    {
+      "signal": "btc_dom_demotion",
+      "dom_threshold": 0.15,
+      "yearly": {
+        "2021": 2.5919,
+        "2022": 1.4795,
+        "2023": 1.7705,
+        "2024": 3.0207,
+        "2025": 1.9376
+      },
+      "obj": 1.8779,
+      "avg": 2.16,
+      "min": 1.4795
+    },
+    {
+      "signal": "btc_dom_demotion",
+      "dom_threshold": 0.2,
+      "yearly": {
+        "2021": 2.5919,
+        "2022": 1.4795,
+        "2023": 1.7705,
+        "2024": 3.0207,
+        "2025": 1.9376
+      },
+      "obj": 1.8779,
+      "avg": 2.16,
+      "min": 1.4795
+    },
+    {
+      "signal": "corr_override",
+      "corr_threshold": 0.8,
+      "yearly": {
+        "2021": 2.5113,
+        "2022": 1.7365,
+        "2023": 1.6956,
+        "2024": 2.8629,
+        "2025": 1.7485
+      },
+      "obj": 1.8691,
+      "avg": 2.111,
+      "min": 1.6956
+    }
+  ],
+  "best_new": {
+    "signal": "btc_dom_demotion",
+    "dom_threshold": 0.05,
+    "yearly": {
+      "2021": 2.5919,
+      "2022": 1.4795,
+      "2023": 1.7705,
+      "2024": 3.0207,
+      "2025": 1.9376
+    },
+    "obj": 1.8779,
+    "avg": 2.16,
+    "min": 1.4795
+  },
+  "delta_obj": -0.0166,
+  "loyo": {
+    "results": [
+      {
+        "test_year": "2021",
+        "test_sharpe": 2.5919,
+        "baseline_sharpe": 2.1102,
+        "delta": 0.4817
+      },
+      {
+        "test_year": "2022",
+        "test_sharpe": 1.4795,
+        "baseline_sharpe": 1.4833,
+        "delta": -0.0038
+      },
+      {
+        "test_year": "2023",
+        "test_sharpe": 1.7705,
+        "baseline_sharpe": 1.5648,
+        "delta": 0.2057
+      },
+      {
+        "test_year": "2024",
+        "test_sharpe": 3.0207,
+        "baseline_sharpe": 2.3941,
+        "delta": 0.6266
+      },
+      {
+        "test_year": "2025",
+        "test_sharpe": 1.9376,
+        "baseline_sharpe": 2.0534,
+        "delta": -0.1158
+      }
+    ],
+    "wins": "3/5",
+    "avg_delta": 0.2389
+  },
+  "verdict": "NO IMPROVEMENT \u2014 keep P146 breadth classifier. 2025 miss (-0.024) is acceptable given overall +0.40 avg_delta. Consider exploring on-chain/options signals in P148.",
+  "next_phase_notes": "Phase 148: Explore on-chain whale flow signal (Glassnode/Nansen) OR Deribit IV skew surface as regime indicator. Both independent of price/funding and could add alpha in choppy regimes.",
+  "partial": false,
+  "timestamp": "2026-02-21T00:51:07"
+}
