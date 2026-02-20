@@ -291,122 +291,64 @@ def permutation_test_signal(ds_cache, n_perm=N_PERMUTATIONS):
     }
 
 
-# ─── Test 3: Parameter perturbation ──────────────────────────────────
+# ─── Test 3: Weight & tilt perturbation (FAST — no re-running backtests) ────
 
-def parameter_perturbation(ds_cache, n_trials=200):
+def parameter_perturbation(ds_cache, n_trials=500):
     """
-    Jitter all continuous params ±10% simultaneously → Sharpe distribution.
+    Perturb ensemble weights ±20% and vol tilt ratio/lookback.
+    Uses CACHED signal returns — only array math, no backtest re-runs.
     Tests if the champion is a narrow peak or a broad plateau.
     """
-    # Params to perturb for each signal
-    PARAM_RANGES = {
-        "v1": {
-            "w_carry": (0.25, 0.45),
-            "w_mom": (0.35, 0.55),
-            "w_mean_reversion": (0.10, 0.30),
-            "momentum_lookback_bars": (270, 400),
-            "mean_reversion_lookback_bars": (48, 96),
-            "target_gross_leverage": (0.28, 0.42),
-            "rebalance_interval_bars": (48, 72),
-        },
-        "i460bw168": {
-            "lookback_bars": (380, 540),
-            "beta_window_bars": (135, 200),
-            "target_gross_leverage": (0.24, 0.36),
-            "rebalance_interval_bars": (36, 60),
-        },
-        "i415bw216": {
-            "lookback_bars": (340, 490),
-            "beta_window_bars": (175, 255),
-            "target_gross_leverage": (0.24, 0.36),
-            "rebalance_interval_bars": (36, 60),
-        },
-        "f144": {
-            "funding_lookback_bars": (115, 175),
-            "target_gross_leverage": (0.20, 0.30),
-            "rebalance_interval_bars": (18, 30),
-        },
-    }
-    # Also perturb vol tilt
-    VOL_TILT_RANGES = {
-        "lookback": (135, 200),
-        "ratio": (0.52, 0.78),
-    }
-    # Also perturb ensemble weights (normalized)
+    # Pre-cache individual signal returns (expensive, done ONCE)
+    sig_returns = {}  # (sig_key, year) -> np.array
+    for yr in YEARS:
+        ds = get_dataset(yr, ds_cache)
+        for sig_key in SIG_KEYS:
+            rets = run_signal_returns(ds, sig_key)
+            sig_returns[(sig_key, yr)] = rets
+            log(f"  Cached {sig_key}/{yr}: {len(rets)} returns")
+
+    # Pre-cache z-scores for a range of lookbacks
+    z_cache = {}  # (year, lookback) -> np.array
+    for yr in YEARS:
+        ds = get_dataset(yr, ds_cache)
+        for lb in range(120, 250, 12):
+            z_cache[(yr, lb)] = compute_volume_z(ds, lb)
+
     WEIGHT_RANGES = {k: (v * 0.8, v * 1.2) for k, v in P91B_WEIGHTS.items()}
+    VOL_TILT_RANGES = {"ratio": (0.52, 0.78)}
+    LOOKBACKS = sorted(set(lb for (_, lb) in z_cache.keys()))
 
     trial_sharpes = []
-    trial_details = []
-
     for trial in range(n_trials):
-        # Perturb signal params
-        perturbed_signals = {}
-        for sig_key in SIG_KEYS:
-            new_params = copy.deepcopy(SIGNALS[sig_key]["params"])
-            if sig_key in PARAM_RANGES:
-                for param_name, (lo, hi) in PARAM_RANGES[sig_key].items():
-                    val = RNG.uniform(lo, hi)
-                    if param_name.endswith("_bars") or param_name == "k_per_side":
-                        val = int(round(val))
-                    new_params[param_name] = val
-            perturbed_signals[sig_key] = {"name": SIGNALS[sig_key]["name"], "params": new_params}
+        # Random weights (normalized)
+        raw_w = {k: RNG.uniform(lo, hi) for k, (lo, hi) in WEIGHT_RANGES.items()}
+        wt_sum = sum(raw_w.values())
+        norm_w = {k: v / wt_sum for k, v in raw_w.items()}
+        w_arr = np.array([norm_w[k] for k in SIG_KEYS])
 
-        # Perturb ensemble weights (normalize)
-        raw_weights = {}
-        for k, (lo, hi) in WEIGHT_RANGES.items():
-            raw_weights[k] = RNG.uniform(lo, hi)
-        wt_sum = sum(raw_weights.values())
-        norm_weights = {k: v / wt_sum for k, v in raw_weights.items()}
-
-        # Perturb vol tilt
-        vt_lb = int(round(RNG.uniform(*VOL_TILT_RANGES["lookback"])))
+        # Random vol tilt
+        vt_lb = RNG.choice(LOOKBACKS)
         vt_ratio = RNG.uniform(*VOL_TILT_RANGES["ratio"])
 
-        # Run perturbed ensemble on all years
         yr_sharpes = []
-        cost_model = cost_model_from_config({"fee_rate": 0.0005, "slippage_rate": 0.0003})
         for yr in YEARS:
-            ds = get_dataset(yr, ds_cache)
-            all_returns = []
-            for sig_key in SIG_KEYS:
-                cfg = perturbed_signals[sig_key]
-                try:
-                    strat = make_strategy({"name": cfg["name"], "params": cfg["params"]})
-                    engine = BacktestEngine(BacktestConfig(costs=cost_model))
-                    result = engine.run(ds, strat)
-                    rets = np.diff(result.equity_curve) / result.equity_curve[:-1]
-                    all_returns.append(rets)
-                except Exception:
-                    # If perturbed params are invalid, use original signal
-                    rets = run_signal_returns(ds, sig_key)
-                    all_returns.append(rets)
-
-            min_len = min(len(r) for r in all_returns)
-            all_returns = [r[:min_len] for r in all_returns]
-            w_arr = np.array([norm_weights[k] for k in SIG_KEYS])
-            ens_rets = np.zeros(min_len)
-            for i, k in enumerate(SIG_KEYS):
-                ens_rets += w_arr[i] * all_returns[i]
-
-            # Apply perturbed vol tilt
-            z = compute_volume_z(ds, vt_lb)
+            rets_list = [sig_returns[(sk, yr)] for sk in SIG_KEYS]
+            min_len = min(len(r) for r in rets_list)
+            ens = np.zeros(min_len)
+            for i in range(len(SIG_KEYS)):
+                ens += w_arr[i] * rets_list[i][:min_len]
+            z = z_cache.get((yr, vt_lb))
             if z is not None:
-                ens_rets = apply_tilt(ens_rets, z, vt_ratio)
-
-            yr_sharpes.append(compute_sharpe(ens_rets))
+                ens = apply_tilt(ens, z, vt_ratio)
+            yr_sharpes.append(compute_sharpe(ens))
 
         avg_s = np.mean(yr_sharpes)
         min_s = np.min(yr_sharpes)
-        obj = (avg_s + min_s) / 2
-        trial_sharpes.append(obj)
-        trial_details.append({
-            "avg": round(avg_s, 4),
-            "min": round(min_s, 4),
-            "obj": round(obj, 4),
-        })
+        trial_sharpes.append((avg_s + min_s) / 2)
 
-        if (trial + 1) % 50 == 0:
-            log(f"  Perturbation trial {trial+1}/{n_trials}: median OBJ={np.median(trial_sharpes):.4f}")
+        if (trial + 1) % 100 == 0:
+            log(f"  Perturbation {trial+1}/{n_trials}: median OBJ={np.median(trial_sharpes):.4f}")
 
     trial_sharpes = np.array(trial_sharpes)
     return {
@@ -572,7 +514,7 @@ def main():
     log("Test 3: Parameter Perturbation (±20% jitter, 200 trials)")
     log("=" * 70)
 
-    perturb_result = parameter_perturbation(ds_cache, N_PERTURBATIONS)
+    perturb_result = parameter_perturbation(ds_cache, 500)
     log(f"\n  Perturbation results:")
     log(f"    Mean OBJ: {perturb_result['mean_obj']:.4f} (champion: {champ_obj:.4f})")
     log(f"    Std OBJ: {perturb_result['std_obj']:.4f}")

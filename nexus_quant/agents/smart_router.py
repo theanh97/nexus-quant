@@ -1,14 +1,17 @@
 """
-NEXUS Smart Router - Assigns the optimal LLM to each task type.
+NEXUS Smart Router v1.0 — Decision Network model assignments.
 
-Model assignments based on empirical benchmarks & cost tiers:
-- Claude Sonnet 4.6: Architecture, code review, complex debugging (PM role) [PAID via ZAI]
-- GPT-5.2 (Codex): Code generation, strategy math, refactoring [PAID]
-- Gemini 2.5 Pro: Complex reasoning, cross-verification, data analysis [FREE]
-- Gemini 2.5 Flash: QA, monitoring, diary synthesis, fast tasks [FREE]
-- GLM-5 (ZAI): Experiment design, low-cost throughput [PAID via ZAI]
+Model stack (Feb 2026):
+- Claude Sonnet 4.6: All 4 agents (ATLAS/CIPHER/ECHO/FLUX) — strongest reasoning [PAID via ZAI]
+- GPT-5.3 Codex: Code generation tasks [PAID via OpenAI]
+- Gemini 3.1 Pro: ECHO secondary (dual-model cross-validation), code review [FREE]
+- Gemini 3 Flash: QA chat, monitoring, diary synthesis [FREE]
+- GLM-5 (ZAI): Fallback only [PAID via ZAI, low cost]
 
-Cost optimization: Gemini (free) replaces MiniMax and handles many tasks previously routed to paid models.
+Decision Network phases:
+  Phase 1 — ATLAS + CIPHER (parallel): Claude Sonnet 4.6
+  Phase 2 — ECHO (cross-validation): Claude Sonnet 4.6 + Gemini 3.1 Pro (dual-model)
+  Phase 3 — FLUX (decision gate): Claude Sonnet 4.6
 """
 
 from __future__ import annotations
@@ -78,21 +81,21 @@ ZAI_CLAUDE_SONNET_46 = ModelSpec(
     strengths=["architecture", "code review", "complex debugging", "risk reasoning"],
 )
 
-OPENAI_GPT52_CODEX = ModelSpec(
-    name="gpt-5.2",
+OPENAI_GPT53_CODEX = ModelSpec(
+    name="gpt-5.3-codex",
     provider="openai",
     base_url="https://api.openai.com/v1",
     api_key_env="OPENAI_API_KEY",
     max_tokens=4096,
     cost_tier="high",
-    strengths=["code generation", "refactoring", "strategy math"],
+    strengths=["code generation", "refactoring", "strategy math", "agentic coding"],
 )
 
-# ─── Google Gemini (OpenAI-compatible endpoint) — FREE tier ───
+# ─── Google Gemini 3.x (OpenAI-compatible endpoint) — FREE tier ───
 _GOOGLE_OPENAI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
 
 GOOGLE_GEMINI_PRO = ModelSpec(
-    name="gemini-2.5-pro",
+    name="gemini-3.1-pro",
     provider="google",
     base_url=_GOOGLE_OPENAI_BASE,
     api_key_env="GEMINI_API_KEY",
@@ -102,7 +105,7 @@ GOOGLE_GEMINI_PRO = ModelSpec(
 )
 
 GOOGLE_GEMINI_FLASH = ModelSpec(
-    name="gemini-2.5-flash",
+    name="gemini-3-flash",
     provider="google",
     base_url=_GOOGLE_OPENAI_BASE,
     api_key_env="GEMINI_API_KEY",
@@ -136,16 +139,24 @@ GEMINI_CLI_FLASH = ModelSpec(
 
 
 ROUTING_TABLE: Dict[TaskType, ModelSpec] = {
-    TaskType.CODE_GENERATION: OPENAI_GPT52_CODEX,       # GPT-5.2 [PAID] — best for code
-    TaskType.STRATEGY_RESEARCH: ZAI_CLAUDE_SONNET_46,    # Claude [PAID] — architecture thinking
+    # ── v1.0 Decision Network model assignments ──
+    # Phase 1 agents (ATLAS, CIPHER): strong reasoning for generation + risk
+    TaskType.STRATEGY_RESEARCH: ZAI_CLAUDE_SONNET_46,    # ATLAS: Claude [PAID] — creative proposals
+    TaskType.RISK_ANALYSIS: ZAI_CLAUDE_SONNET_46,        # CIPHER: Claude [PAID] — risk precision
+    # Phase 2 agent (ECHO): UPGRADED — overfitting detection is the most critical task
+    TaskType.DATA_ANALYSIS: ZAI_CLAUDE_SONNET_46,        # ECHO primary: Claude [PAID] — strong skepticism
+    # Phase 3 agent (FLUX): UPGRADED — now acts as decision gate, needs strong reasoning
+    TaskType.EXPERIMENT_DESIGN: ZAI_CLAUDE_SONNET_46,    # FLUX: Claude [PAID] — decision gating
+    # Non-agent tasks: cost-optimized
+    TaskType.CODE_GENERATION: OPENAI_GPT53_CODEX,        # GPT-5.3 Codex [PAID] — best for code
     TaskType.CODE_REVIEW: GOOGLE_GEMINI_PRO,             # Gemini Pro [FREE] — excellent quality
-    TaskType.RISK_ANALYSIS: ZAI_CLAUDE_SONNET_46,        # Claude [PAID] — precision matters
-    TaskType.DATA_ANALYSIS: GOOGLE_GEMINI_PRO,           # Gemini Pro [FREE] — multimodal capable
     TaskType.QA_CHAT: GOOGLE_GEMINI_FLASH,               # Gemini Flash [FREE] — fast Q&A
     TaskType.DIARY_SYNTHESIS: GOOGLE_GEMINI_FLASH,        # Gemini Flash [FREE] — good for synthesis
     TaskType.MONITORING_ALERT: GOOGLE_GEMINI_FLASH,       # Gemini Flash [FREE] — high throughput
-    TaskType.EXPERIMENT_DESIGN: ZAI_GLM5,                 # GLM-5 [low cost] — experiment plans
 }
+
+# ECHO uses dual-model cross-validation: Claude (primary) + Gemini Pro (secondary)
+ECHO_SECONDARY_MODEL: ModelSpec = GOOGLE_GEMINI_PRO
 
 
 class SmartRouter:
@@ -253,12 +264,12 @@ class SmartRouter:
         if spec.provider == "openai":
             models_to_try = [spec.name]
             if task_type == TaskType.CODE_GENERATION:
-                models_to_try.append("gpt-4o")
+                models_to_try.append("gpt-5.2")
             return self._call_openai(spec, system=system, user=user, max_tokens=max_tokens, models=models_to_try)
         if spec.provider == "google":
             models_to_try = [spec.name]
             if "pro" in spec.name:
-                models_to_try.append("gemini-2.5-flash")
+                models_to_try.append("gemini-3-flash")
             return self._call_openai(spec, system=system, user=user, max_tokens=max_tokens, models=models_to_try)
         if spec.provider == "gemini-cli":
             return self._call_gemini_cli(spec, system=system, user=user)
@@ -374,7 +385,7 @@ class SmartRouter:
         if not os.path.isfile(gemini_bin):
             raise RuntimeError("Gemini CLI not installed")
 
-        cli_model = "gemini-2.5-pro" if "pro" in spec.name else "gemini-2.5-flash"
+        cli_model = "gemini-3.1-pro" if "pro" in spec.name else "gemini-3-flash"
         combined = f"SYSTEM: {system}\n\nUSER: {user}"
 
         result = subprocess.run(

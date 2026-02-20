@@ -2264,18 +2264,20 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             {
                 "name": "Gemini 2.5 Pro",
                 "codename": "ORACLE",
-                "provider": "Google (OpenAI-compat)",
+                "provider": "Google (API)" if os.environ.get("GEMINI_API_KEY") else "Google (CLI)",
                 "cost": "free",
                 "role": "Complex reasoning, cross-verification, data analysis",
                 "available": bool(os.environ.get("GEMINI_API_KEY")) or bool(shutil.which("gemini")),
+                "via": "api" if os.environ.get("GEMINI_API_KEY") else ("cli" if shutil.which("gemini") else "unavailable"),
             },
             {
                 "name": "Gemini 2.5 Flash",
                 "codename": "ORACLE-FAST",
-                "provider": "Google (OpenAI-compat)",
+                "provider": "Google (API)" if os.environ.get("GEMINI_API_KEY") else "Google (CLI)",
                 "cost": "free",
                 "role": "QA, monitoring, diary synthesis, fast tasks",
                 "available": bool(os.environ.get("GEMINI_API_KEY")) or bool(shutil.which("gemini")),
+                "via": "api" if os.environ.get("GEMINI_API_KEY") else ("cli" if shutil.which("gemini") else "unavailable"),
             },
             {
                 "name": "GLM-5",

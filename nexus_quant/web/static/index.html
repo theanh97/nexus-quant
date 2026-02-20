@@ -4601,7 +4601,7 @@
       _lang = lang === 'en' ? 'en' : 'vi';
       localStorage.setItem(LANG_KEY, _lang);
       applyI18n();
-      setLiveStatus(APP_STATE.liveConnected ? 'connected' : 'connecting', APP_STATE.liveConnected ? t('status.live') : t('status.connecting'));
+      setLiveStatus(APP_STATE.liveConnected ? 'live' : 'connecting', APP_STATE.liveConnected ? t('status.live') : t('status.connecting'));
       updateMvpSummary();
       if (typeof _updateAutoSyncBadge === 'function') _updateAutoSyncBadge();
       if (!_logLastPath) {
@@ -6908,6 +6908,7 @@
       if (m.includes('opus')) return `<span class="debate-model-tag tag-claude">🟣 NEXUS PRIME (Opus)</span>`;
       if (m.includes('claude')) return `<span class="debate-model-tag tag-claude">🔵 SENTINEL (Claude)</span>`;
       if (m.includes('codex') || m.includes('gpt')) return `<span class="debate-model-tag tag-codex">🟢 FORGE (GPT-5.2)</span>`;
+      if (m.includes('gemini-cli')) return `<span class="debate-model-tag tag-gemini">💎 ORACLE-CLI (Gemini)</span>`;
       if (m.includes('gemini')) return `<span class="debate-model-tag tag-gemini">💎 ORACLE (Gemini)</span>`;
       if (m.includes('minimax')) return `<span class="debate-model-tag tag-minimax">🟠 SCOUT (MiniMax)</span>`;
       return `<span class="debate-model-tag" style="background:#f1f5f9">${escHtml(model)}</span>`;
@@ -7224,7 +7225,9 @@
         const running = procs.filter(p => String(p.status || '') === 'running').length;
         set('proc-count', running);
         updateMvpSummary({ running_processes: running });
-        if (!procs.length) { html('proc-list', `<div class="empty text-sm">${t('console.no_processes')}</div>`); return; }
+        if (!procs.length) {
+          html('proc-list', `<div class="empty text-sm">${t('console.no_processes')}</div>`); return;
+        }
         html('proc-list', procs.map(p => `
       <div class="proc-item ${p.status}">
         <div style="display:flex;align-items:center;gap:8px">

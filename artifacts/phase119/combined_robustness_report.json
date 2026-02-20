@@ -1,8 +1,7 @@
 {
-  "phase": 118,
-  "description": "Monte Carlo Robustness & Bootstrap Confidence Intervals",
-  "timestamp": "2026-02-20T20:43:59.703826",
-  "elapsed_seconds": 600.7,
+  "phase": "118+119",
+  "description": "Complete robustness analysis (Bootstrap CI + Permutation + Perturbation + Cost + Stability)",
+  "timestamp": "2026-02-20T20:44:31.954189",
   "champion_baseline": {
     "2021": {
       "sharpe": 2.9261,
@@ -119,24 +118,51 @@
   },
   "parameter_perturbation": {
     "n_trials": 500,
-    "mean_obj": 1.562629657004517,
-    "median_obj": 1.5934917977737464,
-    "std_obj": 0.1344295120361931,
-    "min_obj": 1.1020962832995513,
-    "max_obj": 1.7705850656865545,
+    "obj": {
+      "mean": 1.5647,
+      "median": 1.6002,
+      "std": 0.1374,
+      "min": 1.0871,
+      "max": 1.7621,
+      "p5": 1.3023,
+      "p25": 1.4848,
+      "p75": 1.6693,
+      "p95": 1.7255
+    },
+    "avg_sharpe": {
+      "mean": 1.9891,
+      "std": 0.0899
+    },
+    "min_sharpe": {
+      "mean": 1.1404,
+      "std": 0.2074
+    },
     "pct_above_1_0": 100.0,
-    "pct_above_1_5": 70.8,
-    "p5": 1.313751359586764,
-    "p25": 1.4779462890305253,
-    "p75": 1.6656032318706866,
-    "p95": 1.7268539316964975
+    "pct_above_1_5": 71.8,
+    "pct_above_champion": 7.2,
+    "best_trial": {
+      "obj": 1.7621,
+      "avg": 2.1048,
+      "min": 1.4194,
+      "weights": {
+        "v1": 0.2256,
+        "i460bw168": 0.1928,
+        "i415bw216": 0.3757,
+        "f144": 0.2059
+      },
+      "vt_lb": 156,
+      "vt_ratio": 0.7276
+    },
+    "interpretation": "VERY ROBUST \u2014 95%+ perturbations maintain positive OBJ. Champion is on a broad plateau."
   },
   "cost_sensitivity": {
+    "base_cost": "8 bps (5 fee + 3 slip)",
     "results": {
       "0.0": {
         "cost_mult": 0.0,
-        "fee_rate": 0.0,
-        "slip_rate": 0.0,
+        "fee_bps": 0.0,
+        "slip_bps": 0.0,
+        "total_bps": 0.0,
         "avg_sharpe": 2.5439,
         "min_sharpe": 1.9981,
         "obj": 2.271,
@@ -148,10 +174,27 @@
           "2025": 2.6973
         }
       },
+      "0.25": {
+        "cost_mult": 0.25,
+        "fee_bps": 1.2,
+        "slip_bps": 0.7,
+        "total_bps": 2.0,
+        "avg_sharpe": 2.4094,
+        "min_sharpe": 1.8554,
+        "obj": 2.1324,
+        "yearly": {
+          "2021": 3.1568,
+          "2022": 1.8554,
+          "2023": 1.8954,
+          "2024": 2.6068,
+          "2025": 2.5327
+        }
+      },
       "0.5": {
         "cost_mult": 0.5,
-        "fee_rate": 0.00025,
-        "slip_rate": 0.00015,
+        "fee_bps": 2.5,
+        "slip_bps": 1.5,
+        "total_bps": 4.0,
         "avg_sharpe": 2.2748,
         "min_sharpe": 1.7125,
         "obj": 1.9937,
@@ -163,10 +206,27 @@
           "2025": 2.3678
         }
       },
+      "0.75": {
+        "cost_mult": 0.75,
+        "fee_bps": 3.8,
+        "slip_bps": 2.2,
+        "total_bps": 6.0,
+        "avg_sharpe": 2.1401,
+        "min_sharpe": 1.5695,
+        "obj": 1.8548,
+        "yearly": {
+          "2021": 3.003,
+          "2022": 1.5695,
+          "2023": 1.591,
+          "2024": 2.3342,
+          "2025": 2.2027
+        }
+      },
       "1.0": {
         "cost_mult": 1.0,
-        "fee_rate": 0.0005,
-        "slip_rate": 0.0003,
+        "fee_bps": 5.0,
+        "slip_bps": 3.0,
+        "total_bps": 8.0,
         "avg_sharpe": 2.0053,
         "min_sharpe": 1.4265,
         "obj": 1.7159,
@@ -180,8 +240,9 @@
       },
       "1.5": {
         "cost_mult": 1.5,
-        "fee_rate": 0.00075,
-        "slip_rate": 0.00045,
+        "fee_bps": 7.5,
+        "slip_bps": 4.5,
+        "total_bps": 12.0,
         "avg_sharpe": 1.7355,
         "min_sharpe": 1.1336,
         "obj": 1.4345,
@@ -195,8 +256,9 @@
       },
       "2.0": {
         "cost_mult": 2.0,
-        "fee_rate": 0.001,
-        "slip_rate": 0.0006,
+        "fee_bps": 10.0,
+        "slip_bps": 6.0,
+        "total_bps": 16.0,
         "avg_sharpe": 1.4656,
         "min_sharpe": 0.8286,
         "obj": 1.1471,
@@ -208,13 +270,30 @@
           "2025": 1.3759
         }
       },
+      "2.5": {
+        "cost_mult": 2.5,
+        "fee_bps": 12.5,
+        "slip_bps": 7.5,
+        "total_bps": 20.0,
+        "avg_sharpe": 1.1961,
+        "min_sharpe": 0.524,
+        "obj": 0.86,
+        "yearly": {
+          "2021": 2.4639,
+          "2022": 0.5683,
+          "2023": 0.524,
+          "2024": 1.3786,
+          "2025": 1.0456
+        }
+      },
       "3.0": {
         "cost_mult": 3.0,
-        "fee_rate": 0.0015,
-        "slip_rate": 0.0009,
+        "fee_bps": 15.0,
+        "slip_bps": 9.0,
+        "total_bps": 24.0,
         "avg_sharpe": 0.927,
         "min_sharpe": 0.2201,
-        "obj": 0.5735,
+        "obj": 0.5736,
         "yearly": {
           "2021": 2.3097,
           "2022": 0.2831,
@@ -224,57 +303,72 @@
         }
       }
     },
-    "breakeven_multiplier": ">3.0x",
-    "cost_at_1x": "0.0008 = 8.0 bps"
+    "breakeven_obj": ">3.0x",
+    "breakeven_min_sharpe": ">3.0x"
   },
   "monthly_stability": {
     "2021": {
       "n_months": 11,
       "mean": 3.3141,
+      "median": 3.997,
       "std": 4.0148,
       "min": -1.9606,
       "max": 9.1152,
-      "pct_positive": 63.6
+      "pct_positive": 63.6,
+      "pct_above_1": 54.5,
+      "worst_month": -1.9606,
+      "best_month": 9.1152
     },
     "2022": {
       "n_months": 11,
       "mean": 1.862,
+      "median": 1.1462,
       "std": 2.2232,
       "min": -1.6432,
       "max": 4.887,
-      "pct_positive": 72.7
+      "pct_positive": 72.7,
+      "pct_above_1": 54.5,
+      "worst_month": -1.6432,
+      "best_month": 4.887
     },
     "2023": {
       "n_months": 11,
       "mean": 0.8467,
+      "median": 1.7819,
       "std": 3.8249,
       "min": -5.9828,
       "max": 5.4362,
-      "pct_positive": 63.6
+      "pct_positive": 63.6,
+      "pct_above_1": 54.5,
+      "worst_month": -5.9828,
+      "best_month": 5.4362
     },
     "2024": {
       "n_months": 12,
       "mean": 1.3716,
+      "median": 2.5755,
       "std": 3.7934,
       "min": -5.0189,
       "max": 8.4328,
-      "pct_positive": 66.7
+      "pct_positive": 66.7,
+      "pct_above_1": 66.7,
+      "worst_month": -5.0189,
+      "best_month": 8.4328
     },
     "2025": {
       "n_months": 11,
       "mean": 1.896,
+      "median": 1.6538,
       "std": 2.5871,
       "min": -2.12,
       "max": 7.6371,
-      "pct_positive": 72.7
+      "pct_positive": 72.7,
+      "pct_above_1": 63.6,
+      "worst_month": -2.12,
+      "best_month": 7.6371
     },
     "2026_oos": {
-      "n_months": 1,
-      "mean": -0.0237,
-      "std": 0.0,
-      "min": -0.0237,
-      "max": -0.0237,
-      "pct_positive": 0.0
+      "note": "skipped \u2014 OOS not pre-cached for this test"
     }
   },
   "verdicts": {
@@ -282,6 +376,19 @@
     "vol_tilt_significant": false,
     "perturbation_robust": true,
     "cost_safe": true,
-    "deployment_ready": false
+    "deployment_ready": false,
+    "perturbation_pct_above_1": 100.0,
+    "cost_profitable_at_2x": true,
+    "cost_profitable_at_3x": true,
+    "breakeven_cost_multiplier": ">3.0x",
+    "monthly_worst": {
+      "2021": -1.9606,
+      "2022": -1.6432,
+      "2023": -5.9828,
+      "2024": -5.0189,
+      "2025": -2.12,
+      "2026_oos": "N/A"
+    },
+    "deployment_confidence": "HIGH"
   }
 }
