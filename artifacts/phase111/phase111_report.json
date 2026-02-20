@@ -1,0 +1,144 @@
+{
+  "phase": 111,
+  "description": "Positioning & volume tilt on P91b",
+  "timestamp": "2026-02-20T17:23:11.406962",
+  "elapsed_seconds": 91.8,
+  "positioning_blocked": true,
+  "positioning_reason": "Binance free API only has ~30 days of hourly OI/LS data",
+  "baseline": {
+    "yearly": {
+      "2021": 3.0488,
+      "2022": 1.4356,
+      "2023": 1.2966,
+      "2024": 2.2799,
+      "2025": 1.9739,
+      "2026_oos": 1.2679
+    },
+    "is_avg": 2.007,
+    "is_min": 1.2966,
+    "is_obj": 1.6518
+  },
+  "volume_tilt_results": {
+    "vol_mom_z_24": {
+      "best_ratio": 0.3,
+      "avg": 2.0566,
+      "min": 1.6625,
+      "obj": 1.8596,
+      "delta_obj": 0.2078,
+      "oos": 2.1141,
+      "delta_oos": 0.8462,
+      "yearly": {
+        "2021": 3.112,
+        "2022": 1.754,
+        "2023": 1.6625,
+        "2024": 2.0838,
+        "2025": 1.6707
+      },
+      "verdict": "PROMISING"
+    },
+    "vol_mom_z_48": {
+      "best_ratio": 0.8,
+      "avg": 2.0016,
+      "min": 1.4506,
+      "obj": 1.7261,
+      "delta_obj": 0.0743,
+      "oos": 1.3796,
+      "delta_oos": 0.1117,
+      "yearly": {
+        "2021": 3.0108,
+        "2022": 1.4506,
+        "2023": 1.4772,
+        "2024": 2.1236,
+        "2025": 1.9459
+      },
+      "verdict": "PROMISING"
+    },
+    "vol_mom_z_72": {
+      "best_ratio": 1.0,
+      "delta_obj": 0.0,
+      "verdict": "NO_VALUE"
+    },
+    "vol_mom_z_168": {
+      "best_ratio": 0.7,
+      "avg": 2.0121,
+      "min": 1.4192,
+      "obj": 1.7156,
+      "delta_obj": 0.0639,
+      "oos": 1.475,
+      "delta_oos": 0.2071,
+      "yearly": {
+        "2021": 2.9565,
+        "2022": 1.4327,
+        "2023": 1.4192,
+        "2024": 2.2189,
+        "2025": 2.0331
+      },
+      "verdict": "PROMISING"
+    },
+    "vol_mom_z_336": {
+      "best_ratio": 1.0,
+      "delta_obj": 0.0,
+      "verdict": "NO_VALUE"
+    }
+  },
+  "walk_forward_results": {
+    "vol_mom_z_24": {
+      "n_positive": 1,
+      "avg_delta": -0.0167,
+      "ratio_std": 0.04,
+      "deltas": [
+        -0.3066,
+        -0.3032,
+        -0.3032,
+        0.8462
+      ],
+      "ratios": [
+        0.2,
+        0.3,
+        0.3,
+        0.3
+      ],
+      "validated": false
+    },
+    "vol_mom_z_48": {
+      "n_positive": 1,
+      "avg_delta": -0.0836,
+      "ratio_std": 0.09,
+      "deltas": [
+        -0.3902,
+        -0.028,
+        -0.028,
+        0.1117
+      ],
+      "ratios": [
+        0.6,
+        0.8,
+        0.8,
+        0.8
+      ],
+      "validated": false
+    },
+    "vol_mom_z_168": {
+      "n_positive": 3,
+      "avg_delta": 0.0661,
+      "ratio_std": 0.0,
+      "deltas": [
+        -0.061,
+        0.0592,
+        0.0592,
+        0.2071
+      ],
+      "ratios": [
+        0.7,
+        0.7,
+        0.7,
+        0.7
+      ],
+      "validated": true
+    }
+  },
+  "validated_signals": [
+    "vol_mom_z_168"
+  ],
+  "conclusion": "VALIDATED"
+}
