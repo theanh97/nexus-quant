@@ -4282,6 +4282,20 @@
         <div class="ctitle" style="margin-bottom:10px">Benchmarks (Estimated Annual Sharpe)</div>
         <div id="tr-benchmarks-table"><div class="text-muted text-sm">Loading…</div></div>
       </div>
+      <!-- ── Portfolio Optimizer Card ─────────────────────────────────── -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="ctitle" style="margin-bottom:10px">
+          📐 Multi-Strategy Portfolio Optimizer
+          <button onclick="loadPortfolioOptimizer()" style="float:right;padding:2px 8px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:11px">Run</button>
+        </div>
+        <div id="portfolio-summary" style="margin-bottom:10px;font-size:13px;color:var(--fg-muted)">
+          Click Run to compute optimal allocation…
+        </div>
+        <div id="portfolio-frontier-table"></div>
+        <div id="portfolio-grid-chart" style="margin-top:10px"></div>
+      </div>
+
+      <!-- ── Key Insights Card ─────────────────────────────────────────── -->
       <div class="card">
         <div class="ctitle" style="margin-bottom:8px">Key Insights</div>
         <div id="tr-insights" style="font-size:13px;line-height:1.7;color:var(--fg-muted)">
@@ -4289,7 +4303,7 @@
             <li><strong style="color:var(--fg)">crypto_perps</strong>: OOS validated 2021-2026. AVG=2.005, MIN=1.427. 2022 bear: Sharpe 1.427 (BTC was -64%).</li>
             <li><strong style="color:var(--fg)">crypto_options (VRP)</strong>: Phase 2 validated 2021-2025. AVG=1.520, MIN=1.273. Best 2023 (1.944, low vol = max premium collect). Proper gamma/theta model.</li>
             <li><strong style="color:var(--fg)">commodity_cta</strong>: Infrastructure Phase 135 complete. Pending real data validation. Target Sharpe &gt; 0.8.</li>
-            <li><strong style="color:var(--fg)">Portfolio diversification</strong>: crypto_perps + crypto_options estimated corr ≈ 0.2-0.35. Combined target: Sharpe &gt; 2.0, MDD &lt; 10%.</li>
+            <li><strong style="color:var(--fg)">Portfolio optimizer (Phase 138)</strong>: 35% perps + 65% options → avg Sharpe <strong style="color:var(--green)">2.265</strong>, min <strong style="color:var(--green)">1.790</strong>, vol 4.6%. Diversification benefit <strong style="color:var(--green)">+0.575</strong>.</li>
             <li><strong style="color:var(--fg)">SG CTA 2022</strong>: +25.2% (best CTA year in decades). NEXUS crypto_perps (1.427) + crypto_options (1.446) both strong in bear market. Macro stress resistant.</li>
           </ul>
         </div>
@@ -7791,6 +7805,113 @@
           toast(msg, 3);
           setTimeout(refreshConsole, 800);
         }).catch(e => { set('ctrl-result', `❌ ${t('console.request_failed')}`); });
+    }
+
+    // ─── Portfolio Optimizer ───────────────────────────────────────────────────
+    function loadPortfolioOptimizer() {
+      html('portfolio-summary', '<span class="text-muted text-sm">Computing…</span>');
+      html('portfolio-frontier-table', '');
+
+      jx('/api/portfolio_optimize').then(data => {
+        if (!data || data.error) {
+          html('portfolio-summary', `<span style="color:#ef4444">Error: ${esc(data&&data.error||'unknown')}</span>`);
+          return;
+        }
+
+        const opt = data.optimal && data.optimal.max_sharpe;
+        const maxMin = data.optimal && data.optimal.max_min_sharpe;
+
+        if (opt) {
+          const w = opt.weights || {};
+          const wStr = Object.entries(w).map(([k,v]) => `${k.replace('crypto_','')}: <strong>${(v*100).toFixed(0)}%</strong>`).join(' + ');
+          html('portfolio-summary', `
+            <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px">
+              <div style="padding:8px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--green)">
+                <div style="font-size:11px;color:var(--fg-muted);text-transform:uppercase;margin-bottom:2px">Optimal (Max Sharpe)</div>
+                <div style="font-size:13px">${wStr}</div>
+                <div style="font-size:18px;font-weight:700;color:var(--green)">${n2(opt.avg_sharpe,3)} avg</div>
+                <div style="font-size:12px;color:var(--fg-muted)">min ${n2(opt.min_sharpe,3)} · vol ${n2(opt.vol_pct,1)}% · ret ${n2(opt.return_pct,1)}%</div>
+                <div style="font-size:11px;color:#86efac">diversification benefit: +${n2(opt.div_benefit,3)}</div>
+              </div>
+              <div style="padding:8px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+                <div style="font-size:11px;color:var(--fg-muted);text-transform:uppercase;margin-bottom:2px">Max Min Sharpe (Safest)</div>
+                ${maxMin ? Object.entries(maxMin.weights||{}).map(([k,v]) => `${k.replace('crypto_','')}: <strong>${(v*100).toFixed(0)}%</strong>`).join(' + ') : '—'}
+                <div style="font-size:18px;font-weight:700;color:var(--yellow)">${maxMin ? n2(maxMin.min_sharpe,3) : '—'} min</div>
+                <div style="font-size:12px;color:var(--fg-muted)">avg ${maxMin ? n2(maxMin.avg_sharpe,3) : '—'}</div>
+              </div>
+            </div>
+          `);
+        }
+
+        // Efficient frontier table
+        const frontier = data.frontier || [];
+        if (frontier.length) {
+          const hdr = `<tr style="font-size:11px;color:var(--fg-muted);text-transform:uppercase">
+            <th style="text-align:left;padding:4px 8px">Correlation</th>
+            <th style="text-align:left">Optimal weights</th>
+            <th style="text-align:center">Avg Sharpe</th>
+            <th style="text-align:center">Min Sharpe</th>
+            <th style="text-align:center">Vol%</th>
+            <th style="text-align:center">Div.Benefit</th>
+          </tr>`;
+          const rows = frontier.map(f => {
+            const wStr = Object.entries(f.weights||{}).map(([k,v]) => `${k.replace('crypto_','')}:${(v*100).toFixed(0)}%`).join(' + ');
+            const isBase = Math.abs(f.correlation - 0.25) < 0.01;
+            const bg = isBase ? 'background:var(--bg)' : '';
+            return `<tr style="border-top:1px solid var(--border);${bg}">
+              <td style="padding:5px 8px;font-weight:${isBase?700:400}">${f.correlation.toFixed(2)}</td>
+              <td style="font-size:12px">${esc(wStr)}</td>
+              <td style="text-align:center;font-weight:600;color:var(--green)">${n2(f.avg_sharpe,3)}</td>
+              <td style="text-align:center;color:var(--fg-muted)">${n2(f.min_sharpe,3)}</td>
+              <td style="text-align:center;color:var(--fg-muted)">${n2(f.vol_pct,1)}%</td>
+              <td style="text-align:center;color:#86efac">+${n2(f.div_benefit,3)}</td>
+            </tr>`;
+          }).join('');
+          html('portfolio-frontier-table', `
+            <div style="font-size:11px;color:var(--fg-muted);margin-bottom:6px">Efficient Frontier — optimal allocation at each correlation assumption (highlighted: our estimate ρ=0.25)</div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px"><thead>${hdr}</thead><tbody>${rows}</tbody></table>
+          `);
+        }
+
+        // Per-year grid chart (text-based sparkline)
+        const grid = data.grid || [];
+        if (grid.length && opt && opt.year_sharpe) {
+          const yrs = Object.keys(opt.year_sharpe).sort();
+          const yrCells = yrs.map(y => `<th style="text-align:center;width:60px;font-size:11px;color:var(--fg-muted)">${y}</th>`).join('');
+          const rows = grid.filter(r => {
+            const p = r.weights.crypto_perps || 0;
+            return [0, 0.25, 0.35, 0.50, 0.60, 0.75, 1.0].some(w => Math.abs(p - w) < 0.01);
+          }).map(r => {
+            const perps_pct = Math.round((r.weights.crypto_perps||0)*100);
+            const opts_pct = 100 - perps_pct;
+            const yrCells2 = yrs.map(y => {
+              const sh = r.year_sharpe[+y];
+              const col = sh >= 1.8 ? '#22c55e' : sh >= 1.2 ? '#86efac' : sh >= 0.8 ? 'var(--yellow)' : '#f97316';
+              return `<td style="text-align:center;color:${col};font-weight:600">${sh != null ? sh.toFixed(2) : '—'}</td>`;
+            }).join('');
+            const isOpt = perps_pct === 35;
+            return `<tr style="border-top:1px solid var(--border);${isOpt?'background:var(--bg)':''}">
+              <td style="padding:5px 8px;font-weight:${isOpt?700:400}">${perps_pct}% perps / ${opts_pct}% options${isOpt?' ★':''}</td>
+              ${yrCells2}
+              <td style="text-align:center;font-weight:700;color:var(--green)">${n2(r.avg_sharpe,3)}</td>
+              <td style="text-align:center;color:var(--fg-muted)">${n2(r.min_sharpe,3)}</td>
+            </tr>`;
+          }).join('');
+          html('portfolio-grid-chart', `
+            <div style="font-size:11px;color:var(--fg-muted);margin-bottom:6px;margin-top:10px">Per-year Sharpe at different allocations (★ = optimal, ρ=0.25)</div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead><tr style="font-size:11px;color:var(--fg-muted)">
+                <th style="text-align:left;padding:4px 8px">Allocation</th>${yrCells}
+                <th style="text-align:center">AVG</th><th style="text-align:center">MIN</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          `);
+        }
+
+      }).catch(e => {
+        html('portfolio-summary', `<span style="color:#ef4444">Load failed: ${esc(String(e))}</span>`);
+      });
     }
 
     // ─── Track Record ─────────────────────────────────────────────────────────

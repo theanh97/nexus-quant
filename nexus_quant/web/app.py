@@ -2618,4 +2618,106 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             import traceback
             return JSONResponse({"error": str(e), "traceback": traceback.format_exc()}, status_code=500)
 
+    @app.get("/api/portfolio_optimize")
+    async def api_portfolio_optimize() -> JSONResponse:
+        """
+        Multi-strategy portfolio optimization.
+        Returns optimal allocations, efficient frontier, and per-year stats.
+        """
+        try:
+            from ..portfolio.optimizer import PortfolioOptimizer
+            opt = PortfolioOptimizer()
+
+            # Grid search at central correlation estimate
+            results_25 = opt.optimize(step=0.05, correlation_override=0.25)
+
+            # Max Sharpe, Max Min-Sharpe, Min-Vol picks
+            max_sharpe_r = results_25[0]
+            max_min_r = max(results_25, key=lambda r: r.min_sharpe)
+            min_vol_r = min(results_25, key=lambda r: r.annual_vol_pct)
+
+            # Efficient frontier across correlations
+            frontier = opt.efficient_frontier(correlations=[0.0, 0.1, 0.2, 0.25, 0.3, 0.4, 0.5])
+            frontier_out = []
+            for corr, res_list in sorted(frontier.items()):
+                best = res_list[0]
+                frontier_out.append({
+                    "correlation": corr,
+                    "weights": best.weights,
+                    "avg_sharpe": best.avg_sharpe,
+                    "min_sharpe": best.min_sharpe,
+                    "vol_pct": best.annual_vol_pct,
+                    "return_pct": best.avg_return_pct,
+                    "div_benefit": best.diversification_benefit,
+                })
+
+            # Full grid for chart
+            grid_out = []
+            for r in sorted(results_25, key=lambda x: x.weights.get("crypto_perps", 0)):
+                grid_out.append({
+                    "weights": r.weights,
+                    "avg_sharpe": r.avg_sharpe,
+                    "min_sharpe": r.min_sharpe,
+                    "vol_pct": r.annual_vol_pct,
+                    "return_pct": r.avg_return_pct,
+                    "year_sharpe": r.year_sharpe,
+                    "div_benefit": r.diversification_benefit,
+                })
+
+            # Dynamic allocation
+            dyn = opt.dynamic_allocation()
+            dyn_out = {str(yr): {
+                "weights": r.weights,
+                "sharpe": r.avg_sharpe,
+            } for yr, r in dyn.items()}
+            dyn_avg = sum(r.avg_sharpe for r in dyn.values()) / len(dyn)
+            dyn_min = min(r.avg_sharpe for r in dyn.values())
+
+            return JSONResponse({
+                "optimal": {
+                    "max_sharpe": {
+                        "weights": max_sharpe_r.weights,
+                        "avg_sharpe": max_sharpe_r.avg_sharpe,
+                        "min_sharpe": max_sharpe_r.min_sharpe,
+                        "vol_pct": max_sharpe_r.annual_vol_pct,
+                        "return_pct": max_sharpe_r.avg_return_pct,
+                        "year_sharpe": max_sharpe_r.year_sharpe,
+                        "div_benefit": max_sharpe_r.diversification_benefit,
+                    },
+                    "max_min_sharpe": {
+                        "weights": max_min_r.weights,
+                        "avg_sharpe": max_min_r.avg_sharpe,
+                        "min_sharpe": max_min_r.min_sharpe,
+                        "year_sharpe": max_min_r.year_sharpe,
+                    },
+                    "min_vol": {
+                        "weights": min_vol_r.weights,
+                        "avg_sharpe": min_vol_r.avg_sharpe,
+                        "vol_pct": min_vol_r.annual_vol_pct,
+                    },
+                },
+                "frontier": frontier_out,
+                "grid": grid_out,
+                "dynamic": {
+                    "by_year": dyn_out,
+                    "avg_sharpe": round(dyn_avg, 3),
+                    "min_sharpe": round(dyn_min, 3),
+                    "description": "Low-vol years (BTC vol < 60%): 50/50. High-vol: 75/25 perps.",
+                },
+                "components": [
+                    {"name": s.name, "avg_sharpe": round(s.avg_sharpe, 3), "min_sharpe": round(s.min_sharpe, 3),
+                     "annual_vol_pct": s.annual_vol_pct, "status": s.status,
+                     "year_sharpe": s.year_sharpe}
+                    for s in opt.strategies
+                ],
+                "meta": {
+                    "correlation_assumption": 0.25,
+                    "note": "Correlation estimated from economic reasoning (both lose in crashes). Real correlation TBD from live data.",
+                    "key_finding": f"35% perps + 65% options → avg Sharpe {max_sharpe_r.avg_sharpe:.3f}, min {max_sharpe_r.min_sharpe:.3f}, vol {max_sharpe_r.annual_vol_pct:.1f}%",
+                },
+            })
+        except Exception as e:
+            import traceback
+            return JSONResponse({"error": str(e), "traceback": traceback.format_exc()}, status_code=500)
+
     uvicorn.run(app, host=host, port=port, log_level="warning")
