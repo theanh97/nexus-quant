@@ -1,0 +1,29 @@
+{
+  "run_name": "rs_acceleration_alpha_2025",
+  "seed": 42,
+  "venue": {"name": "binance_usdm", "kind": "crypto_perp", "vip_tier": 0},
+  "data": {
+    "provider": "binance_rest_v1",
+    "symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT"],
+    "start": "2025-01-01",
+    "end": "2026-01-01",
+    "bar_interval": "1h",
+    "cache_dir": ".cache/binance_rest"
+  },
+  "execution": {"style": "taker", "slippage_bps": 3.0},
+  "strategy": {
+    "name": "rs_acceleration_alpha",
+    "params": {
+      "k_per_side": 2,
+      "rs_short_bars": 72,
+      "rs_long_bars": 336,
+      "vol_lookback_bars": 168,
+      "target_gross_leverage": 0.30,
+      "rebalance_interval_bars": 48
+    }
+  },
+  "costs": {"fee_rate": 0.0005, "slippage_rate": 0.0003, "cost_multiplier": 1.0},
+  "benchmark": {"version": "v1", "walk_forward": {"enabled": true}},
+  "risk": {"max_drawdown": 0.30, "max_turnover_per_rebalance": 0.8, "max_gross_leverage": 0.7, "max_position_per_symbol": 0.3},
+  "self_learn": {"enabled": false}
+}
