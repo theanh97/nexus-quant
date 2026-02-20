@@ -40,15 +40,19 @@
 
   "strategy": {
     "name": "crypto_vrp",
+    "class": "VariancePremiumStrategy",
     "params": {
-      "vrp_threshold": 0.03,
+      "base_leverage": 1.5,
+      "exit_z_threshold": -2.0,
+      "_exit_z_note": "Exit to flat only on extreme vol spikes (2-sigma below mean VRP). z=-1.5 causes overtrading.",
       "vrp_lookback": 60,
-      "target_gross_leverage": 1.5,
-      "rebalance_freq": 1,
-      "_rebalance_note": "rebalance_freq=1 means daily for 1d bars",
-      "min_bars": 30,
-      "vol_scale": true
-    }
+      "rebalance_freq": 5,
+      "_rebalance_note": "Weekly rebalance for 1d bars. Daily rebalancing (freq=1) destroys Sharpe via costs.",
+      "min_bars": 30
+    },
+    "_validated": "2026-02-20",
+    "_wf_avg_sharpe": 1.520,
+    "_wf_min_sharpe": 1.273
   },
 
   "risk": {

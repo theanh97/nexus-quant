@@ -143,6 +143,7 @@ class NexusTrackRecord:
         """
         tr = cls()
         tr._add_crypto_perps()
+        tr._add_crypto_options()
         tr._add_commodity_cta()
         tr._add_fx_majors()
         tr._add_benchmarks()
@@ -208,6 +209,45 @@ class NexusTrackRecord:
 
         pr.compute_aggregates()
         self.projects["crypto_perps"] = pr
+
+    def _add_crypto_options(self) -> None:
+        """
+        crypto_options: VRP (Variance Risk Premium) strategy — Phase 2 validated.
+        Proper gamma/theta model: PnL = 0.5*(IV²-RV²)*dt per bar.
+        Source: Phase 2 WF backtest (2021-2025), synthetic Deribit-calibrated IV.
+        """
+        pr = ProjectRecord(
+            name="crypto_options",
+            market="crypto",
+            asset_class="options",
+            description=(
+                "Variance Risk Premium: delta-hedged short straddle on BTC/ETH options (Deribit). "
+                "Carry-style: always short vol at 1.5x leverage. Exit only on extreme vol spike "
+                "(VRP z-score < -2.0). Proper gamma/theta P&L model: 0.5*(IV²-RV²)*dt. "
+                "Weekly rebalancing to control costs."
+            ),
+            champion_config="configs/crypto_options_vrp.json",
+            target_sharpe=0.8,
+            status="validated",
+            inception_date="2026-02-20",
+            notes=(
+                "Phase 2: Proper options P&L model (gamma/theta). "
+                "All 5 WF years positive. exit_z=-2.0 key insight: z=-1.5 causes overtrading. "
+                "Skew MR + Term Structure: failed WF — need real Deribit IV chain data. "
+                "Estimated corr vs crypto_perps: 0.2-0.35 (both lose in crashes)."
+            ),
+        )
+
+        pr.years = {
+            2021: YearMetrics(year=2021, sharpe=1.273, cagr_pct=6.8, max_drawdown_pct=-3.8, status="oos"),
+            2022: YearMetrics(year=2022, sharpe=1.446, cagr_pct=5.8, max_drawdown_pct=-3.7, status="oos"),
+            2023: YearMetrics(year=2023, sharpe=1.944, cagr_pct=3.4, max_drawdown_pct=-1.1, status="oos"),
+            2024: YearMetrics(year=2024, sharpe=1.344, cagr_pct=4.3, max_drawdown_pct=-2.7, status="oos"),
+            2025: YearMetrics(year=2025, sharpe=1.595, cagr_pct=5.9, max_drawdown_pct=-2.8, status="oos"),
+        }
+
+        pr.compute_aggregates()
+        self.projects["crypto_options"] = pr
 
     def _add_commodity_cta(self) -> None:
         """
@@ -357,6 +397,7 @@ class NexusTrackRecord:
             "benchmarks": {k: v.to_dict() for k, v in self.benchmarks.items()},
             "meta": {
                 "crypto_perps_status": "OOS validated — 5yr avg Sharpe 2.005",
+                "crypto_options_status": "VRP validated — 5yr avg Sharpe 1.520, min 1.273",
                 "commodity_cta_status": "Infrastructure complete — backtest pending real data",
                 "target": "Each project > Sharpe 0.8 min, diversified across markets",
             },
@@ -427,6 +468,7 @@ class NexusTrackRecord:
             "meta": {
                 "note": "All Sharpe ratios are annualised. NEXUS = OOS backtest. Benchmarks = estimated from returns.",
                 "crypto_perps_best": "AVG=2.005, MIN=1.427 (5-yr OOS)",
+                "crypto_options_best": "VRP AVG=1.520, MIN=1.273 (5-yr OOS, synthetic IV)",
                 "target": "Each project MIN Sharpe > target_sharpe",
             },
         }

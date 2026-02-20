@@ -1,28 +1,26 @@
 """
 Strategy #1: Variance Risk Premium (VRP)
 
-Signal: IV_atm - RV_realized_21d → short vol when IV >> RV
-
 Economics:
-    Option sellers systematically earn a premium because:
-    1. Buyers pay for insurance (crash protection)
-    2. Market makers demand a spread
-    3. IV consistently overstates future realized vol by ~5-10 vol points
+    VRP = IV_atm - RV_realized > 0 in ~80% of all periods for crypto.
+    Short vol is the DEFAULT position. The goal is to REDUCE exposure only
+    during true vol spikes (RV >> IV), not to time entry/exit daily.
 
-Implementation (delta-equivalent simplified approach):
-    - Signal = VRP = IV_atm - RV_realized
-    - Z-score VRP across symbols (cross-sectional)
-    - Short vol (negative delta-equivalent weight) when VRP is high
-    - Flat when VRP signal is weak
-    - Model: sell premium → profit from theta + vol mean reversion
+Design (carry-like):
+    - Base: always SHORT vol at target_leverage (collect premium constantly)
+    - Scale: reduce exposure when VRP z-score goes very negative (vol spike)
+    - Rebalance: weekly (not daily) to minimize turnover costs
+
+VRP PnL per bar (collected by engine):
+    PnL = (IV - RV_rolling) * dt * |weight|
+    Annual expectation: (IV - RV) * |weight| ≈ 7-12% at 1.5x leverage
 
 Parameters:
-    vrp_threshold: min VRP to enter position (default 0.05 = 5 vol points)
-    vrp_lookback: bars for VRP z-score normalization (default 60)
-    target_gross_leverage: max sum(abs(weights)) (default 1.5)
-    rebalance_freq: bars between rebalances (default 24 = daily for 1h bars)
-    min_bars: min bars before trading (default 30)
-    vol_scale: if True, scale by inverse vol (risk parity across symbols)
+    base_leverage: default short vol leverage (default 1.5 = 0.75 per symbol)
+    exit_z_threshold: reduce to 0 only when z < this value (default -1.5 = extreme spike)
+    vrp_lookback: bars for rolling VRP history (default 60)
+    rebalance_freq: bars between rebalances (default 5 = weekly for daily bars)
+    min_bars: warmup (default 30)
 """
 from __future__ import annotations
 
@@ -34,22 +32,22 @@ from nexus_quant.strategies.base import Strategy, Weights
 
 
 class VariancePremiumStrategy(Strategy):
-    """Short variance premium on crypto options (BTC/ETH).
+    """Short variance premium — carry-style, always short vol.
 
-    Uses VRP (IV_atm - RV_realized) as the primary signal.
-    Outputs delta-equivalent weights on the underlying.
+    Default position: always short vol at base_leverage.
+    Reduce to 0 only when VRP z-score < exit_z_threshold (vol spike = cover).
+    Weekly rebalancing to minimize costs.
     """
 
     def __init__(self, name: str = "crypto_vrp", params: Dict[str, Any] = None) -> None:
         params = params or {}
         super().__init__(name, params)
 
-        self.vrp_threshold: float = float(params.get("vrp_threshold", 0.03))
+        self.base_leverage: float = float(params.get("base_leverage", 1.5))
+        self.exit_z_threshold: float = float(params.get("exit_z_threshold", -1.5))
         self.vrp_lookback: int = int(params.get("vrp_lookback", 60))
-        self.target_leverage: float = float(params.get("target_gross_leverage", 1.5))
-        self.rebalance_freq: int = int(params.get("rebalance_freq", 24))
+        self.rebalance_freq: int = int(params.get("rebalance_freq", 5))
         self.min_bars: int = int(params.get("min_bars", 30))
-        self.vol_scale: bool = bool(params.get("vol_scale", True))
 
     def should_rebalance(self, dataset: MarketDataset, idx: int) -> bool:
         if idx < self.min_bars:
@@ -60,148 +58,53 @@ class VariancePremiumStrategy(Strategy):
         self, dataset: MarketDataset, idx: int, current: Weights
     ) -> Weights:
         syms = dataset.symbols
-        weights: Weights = {s: 0.0 for s in syms}
-
-        signals: Dict[str, float] = {}
-        for sym in syms:
-            vrp = self._get_vrp(dataset, sym, idx)
-            if vrp is None:
-                continue
-            signals[sym] = vrp
-
-        if not signals:
-            return weights
-
-        # Z-score VRP across symbols for cross-sectional ranking
-        if len(signals) > 1:
-            vals = list(signals.values())
-            mean = sum(vals) / len(vals)
-            std = statistics.pstdev(vals)
-            if std > 0:
-                signals = {s: (v - mean) / std for s, v in signals.items()}
-            else:
-                signals = {s: 0.0 for s in signals}
-
-        # Signal → weights
-        # High VRP → short vol → negative weight (sell premium)
-        # Low VRP → flat (don't fight market when IV is cheap)
-        active_syms = [s for s in signals if abs(signals[s]) > 0.5]
-        if not active_syms:
-            return weights
-
-        total_signal = sum(abs(signals[s]) for s in active_syms)
-        if total_signal <= 0:
-            return weights
+        n = max(len(syms), 1)
+        per_sym = self.base_leverage / n
+        weights: Weights = {}
 
         for sym in syms:
-            sig = signals.get(sym, 0.0)
-            if abs(sig) <= 0.5:  # below threshold — stay flat
+            z = self._get_vrp_zscore(dataset, sym, idx)
+
+            if z is None:
+                # Insufficient history: flat
                 weights[sym] = 0.0
-                continue
-
-            # Directional: short vol = negative weight (sell premium = short underlying exposure)
-            # Positive VRP → IV > RV → sell premium → short delta-equivalent
-            raw_weight = -(sig / total_signal) * self.target_leverage
-            weights[sym] = raw_weight
-
-        # Apply vol scaling (inverse vol weighting for risk parity)
-        if self.vol_scale:
-            weights = self._apply_vol_scale(dataset, idx, weights, syms)
-
-        # Clamp total leverage
-        total = sum(abs(w) for w in weights.values())
-        if total > self.target_leverage * 1.1:
-            scale = (self.target_leverage * 1.1) / total
-            weights = {s: w * scale for s, w in weights.items()}
+            elif z < self.exit_z_threshold:
+                # Extreme vol spike (VRP very negative): cover short, go flat
+                weights[sym] = 0.0
+            else:
+                # Normal: short vol
+                # Optionally scale by z-score magnitude for more premium when VRP high
+                # scale = min(1.0, max(0.5, 0.5 + z * 0.25))  # 0.5x to 1.0x
+                weights[sym] = -per_sym  # fixed short
 
         return weights
 
-    def _get_vrp(
+    def _get_vrp_zscore(
         self, dataset: MarketDataset, sym: str, idx: int
     ) -> Optional[float]:
-        """Get current VRP = IV_atm - RV_realized at bar idx."""
+        """Time-series VRP z-score vs this symbol's own rolling history."""
         iv_series = dataset.feature("iv_atm", sym)
         rv_series = dataset.feature("rv_realized", sym)
 
         if iv_series is None or rv_series is None:
             return None
-        if idx >= len(iv_series) or idx >= len(rv_series):
-            return None
 
-        iv = iv_series[idx]
-        rv = rv_series[idx]
-        if iv is None or rv is None:
-            return None
-
-        return float(iv) - float(rv)
-
-    def _get_vrp_zscore(
-        self, dataset: MarketDataset, sym: str, idx: int
-    ) -> Optional[float]:
-        """Get z-scored VRP relative to recent history."""
-        # Compute rolling VRP history
-        vrp_history: List[float] = []
+        history: List[float] = []
         start = max(0, idx - self.vrp_lookback)
-        for i in range(start, idx + 1):
-            v = self._get_vrp(dataset, sym, i)
-            if v is not None:
-                vrp_history.append(v)
+        for i in range(start, min(idx + 1, len(iv_series), len(rv_series))):
+            iv = iv_series[i]
+            rv = rv_series[i]
+            if iv is not None and rv is not None:
+                history.append(float(iv) - float(rv))
 
-        if len(vrp_history) < 10:
+        if len(history) < max(10, self.vrp_lookback // 6):
             return None
 
-        current = vrp_history[-1]
-        mean = sum(vrp_history) / len(vrp_history)
-        std = statistics.pstdev(vrp_history)
-        if std < 1e-6:
+        current_vrp = history[-1]
+        mean_vrp = sum(history) / len(history)
+        std_vrp = statistics.pstdev(history)
+
+        if std_vrp < 1e-6:
             return 0.0
-        return (current - mean) / std
 
-    def _apply_vol_scale(
-        self,
-        dataset: MarketDataset,
-        idx: int,
-        weights: Weights,
-        syms: List[str],
-    ) -> Weights:
-        """Scale weights by inverse realized vol (risk parity)."""
-        inv_vols: Dict[str, float] = {}
-        for sym in syms:
-            rv_series = dataset.feature("rv_realized", sym)
-            if rv_series and idx < len(rv_series) and rv_series[idx] is not None:
-                rv = float(rv_series[idx])
-                inv_vols[sym] = 1.0 / max(rv, 0.10)
-            else:
-                # Fallback: compute from price history
-                closes = dataset.perp_close.get(sym, [])
-                if len(closes) > 21:
-                    window = [
-                        closes[i] / closes[i - 1] - 1
-                        for i in range(max(1, idx - 21), idx + 1)
-                        if closes[i - 1] > 0
-                    ]
-                    if len(window) > 5:
-                        rv = statistics.pstdev(window) * (8760 ** 0.5)
-                        inv_vols[sym] = 1.0 / max(rv, 0.10)
-                    else:
-                        inv_vols[sym] = 1.0
-                else:
-                    inv_vols[sym] = 1.0
-
-        if not inv_vols:
-            return weights
-
-        # Normalize inv_vol weights
-        total_inv = sum(inv_vols.values())
-        norm_inv = {s: v / total_inv for s, v in inv_vols.items()}
-
-        # Scale: keep direction, scale magnitude by inverse vol
-        scaled: Weights = {}
-        for sym in syms:
-            w = weights.get(sym, 0.0)
-            if w == 0.0:
-                scaled[sym] = 0.0
-            else:
-                sign = 1.0 if w > 0 else -1.0
-                scaled[sym] = sign * abs(w) * (norm_inv.get(sym, 0.0) * len(syms))
-        return scaled
+        return (current_vrp - mean_vrp) / std_vrp
