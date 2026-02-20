@@ -1,8 +1,8 @@
 {
-  "_comment": "PRODUCTION CONFIG \u2014 P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
+  "_comment": "PRODUCTION CONFIG — P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
   "_version": "2.24.0",
   "_created": "2026-02-21",
-  "_validated": "Phases 91-129: walk-forward stable, OOS validated; breadth regime switching v2.2.0; dispersion v2.3.0; TS overlay v2.4.0; TS fine-tune v2.5.0; F168 v2.6.0; vol fine-tune v2.7.0; breadth lb=192 LOYO 5/5 v2.8.0 OBJ=2.2095; TS short=12h long=96h LOYO 4/5 WF 2/2 v2.9.0 OBJ=2.2423; TS thresh re-sweep P168 rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 v2.10.0 OBJ=2.3510 (\u0394=+0.1087); boost fine-tune P169 bt=0.25 bs=1.50 LOYO 3/5 v2.11.0 OBJ=2.3599 (\u0394=+0.0089); disp fine-tune P170 scale=1.05 thr=0.60 pct=240 LOYO 4/5 v2.12.0 OBJ=2.4148 (\u0394=+0.0549); Vol overlay re-tune (P171): scale=0.4/boost=0.1/thr=0.5 LOYO 3/5 \u0394=+0.0005 OBJ=2.4153 \u2014 PRODUCTION v2.13.0; I460 bw=120 P172 LOYO 4/5 v2.14.0 OBJ=2.4299 (\u0394=+0.0146); Regime weight re-opt (P172): LOW_f168=0.3/MID_f168=0.3/HIGH_f168=0.15 LOYO 3/5 \u0394=+0.0664 OBJ=2.4817 \u2014 PRODUCTION v2.14.0; I415 bw sweep P175: bw=216\u2192144 LOYO 3/5 \u0394=+0.0436 OBJ=2.5396 \u2014 PRODUCTION v2.15.0; Disp overlay P179: scale=1.05\u21921.0 thr=0.60 LOYO 4/5 \u0394\u2248+0.009 \u2014 PRODUCTION v2.16.0; Breadth thr P181: PL=0.35\u21920.2 PH=0.65\u21920.6 LOYO 5/5 \u0394=+0.0401 \u2014 PRODUCTION 2.17.0; Regime weight re-opt P182: LOW_f168=0.35 MID_f168=0.35 HIGH_f168=0.1 LOYO 5/5 \u0394=+0.0461 \u2014 PRODUCTION 2.18.0; FTS boost re-tune (P176): bt=0.35/bs=1.6 LOYO 3/5 \u0394=+0.0078 OBJ=2.4895 \u2014 PRODUCTION v2.15.0; V1 weights re-tune P185: wc=0.35 wm=0.4 wr=0.25 LOYO 4/5 \u0394=+0.0256 OBJ=2.5945 \u2014 PRODUCTION 2.15.1; [META FIX] Version corrected to 2.19.0: accounts for P179(disp scale=1.0)+P181(breadth PL=0.20 PH=0.60)+P182(regime weights LOW/MID f168=0.35 HIGH f168=0.10)+P185(V1 wc=0.35 wm=0.40 wr=0.25 LOYO 4/5 OBJ=2.5945); V1 mr_lb re-sweep P187: 72\u219284 LOYO 4/5 \u0394=+0.1158 OBJ=2.7103 \u2014 PRODUCTION 2.20.0; Regime V1 weight re-opt P189: LOW_v1=0.4000 MID_v1=0.3000 HIGH_v1=0.0600 LOYO 4/5 \u0394=+0.1403 OBJ=2.8506 \u2014 PRODUCTION 2.21.0; V1 weight extend P190: LOW_v1=0.4800 MID_v1=0.3500 LOYO 4/5 \u0394=+0.0154 OBJ=2.8660 \u2014 PRODUCTION 2.22.0; V1 vol_lb sweep P190: 168\u2192192 LOYO 4/5 \u0394=+0.0185 OBJ=2.8691 \u2014 PRODUCTION 2.23.0; I460 bw sweep P194: 120->168 LOYO 3/5 delta=+0.0106 OBJ=2.8797 \u2014 PRODUCTION 2.24.0",
+  "_validated": "Phases 91-129: walk-forward stable, OOS validated; breadth regime switching v2.2.0; dispersion v2.3.0; TS overlay v2.4.0; TS fine-tune v2.5.0; F168 v2.6.0; vol fine-tune v2.7.0; breadth lb=192 LOYO 5/5 v2.8.0 OBJ=2.2095; TS short=12h long=96h LOYO 4/5 WF 2/2 v2.9.0 OBJ=2.2423; TS thresh re-sweep P168 rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 v2.10.0 OBJ=2.3510 (Δ=+0.1087); boost fine-tune P169 bt=0.25 bs=1.50 LOYO 3/5 v2.11.0 OBJ=2.3599 (Δ=+0.0089); disp fine-tune P170 scale=1.05 thr=0.60 pct=240 LOYO 4/5 v2.12.0 OBJ=2.4148 (Δ=+0.0549); Vol overlay re-tune (P171): scale=0.4/boost=0.1/thr=0.5 LOYO 3/5 Δ=+0.0005 OBJ=2.4153 — PRODUCTION v2.13.0; I460 bw=120 P172 LOYO 4/5 v2.14.0 OBJ=2.4299 (Δ=+0.0146); Regime weight re-opt (P172): LOW_f168=0.3/MID_f168=0.3/HIGH_f168=0.15 LOYO 3/5 Δ=+0.0664 OBJ=2.4817 — PRODUCTION v2.14.0; I415 bw sweep P175: bw=216→144 LOYO 3/5 Δ=+0.0436 OBJ=2.5396 — PRODUCTION v2.15.0; Disp overlay P179: scale=1.05→1.0 thr=0.60 LOYO 4/5 Δ≈+0.009 — PRODUCTION v2.16.0; Breadth thr P181: PL=0.35→0.2 PH=0.65→0.6 LOYO 5/5 Δ=+0.0401 — PRODUCTION 2.17.0; Regime weight re-opt P182: LOW_f168=0.35 MID_f168=0.35 HIGH_f168=0.1 LOYO 5/5 Δ=+0.0461 — PRODUCTION 2.18.0; FTS boost re-tune (P176): bt=0.35/bs=1.6 LOYO 3/5 Δ=+0.0078 OBJ=2.4895 — PRODUCTION v2.15.0; V1 weights re-tune P185: wc=0.35 wm=0.4 wr=0.25 LOYO 4/5 Δ=+0.0256 OBJ=2.5945 — PRODUCTION 2.15.1; [META FIX] Version corrected to 2.19.0: accounts for P179(disp scale=1.0)+P181(breadth PL=0.20 PH=0.60)+P182(regime weights LOW/MID f168=0.35 HIGH f168=0.10)+P185(V1 wc=0.35 wm=0.40 wr=0.25 LOYO 4/5 OBJ=2.5945); V1 mr_lb re-sweep P187: 72→84 LOYO 4/5 Δ=+0.1158 OBJ=2.7103 — PRODUCTION 2.20.0; Regime V1 weight re-opt P189: LOW_v1=0.4000 MID_v1=0.3000 HIGH_v1=0.0600 LOYO 4/5 Δ=+0.1403 OBJ=2.8506 — PRODUCTION 2.21.0; V1 weight extend P190: LOW_v1=0.4800 MID_v1=0.3500 LOYO 4/5 Δ=+0.0154 OBJ=2.8660 — PRODUCTION 2.22.0; V1 vol_lb sweep P190: 168→192 LOYO 4/5 Δ=+0.0185 OBJ=2.8691 — PRODUCTION 2.23.0; I460 bw sweep P194: 120->168 LOYO 3/5 delta=+0.0106 OBJ=2.8797 — PRODUCTION 2.24.0",
   "run_name": "production_p91b",
   "seed": 42,
   "venue": {
@@ -62,28 +62,28 @@
   },
   "volume_tilt": {
     "_comment": "Phase 111-113: reduce leverage when aggregate volume momentum is high (crowded market)",
-    "_validated": "3/4 WF windows positive, avg \u0394=+0.066, ratio perfectly stable (std=0.00)",
+    "_validated": "3/4 WF windows positive, avg Δ=+0.066, ratio perfectly stable (std=0.00)",
     "enabled": true,
     "lookback_bars": 168,
     "tilt_ratio": 0.65,
     "signal": "vol_mom_z",
-    "condition": "z_score > 0 \u2192 multiply returns by tilt_ratio",
-    "mechanism": "Sum perp_volume across all symbols \u2192 log momentum (168h) \u2192 rolling z-score \u2192 contrarian tilt"
+    "condition": "z_score > 0 → multiply returns by tilt_ratio",
+    "mechanism": "Sum perp_volume across all symbols → log momentum (168h) → rolling z-score → contrarian tilt"
   },
   "vol_regime_overlay": {
     "_comment": "Phase 127-129 + fine-tuned P156: reduce leverage + tilt F168 when BTC price vol is high",
-    "_validated": "P129 LOYO 3/5 wins avg \u0394=+0.232; P156 fine-tune: scale 0.50\u21920.40 + boost 0.20\u21920.15, LOYO 4/5 OBJ=2.1448; P171 retune LOYO 3/5 \u0394=+0.0005",
+    "_validated": "P129 LOYO 3/5 wins avg Δ=+0.232; P156 fine-tune: scale 0.50→0.40 + boost 0.20→0.15, LOYO 4/5 OBJ=2.1448; P171 retune LOYO 3/5 Δ=+0.0005",
     "enabled": true,
     "window_bars": 168,
     "threshold": 0.5,
     "scale_factor": 0.4,
     "f144_boost": 0.1,
     "signal": "btc_rolling_price_vol",
-    "condition": "ann_vol > 0.50 \u2192 tilt F168 +15% and scale leverage \u00d70.40",
-    "mechanism": "BTC hourly returns \u2192 rolling 168h std \u00d7 \u221a8760 \u2192 if > 0.50 \u2192 reduce \u00d70.40 + tilt F168 +15%. Fine-tuned P156: less aggressive = more alpha in vol regime."
+    "condition": "ann_vol > 0.50 → tilt F168 +15% and scale leverage ×0.40",
+    "mechanism": "BTC hourly returns → rolling 168h std × √8760 → if > 0.50 → reduce ×0.40 + tilt F168 +15%. Fine-tuned P156: less aggressive = more alpha in vol regime."
   },
   "ensemble": {
-    "_comment": "4-signal blend \u2014 DO NOT remove v1 (regime insurance, Phase 102)",
+    "_comment": "4-signal blend — DO NOT remove v1 (regime insurance, Phase 102)",
     "weights": {
       "v1": 0.2747,
       "i460bw168": 0.1967,
@@ -100,7 +100,7 @@
           "w_mean_reversion": 0.25,
           "momentum_lookback_bars": 336,
           "mean_reversion_lookback_bars": 84,
-          "vol_lookback_bars": 168,
+          "vol_lookback_bars": 192,
           "target_gross_leverage": 0.35,
           "rebalance_interval_bars": 60
         }
@@ -110,7 +110,7 @@
         "params": {
           "k_per_side": 4,
           "lookback_bars": 460,
-          "beta_window_bars": 120,
+          "beta_window_bars": 168,
           "target_gross_leverage": 0.3,
           "rebalance_interval_bars": 48
         }
@@ -138,7 +138,7 @@
     }
   },
   "monitoring": {
-    "_comment": "Thresholds for live monitoring \u2014 halt trading if breached",
+    "_comment": "Thresholds for live monitoring — halt trading if breached",
     "halt_conditions": {
       "rolling_30d_sharpe_below": -1.0,
       "max_drawdown_pct": 15.0,
@@ -152,7 +152,7 @@
       "daily_turnover_above_pct": 50.0
     },
     "expected_performance": {
-      "annual_sharpe_backtest": 2.866,
+      "annual_sharpe_backtest": 2.8797,
       "annual_sharpe_realistic": 0.8,
       "annual_sharpe_conservative": 0.7,
       "max_drawdown_backtest_pct": 25.1,
@@ -194,14 +194,14 @@
   },
   "global_ls_overlay": {
     "_comment": "Phase 118b: Binance Vision global long/short ratio z-score overlay",
-    "_validated": "IS avg \u0394=+0.380 (2022/2023/2024), OOS 2025 \u0394=+0.1764 \u2014 WF PASS (3 IS + OOS primary gate)",
-    "_candidate_notes": "taker_ls_z168_low also passes (OOS25=+0.07, OOS26=+0.17) \u2014 consider Phase 119 test",
+    "_validated": "IS avg Δ=+0.380 (2022/2023/2024), OOS 2025 Δ=+0.1764 — WF PASS (3 IS + OOS primary gate)",
+    "_candidate_notes": "taker_ls_z168_low also passes (OOS25=+0.07, OOS26=+0.17) — consider Phase 119 test",
     "enabled": true,
     "metric": "global_ls_ratio",
     "lookback_bars": 168,
     "tilt_ratio": 0.65,
     "direction": "reduce_on_low",
-    "mechanism": "Binance Vision global L/S account ratio \u2192 log momentum \u2192 rolling 168h z-score \u2192 when z < 0 (crowd net short) \u2192 reduce portfolio returns by tilt_ratio=0.65 (contrarian protection)",
+    "mechanism": "Binance Vision global L/S account ratio → log momentum → rolling 168h z-score → when z < 0 (crowd net short) → reduce portfolio returns by tilt_ratio=0.65 (contrarian protection)",
     "data_source": "data.binance.vision daily metrics CSV resampled to 1h; local cache in .cache/binance_vision_metrics/",
     "walk_forward": {
       "2022_is": "+0.270",
@@ -214,7 +214,7 @@
   },
   "breadth_regime_switching": {
     "_comment": "Phase 144-146 + fine-tuned P158: Breadth regime classifier for dynamic weight switching",
-    "_validated": "P144-P146 orig; P158 param sweep LOYO 5/5 (perfect!) OBJ=2.2095 (\u0394=+0.0647) \u2014 lb=192 pw=336 p=0.35/0.65; V1 vol_lb sweep P190: vol_lb=168\u2192192 LOYO 4/5 \u0394=+0.0185 OBJ=2.8691",
+    "_validated": "P144-P146 orig; P158 param sweep LOYO 5/5 (perfect!) OBJ=2.2095 (Δ=+0.0647) — lb=192 pw=336 p=0.35/0.65; V1 vol_lb sweep P190: vol_lb=168→192 LOYO 4/5 Δ=+0.0185 OBJ=2.8691",
     "enabled": true,
     "n_regimes": 3,
     "signal": "cross_sectional_price_breadth",
@@ -228,38 +228,38 @@
         "v1": 0.48,
         "i460bw168": 0.0642,
         "i415bw216": 0.1058,
-        "_regime": "LOW momentum (<20th pct breadth) \u2014 defensive"
+        "_regime": "LOW momentum (<20th pct breadth) — defensive"
       },
       "MID": {
         "f168": 0.35,
         "v1": 0.35,
         "i460bw168": 0.1119,
         "i415bw216": 0.1881,
-        "_regime": "MID momentum (20-60%) \u2014 balanced"
+        "_regime": "MID momentum (20-60%) — balanced"
       },
       "HIGH": {
         "f168": 0.1,
         "v1": 0.06,
         "i460bw168": 0.3,
         "i415bw216": 0.54,
-        "_regime": "HIGH momentum (>60th pct) \u2014 momentum-heavy"
+        "_regime": "HIGH momentum (>60th pct) — momentum-heavy"
       }
     },
     "mechanism": "At each bar: compute % symbols with positive 192h return (breadth). Rolling percentile rank vs prior 336h. If <20th pct -> LOW weights. If 20-60% -> MID weights. If >60% -> HIGH weights. P158 tune: lb=192, thresholds 0.35/0.65. P181 tune: PL=0.20 PH=0.60 (wider HIGH band). P182 tune: LOW/MID f168=0.35 HIGH f168=0.10."
   },
   "funding_dispersion_overlay": {
-    "_comment": "Phase 148: Funding rate cross-sectional dispersion boost \u2014 fine-tuned P170",
-    "_validated": "P148 orig LOYO 3/5 OBJ=1.8886; P170 fine-tune scale=1.05 thr=0.60 pct=240 LOYO 4/5 OBJ=2.4148 (\u0394=+0.0549). Key finding: scale was over-boosting (1.15\u21921.05), shorter lookback (336\u2192240) more responsive",
+    "_comment": "Phase 148: Funding rate cross-sectional dispersion boost — fine-tuned P170",
+    "_validated": "P148 orig LOYO 3/5 OBJ=1.8886; P170 fine-tune scale=1.05 thr=0.60 pct=240 LOYO 4/5 OBJ=2.4148 (Δ=+0.0549). Key finding: scale was over-boosting (1.15→1.05), shorter lookback (336→240) more responsive",
     "enabled": true,
     "signal": "funding_rate_cross_sectional_std",
     "percentile_window": 240,
     "boost_threshold_pct": 0.6,
     "boost_scale": 1.0,
-    "mechanism": "At each bar: compute std of funding rates across all 10 symbols. Rolling 240h percentile rank. If std_pct > 0.60 \u2192 boost portfolio returns \u00d71.05. P170 fine-tune: scale 1.15\u21921.05 (less aggressive, TS overlay already handles amplification), thr 0.75\u21920.60 (wider but gentler trigger), pct 336\u2192240 (more responsive 10-day window). LOYO 4/5 \u0394=+0.0549."
+    "mechanism": "At each bar: compute std of funding rates across all 10 symbols. Rolling 240h percentile rank. If std_pct > 0.60 → boost portfolio returns ×1.05. P170 fine-tune: scale 1.15→1.05 (less aggressive, TS overlay already handles amplification), thr 0.75→0.60 (wider but gentler trigger), pct 336→240 (more responsive 10-day window). LOYO 4/5 Δ=+0.0549."
   },
   "funding_term_structure_overlay": {
-    "_comment": "Phase 150/152/164-165: Bidirectional funding term structure spread overlay \u2014 windows fine-tuned P164-165",
-    "_validated": "P150b LOYO 4/5, avg_delta=+0.1600, OBJ=2.0079; P152 WF 2/2 avg_delta=+0.1077, fine-tuned OBJ=2.0851; P164-165 window sweep: short=12h long=96h LOYO 4/5 WF 2/2 avg_delta=+0.1264 OBJ=2.2423 (\u0394=+0.0328 vs v2.8.0); P168 threshold re-sweep rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 OBJ=2.3510; P169 boost fine-tune bt=0.25 bs=1.50 LOYO 3/5 OBJ=2.3599 (\u0394=+0.0089); P176 boost retune LOYO 3/5 \u0394=+0.0078",
+    "_comment": "Phase 150/152/164-165: Bidirectional funding term structure spread overlay — windows fine-tuned P164-165",
+    "_validated": "P150b LOYO 4/5, avg_delta=+0.1600, OBJ=2.0079; P152 WF 2/2 avg_delta=+0.1077, fine-tuned OBJ=2.0851; P164-165 window sweep: short=12h long=96h LOYO 4/5 WF 2/2 avg_delta=+0.1264 OBJ=2.2423 (Δ=+0.0328 vs v2.8.0); P168 threshold re-sweep rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 OBJ=2.3510; P169 boost fine-tune bt=0.25 bs=1.50 LOYO 3/5 OBJ=2.3599 (Δ=+0.0089); P176 boost retune LOYO 3/5 Δ=+0.0078",
     "enabled": true,
     "signal": "funding_term_structure_spread",
     "short_window_bars": 12,
@@ -269,13 +269,6 @@
     "reduce_scale": 0.4,
     "boost_threshold": 0.35,
     "boost_scale": 1.6,
-    "mechanism": "spread = rolling_mean(cross-sectional funding, 12h) - rolling_mean(cross-sectional funding, 96h). Rolling percentile (336h). If spread_pct > 60th: scale\u00d70.40. If spread_pct < 25th: scale\u00d71.50. P168 re-sweep: rt=0.70\u21920.60, rs=0.60\u21920.40, bs=1.15\u21921.25. P169 fine-tune: bt=0.30\u21920.25 (tighter boost window), bs=1.25\u21921.50 (stronger boost). Peak at bs=1.50 confirmed (bs=1.60 regresses). LOYO 3/5 \u0394=+0.0089."
-  },
-  "v1_tuned_params": {
-    "vol_lookback_bars": 192,
-    "_note": "P190 validated: vol_lb=192 LOYO 4/5"
-  },
-  "i460_tuned_params": {
-    "beta_window_bars": 168
+    "mechanism": "spread = rolling_mean(cross-sectional funding, 12h) - rolling_mean(cross-sectional funding, 96h). Rolling percentile (336h). If spread_pct > 60th: scale×0.40. If spread_pct < 25th: scale×1.50. P168 re-sweep: rt=0.70→0.60, rs=0.60→0.40, bs=1.15→1.25. P169 fine-tune: bt=0.30→0.25 (tighter boost window), bs=1.25→1.50 (stronger boost). Peak at bs=1.50 confirmed (bs=1.60 regresses). LOYO 3/5 Δ=+0.0089."
   }
 }
