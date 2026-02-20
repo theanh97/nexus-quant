@@ -1,0 +1,273 @@
+{
+  "phase": 145,
+  "description": "Regime Classifier for Live Weight Switching",
+  "hypothesis": "Rolling funding rate percentile classifies momentum regime \u2192 switch weights",
+  "elapsed_seconds": 94.0,
+  "baseline_obj": 1.5672,
+  "ph144_is_benchmark": 1.9306,
+  "best_classifier": {
+    "signal": "breadth",
+    "window": 84,
+    "p_low": 0.33,
+    "p_high": 0.67,
+    "yearly": {
+      "2021": 2.629,
+      "2022": 1.7904,
+      "2023": 1.5773,
+      "2024": 2.9694,
+      "2025": 1.8152
+    },
+    "avg_sharpe": 2.1563,
+    "min_sharpe": 1.5773,
+    "obj": 1.8851
+  },
+  "top10_classifiers": [
+    {
+      "signal": "breadth",
+      "window": 84,
+      "p_low": 0.33,
+      "p_high": 0.67,
+      "yearly": {
+        "2021": 2.629,
+        "2022": 1.7904,
+        "2023": 1.5773,
+        "2024": 2.9694,
+        "2025": 1.8152
+      },
+      "avg_sharpe": 2.1563,
+      "min_sharpe": 1.5773,
+      "obj": 1.8851
+    },
+    {
+      "signal": "breadth",
+      "window": 168,
+      "p_low": 0.33,
+      "p_high": 0.67,
+      "yearly": {
+        "2021": 2.629,
+        "2022": 1.7904,
+        "2023": 1.5773,
+        "2024": 2.9694,
+        "2025": 1.8152
+      },
+      "avg_sharpe": 2.1563,
+      "min_sharpe": 1.5773,
+      "obj": 1.8851
+    },
+    {
+      "signal": "breadth",
+      "window": 336,
+      "p_low": 0.33,
+      "p_high": 0.67,
+      "yearly": {
+        "2021": 2.629,
+        "2022": 1.7904,
+        "2023": 1.5773,
+        "2024": 2.9694,
+        "2025": 1.8152
+      },
+      "avg_sharpe": 2.1563,
+      "min_sharpe": 1.5773,
+      "obj": 1.8851
+    },
+    {
+      "signal": "breadth",
+      "window": 84,
+      "p_low": 0.33,
+      "p_high": 0.6,
+      "yearly": {
+        "2021": 2.5983,
+        "2022": 1.8119,
+        "2023": 1.5542,
+        "2024": 3.0074,
+        "2025": 1.8135
+      },
+      "avg_sharpe": 2.1571,
+      "min_sharpe": 1.5542,
+      "obj": 1.8815
+    },
+    {
+      "signal": "breadth",
+      "window": 168,
+      "p_low": 0.33,
+      "p_high": 0.6,
+      "yearly": {
+        "2021": 2.5983,
+        "2022": 1.8119,
+        "2023": 1.5542,
+        "2024": 3.0074,
+        "2025": 1.8135
+      },
+      "avg_sharpe": 2.1571,
+      "min_sharpe": 1.5542,
+      "obj": 1.8815
+    },
+    {
+      "signal": "breadth",
+      "window": 336,
+      "p_low": 0.33,
+      "p_high": 0.6,
+      "yearly": {
+        "2021": 2.5983,
+        "2022": 1.8119,
+        "2023": 1.5542,
+        "2024": 3.0074,
+        "2025": 1.8135
+      },
+      "avg_sharpe": 2.1571,
+      "min_sharpe": 1.5542,
+      "obj": 1.8815
+    },
+    {
+      "signal": "breadth",
+      "window": 84,
+      "p_low": 0.4,
+      "p_high": 0.67,
+      "yearly": {
+        "2021": 2.5637,
+        "2022": 1.7827,
+        "2023": 1.5681,
+        "2024": 3.0101,
+        "2025": 1.7601
+      },
+      "avg_sharpe": 2.1369,
+      "min_sharpe": 1.5681,
+      "obj": 1.8598
+    },
+    {
+      "signal": "breadth",
+      "window": 168,
+      "p_low": 0.4,
+      "p_high": 0.67,
+      "yearly": {
+        "2021": 2.5637,
+        "2022": 1.7827,
+        "2023": 1.5681,
+        "2024": 3.0101,
+        "2025": 1.7601
+      },
+      "avg_sharpe": 2.1369,
+      "min_sharpe": 1.5681,
+      "obj": 1.8598
+    },
+    {
+      "signal": "breadth",
+      "window": 336,
+      "p_low": 0.4,
+      "p_high": 0.67,
+      "yearly": {
+        "2021": 2.5637,
+        "2022": 1.7827,
+        "2023": 1.5681,
+        "2024": 3.0101,
+        "2025": 1.7601
+      },
+      "avg_sharpe": 2.1369,
+      "min_sharpe": 1.5681,
+      "obj": 1.8598
+    },
+    {
+      "signal": "breadth",
+      "window": 84,
+      "p_low": 0.4,
+      "p_high": 0.6,
+      "yearly": {
+        "2021": 2.533,
+        "2022": 1.804,
+        "2023": 1.5451,
+        "2024": 3.048,
+        "2025": 1.7584
+      },
+      "avg_sharpe": 2.1377,
+      "min_sharpe": 1.5451,
+      "obj": 1.8556
+    }
+  ],
+  "capture_ratio": 0.8748,
+  "delta_obj": 0.3179,
+  "loyo": {
+    "results": [
+      {
+        "test_year": "2021",
+        "train_config": {
+          "signal": "breadth",
+          "window": 84,
+          "p_low": 0.33,
+          "p_high": 0.67,
+          "avg_sharpe": 2.1563,
+          "min_sharpe": 1.5773,
+          "obj": 1.8851
+        },
+        "test_sharpe": 2.8715,
+        "baseline_sharpe": 1.6744,
+        "delta": 1.1971
+      },
+      {
+        "test_year": "2022",
+        "train_config": {
+          "signal": "breadth",
+          "window": 84,
+          "p_low": 0.33,
+          "p_high": 0.67,
+          "avg_sharpe": 2.1563,
+          "min_sharpe": 1.5773,
+          "obj": 1.8851
+        },
+        "test_sharpe": 1.5599,
+        "baseline_sharpe": 1.496,
+        "delta": 0.0639
+      },
+      {
+        "test_year": "2023",
+        "train_config": {
+          "signal": "breadth",
+          "window": 84,
+          "p_low": 0.33,
+          "p_high": 0.6,
+          "avg_sharpe": 2.1571,
+          "min_sharpe": 1.5542,
+          "obj": 1.8815
+        },
+        "test_sharpe": 1.4516,
+        "baseline_sharpe": 1.3221,
+        "delta": 0.1295
+      },
+      {
+        "test_year": "2024",
+        "train_config": {
+          "signal": "breadth",
+          "window": 84,
+          "p_low": 0.33,
+          "p_high": 0.67,
+          "avg_sharpe": 2.1563,
+          "min_sharpe": 1.5773,
+          "obj": 1.8851
+        },
+        "test_sharpe": 3.1181,
+        "baseline_sharpe": 2.2707,
+        "delta": 0.8474
+      },
+      {
+        "test_year": "2025",
+        "train_config": {
+          "signal": "breadth",
+          "window": 84,
+          "p_low": 0.33,
+          "p_high": 0.67,
+          "avg_sharpe": 2.1563,
+          "min_sharpe": 1.5773,
+          "obj": 1.8851
+        },
+        "test_sharpe": 1.8018,
+        "baseline_sharpe": 1.8981,
+        "delta": -0.0963
+      }
+    ],
+    "wins": "4/5",
+    "avg_delta": 0.4283
+  },
+  "verdict": "VALIDATED \u2014 live classifier adds +0.3179 OBJ vs baseline (87% of P144 IS gain), LOYO 4/5",
+  "next_phase_notes": "Phase 146: Implement funding-percentile regime classifier in production config. Add vol_regime_weight_switching block with p_low, p_high, fund_window params.",
+  "partial": false,
+  "timestamp": "2026-02-21T00:39:13"
+}
