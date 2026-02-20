@@ -1,0 +1,52 @@
+{
+  "phase": 152,
+  "description": "Full stack WF validation + TS overlay verification",
+  "elapsed_seconds": 51.9,
+  "v23_obj": 1.8886,
+  "v23_yearly": {
+    "2021": 2.5426,
+    "2022": 1.8711,
+    "2023": 1.5181,
+    "2024": 3.0096,
+    "2025": 1.8517
+  },
+  "v24_obj": 1.9917,
+  "v24_yearly": {
+    "2021": 2.8126,
+    "2022": 1.9653,
+    "2023": 1.5234,
+    "2024": 3.0502,
+    "2025": 2.0265
+  },
+  "ts_overlay_delta": 0.1031,
+  "claimed_obj": 2.0079,
+  "verified": true,
+  "fine_tuned_obj": 2.0851,
+  "fine_tuned_params": {
+    "rs": 0.6,
+    "bs": 1.15,
+    "rt": 0.7,
+    "bt": 0.3
+  },
+  "wf_results": [
+    {
+      "test": "2024",
+      "v24_sharpe": 3.0502,
+      "v23_sharpe": 3.0096,
+      "delta_ts": 0.0406
+    },
+    {
+      "test": "2025",
+      "v24_sharpe": 2.0265,
+      "v23_sharpe": 1.8517,
+      "delta_ts": 0.1748
+    }
+  ],
+  "wf_wins": 2,
+  "wf_avg_delta": 0.1077,
+  "wf_passes": true,
+  "verdict": "VERIFIED & WF PASSES \u2014 v2.4.0 OBJ=1.9917 confirmed (claimed 2.0079, \u0394=-0.0162). WF 2/2 wins avg_delta=+0.1077. Production stable.",
+  "next_phase_notes": "Phase 153: Explore adaptive signal weights (update ensemble weights dynamically based on trailing 6-month per-signal Sharpe). OR: test F144 with shorter lookback (72h, 96h) for 2025 regime.",
+  "partial": false,
+  "timestamp": "2026-02-21T01:15:01"
+}

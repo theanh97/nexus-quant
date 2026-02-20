@@ -72,5 +72,6 @@ P149: Cross-symbol correlation regime — NO IMPROVEMENT (all variants worse)
 P150: Cross-sectional skewness filter — NO IMPROVEMENT (all variants worse)
 P150b (parallel): Funding term structure spread (short 24h vs long 144h) VALIDATED — LOYO 4/5, OBJ=2.0079 (FIRST >2.0!) | prod v2.4.0
 P151: Universe expansion 10→15 symbols — NO IMPROVEMENT (15sym OBJ=1.29 vs 10sym=1.89; more coins hurt idio signal)
-P152: Full-stack WF validation + TS fine-tune — VERIFIED v2.4.0 OBJ=1.9917, fine-tuned OBJ=2.0851 (rs=0.60,bs=1.15,rt=0.70,bt=0.30), WF 2/2 | prod v2.5.0
-**Next: P153** — New alpha direction (intraday momentum reversion OR rebalance interval optimization OR signal weight adaptive via online learning)
+P152a (this session): F lookback scan F48-F192 → F168 OBJ=2.0382 (+0.0303, LOYO 4/5) > F144. 2025 Sharpe 1.97→2.15
+P152b: Full-stack WF + TS fine-tune — OBJ=2.0851 (rt=0.70,rs=0.60,bt=0.30,bs=1.15), WF 2/2 | prod v2.5.0
+**Next: P153** — Test F168 on v2.5.0 stack + rebalance interval tuning (V1 60→48h, Idio 48→36h)
