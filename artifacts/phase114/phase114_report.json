@@ -1,0 +1,64 @@
+{
+  "phase": 114,
+  "description": "Taker ratio + dataset signals as tilts on champion",
+  "timestamp": "2026-02-20T17:37:43.656171",
+  "elapsed_seconds": 92.5,
+  "baseline_obj": 1.7159,
+  "results": {
+    "taker_ratio_72": {
+      "best_ratio": 0.9,
+      "avg": 1.9997,
+      "min": 1.4324,
+      "obj": 1.716,
+      "delta_obj": 0.0001,
+      "oos": 1.53,
+      "verdict": "MARGINAL"
+    },
+    "taker_ratio_168": {
+      "best_ratio": 1.0,
+      "verdict": "NO_VALUE"
+    },
+    "taker_ratio_336": {
+      "best_ratio": 0.9,
+      "avg": 2.0096,
+      "min": 1.4401,
+      "obj": 1.7249,
+      "delta_obj": 0.009,
+      "oos": 1.448,
+      "verdict": "MARGINAL"
+    },
+    "vol_concentration_72": {
+      "best_ratio": 0.7,
+      "avg": 2.0062,
+      "min": 1.4856,
+      "obj": 1.7459,
+      "delta_obj": 0.03,
+      "oos": 1.1342,
+      "verdict": "PROMISING",
+      "wf_n_positive": 0,
+      "wf_avg_delta": -0.2226,
+      "wf_validated": false
+    },
+    "vol_concentration_168": {
+      "best_ratio": 1.0,
+      "verdict": "NO_VALUE"
+    },
+    "vol_concentration_336": {
+      "best_ratio": 1.0,
+      "verdict": "NO_VALUE"
+    },
+    "funding_dispersion_72": {
+      "best_ratio": 1.0,
+      "verdict": "NO_VALUE"
+    },
+    "funding_dispersion_168": {
+      "best_ratio": 1.0,
+      "verdict": "NO_VALUE"
+    },
+    "funding_dispersion_336": {
+      "best_ratio": 1.0,
+      "verdict": "NO_VALUE"
+    }
+  },
+  "validated": []
+}
