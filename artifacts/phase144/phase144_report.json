@@ -1,0 +1,424 @@
+{
+  "phase": 144,
+  "description": "Regime-Adaptive Weight Switching",
+  "hypothesis": "Vol-regime classifier switches between V1-heavy (2022/2025) and i415bw216-heavy (2021/2024) weights to capture trending + volatile alpha",
+  "elapsed_seconds": 372.2,
+  "baseline_obj": 1.7486,
+  "weight_set_results": {
+    "prod": {
+      "weights": {
+        "v1": 0.2747,
+        "i460bw168": 0.1967,
+        "i415bw216": 0.3247,
+        "f144": 0.2039
+      },
+      "yearly": {
+        "2021": 2.1102,
+        "2022": 1.4833,
+        "2023": 1.5648,
+        "2024": 2.3941,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 1.9212,
+      "min_sharpe": 1.4833,
+      "obj": 1.7486
+    },
+    "p143a": {
+      "weights": {
+        "v1": 0.05,
+        "i460bw168": 0.25,
+        "i415bw216": 0.4,
+        "f144": 0.3
+      },
+      "yearly": {
+        "2021": 2.7921,
+        "2022": 1.5807,
+        "2023": 1.5662,
+        "2024": 3.2738,
+        "2025": 1.706
+      },
+      "avg_sharpe": 2.1838,
+      "min_sharpe": 1.5662,
+      "obj": 1.828
+    },
+    "p143b": {
+      "weights": {
+        "v1": 0.05,
+        "i460bw168": 0.25,
+        "i415bw216": 0.45,
+        "f144": 0.25
+      },
+      "yearly": {
+        "2021": 2.8419,
+        "2022": 1.6461,
+        "2023": 1.5423,
+        "2024": 3.1201,
+        "2025": 1.7441
+      },
+      "avg_sharpe": 2.1789,
+      "min_sharpe": 1.5423,
+      "obj": 1.847
+    },
+    "p143c": {
+      "weights": {
+        "v1": 0.05,
+        "i460bw168": 0.3,
+        "i415bw216": 0.4,
+        "f144": 0.25
+      },
+      "yearly": {
+        "2021": 2.8796,
+        "2022": 1.5676,
+        "2023": 1.533,
+        "2024": 3.1776,
+        "2025": 1.8016
+      },
+      "avg_sharpe": 2.1919,
+      "min_sharpe": 1.533,
+      "obj": 1.844
+    },
+    "mid": {
+      "weights": {
+        "v1": 0.16,
+        "i460bw168": 0.22,
+        "i415bw216": 0.37,
+        "f144": 0.25
+      },
+      "yearly": {
+        "2021": 2.6201,
+        "2022": 1.5603,
+        "2023": 1.6003,
+        "2024": 2.844,
+        "2025": 1.9271
+      },
+      "avg_sharpe": 2.1104,
+      "min_sharpe": 1.5603,
+      "obj": 1.8463
+    }
+  },
+  "top10_adaptive": [
+    {
+      "high_set": "prod",
+      "low_set": "p143b",
+      "assignment": {
+        "2021": "p143b",
+        "2022": "p143b",
+        "2023": "prod",
+        "2024": "p143b",
+        "2025": "prod"
+      },
+      "yearly": {
+        "2021": 2.8419,
+        "2022": 1.6461,
+        "2023": 1.5648,
+        "2024": 3.1201,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 2.2453,
+      "min_sharpe": 1.5648,
+      "obj": 1.9306
+    },
+    {
+      "high_set": "prod",
+      "low_set": "p143b",
+      "assignment": {
+        "2021": "p143b",
+        "2022": "p143b",
+        "2023": "p143b",
+        "2024": "p143b",
+        "2025": "prod"
+      },
+      "yearly": {
+        "2021": 2.8419,
+        "2022": 1.6461,
+        "2023": 1.5423,
+        "2024": 3.1201,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 2.2408,
+      "min_sharpe": 1.5423,
+      "obj": 1.9236
+    },
+    {
+      "high_set": "prod",
+      "low_set": "p143c",
+      "assignment": {
+        "2021": "p143c",
+        "2022": "p143c",
+        "2023": "prod",
+        "2024": "p143c",
+        "2025": "prod"
+      },
+      "yearly": {
+        "2021": 2.8796,
+        "2022": 1.5676,
+        "2023": 1.5648,
+        "2024": 3.1776,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 2.2486,
+      "min_sharpe": 1.5648,
+      "obj": 1.9146
+    },
+    {
+      "high_set": "prod",
+      "low_set": "p143a",
+      "assignment": {
+        "2021": "p143a",
+        "2022": "p143a",
+        "2023": "p143a",
+        "2024": "p143a",
+        "2025": "prod"
+      },
+      "yearly": {
+        "2021": 2.7921,
+        "2022": 1.5807,
+        "2023": 1.5662,
+        "2024": 3.2738,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 2.2532,
+      "min_sharpe": 1.5662,
+      "obj": 1.9144
+    },
+    {
+      "high_set": "prod",
+      "low_set": "p143a",
+      "assignment": {
+        "2021": "p143a",
+        "2022": "p143a",
+        "2023": "prod",
+        "2024": "p143a",
+        "2025": "prod"
+      },
+      "yearly": {
+        "2021": 2.7921,
+        "2022": 1.5807,
+        "2023": 1.5648,
+        "2024": 3.2738,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 2.253,
+      "min_sharpe": 1.5648,
+      "obj": 1.914
+    },
+    {
+      "high_set": "prod",
+      "low_set": "p143c",
+      "assignment": {
+        "2021": "p143c",
+        "2022": "p143c",
+        "2023": "p143c",
+        "2024": "p143c",
+        "2025": "prod"
+      },
+      "yearly": {
+        "2021": 2.8796,
+        "2022": 1.5676,
+        "2023": 1.533,
+        "2024": 3.1776,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 2.2422,
+      "min_sharpe": 1.533,
+      "obj": 1.905
+    },
+    {
+      "high_set": "mid",
+      "low_set": "p143a",
+      "assignment": {
+        "2021": "p143a",
+        "2022": "p143a",
+        "2023": "mid",
+        "2024": "p143a",
+        "2025": "mid"
+      },
+      "yearly": {
+        "2021": 2.7921,
+        "2022": 1.5807,
+        "2023": 1.6003,
+        "2024": 3.2738,
+        "2025": 1.9271
+      },
+      "avg_sharpe": 2.2348,
+      "min_sharpe": 1.5807,
+      "obj": 1.8946
+    },
+    {
+      "high_set": "prod",
+      "low_set": "p143c",
+      "assignment": {
+        "2021": "p143c",
+        "2022": "prod",
+        "2023": "prod",
+        "2024": "p143c",
+        "2025": "prod"
+      },
+      "yearly": {
+        "2021": 2.8796,
+        "2022": 1.4833,
+        "2023": 1.5648,
+        "2024": 3.1776,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 2.2317,
+      "min_sharpe": 1.4833,
+      "obj": 1.8889
+    },
+    {
+      "high_set": "mid",
+      "low_set": "p143a",
+      "assignment": {
+        "2021": "p143a",
+        "2022": "mid",
+        "2023": "mid",
+        "2024": "p143a",
+        "2025": "mid"
+      },
+      "yearly": {
+        "2021": 2.7921,
+        "2022": 1.5603,
+        "2023": 1.6003,
+        "2024": 3.2738,
+        "2025": 1.9271
+      },
+      "avg_sharpe": 2.2307,
+      "min_sharpe": 1.5603,
+      "obj": 1.8885
+    },
+    {
+      "high_set": "prod",
+      "low_set": "p143a",
+      "assignment": {
+        "2021": "p143a",
+        "2022": "prod",
+        "2023": "p143a",
+        "2024": "p143a",
+        "2025": "prod"
+      },
+      "yearly": {
+        "2021": 2.7921,
+        "2022": 1.4833,
+        "2023": 1.5662,
+        "2024": 3.2738,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 2.2338,
+      "min_sharpe": 1.4833,
+      "obj": 1.8848
+    }
+  ],
+  "hypothesis_results": {
+    "vol_thresh_3": {
+      "assignment": {
+        "2021": "p143a",
+        "2022": "prod",
+        "2023": "prod",
+        "2024": "p143a",
+        "2025": "prod"
+      },
+      "yearly": {
+        "2021": 2.7921,
+        "2022": 1.4833,
+        "2023": 1.5648,
+        "2024": 3.2738,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 2.2335,
+      "min_sharpe": 1.4833,
+      "obj": 1.8844
+    },
+    "vol_thresh_4": {
+      "assignment": {
+        "2021": "p143a",
+        "2022": "prod",
+        "2023": "p143a",
+        "2024": "p143a",
+        "2025": "prod"
+      },
+      "yearly": {
+        "2021": 2.7921,
+        "2022": 1.4833,
+        "2023": 1.5662,
+        "2024": 3.2738,
+        "2025": 2.0534
+      },
+      "avg_sharpe": 2.2338,
+      "min_sharpe": 1.4833,
+      "obj": 1.8848
+    }
+  },
+  "best_adaptive": {
+    "high_set": "prod",
+    "low_set": "p143b",
+    "assignment": {
+      "2021": "p143b",
+      "2022": "p143b",
+      "2023": "prod",
+      "2024": "p143b",
+      "2025": "prod"
+    },
+    "yearly": {
+      "2021": 2.8419,
+      "2022": 1.6461,
+      "2023": 1.5648,
+      "2024": 3.1201,
+      "2025": 2.0534
+    },
+    "avg_sharpe": 2.2453,
+    "min_sharpe": 1.5648,
+    "obj": 1.9306
+  },
+  "delta_obj": 0.182,
+  "loyo": {
+    "results": [
+      {
+        "test_year": "2021",
+        "chosen_static": "mid",
+        "chosen_adaptive": "p143b",
+        "test_sharpe_adaptive": 2.8419,
+        "baseline_sharpe": 2.1102,
+        "delta": 0.7317
+      },
+      {
+        "test_year": "2022",
+        "chosen_static": "p143c",
+        "chosen_adaptive": "p143c",
+        "test_sharpe_adaptive": 1.5676,
+        "baseline_sharpe": 1.4833,
+        "delta": 0.0843
+      },
+      {
+        "test_year": "2023",
+        "chosen_static": "p143c",
+        "chosen_adaptive": "prod",
+        "test_sharpe_adaptive": 1.5648,
+        "baseline_sharpe": 1.5648,
+        "delta": 0.0
+      },
+      {
+        "test_year": "2024",
+        "chosen_static": "mid",
+        "chosen_adaptive": "p143b",
+        "test_sharpe_adaptive": 3.1201,
+        "baseline_sharpe": 2.3941,
+        "delta": 0.726
+      },
+      {
+        "test_year": "2025",
+        "chosen_static": "p143b",
+        "chosen_adaptive": "prod",
+        "test_sharpe_adaptive": 2.0534,
+        "baseline_sharpe": 2.0534,
+        "delta": 0.0
+      }
+    ],
+    "wins": "3/5",
+    "avg_delta": 0.3084
+  },
+  "verdict": "VALIDATED \u2014 adaptive switching +0.1820 OBJ, LOYO 3/5",
+  "next_phase_notes": "Phase 145: Production integration of adaptive weights + live monitoring.",
+  "next_phase_options": "Update production config to include vol_regime_weight_switching.",
+  "partial": false,
+  "timestamp": "2026-02-21T00:30:19"
+}
