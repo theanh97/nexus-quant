@@ -1,0 +1,100 @@
+{
+  "_meta": {
+    "project": "commodity_cta",
+    "layer": "L2",
+    "version": "1.0.0",
+    "created": "2026-02-20",
+    "status": "Phase 1 complete — data + features + strategies implemented"
+  },
+
+  "architecture": {
+    "data_provider": "YahooFuturesProvider (yahoo_futures_v1)",
+    "universe": ["CL=F", "NG=F", "BZ=F", "GC=F", "SI=F", "HG=F", "PL=F", "ZW=F", "ZC=F", "ZS=F", "KC=F", "SB=F", "CT=F"],
+    "bar_interval": "1d (daily)",
+    "history_available": "2003-2026 (Yahoo Finance free)",
+    "features_computed": ["mom_20d", "mom_60d", "mom_120d", "ewma_signal", "atr_14", "rv_20d", "vol_regime", "vol_mom_z", "rsi_14", "zscore_60d", "zscore_252d", "sector_momentum"],
+    "strategies": {
+      "cta_trend": "Multi-timeframe trend (20/60/120d) — daily rebalance",
+      "cta_carry": "Carry proxy using mean-reversion in trend — weekly rebalance",
+      "cta_mom_value": "120d momentum + 252d value combo — monthly rebalance",
+      "cta_ensemble": "Static blend Trend(40%)+Carry(30%)+MomValue(30%) + vol tilt"
+    }
+  },
+
+  "design_decisions": {
+    "static_over_adaptive_weights": "Lesson from crypto (Phase 124): static weights outperform adaptive. Applied to ensemble.",
+    "vol_tilt_transfer": "Vol momentum tilt (r=0.65 when vol_mom_z > 1.5) validated in crypto (Phase 113). Testing here for cross-market transfer.",
+    "carry_proxy": "No term structure data from Yahoo. Approximate carry as mean-reversion within trend direction. Must validate when CME data available.",
+    "feature_precomputation": "All features computed once during provider.load(). Strategies read from dataset.features. Efficient for long daily history.",
+    "daily_bars": "Daily bars (not hourly). Lookbacks measured in calendar days (20d, 60d, 120d). Transaction costs ~7 bps RT (much cheaper than crypto ~15-25 bps)."
+  },
+
+  "cost_model": {
+    "name": "commodity_futures",
+    "commission_bps": 1.0,
+    "slippage_bps": 5.0,
+    "spread_bps": 1.0,
+    "total_rt_bps": 7.0,
+    "note": "Very cheap vs crypto. Low-frequency daily rebalance further reduces cost drag."
+  },
+
+  "targets": {
+    "sharpe_min": 0.3,
+    "sharpe_target": 0.8,
+    "sharpe_benchmark_sg_cta": "0.5-0.7",
+    "max_drawdown_target": 0.25,
+    "crypto_correlation_target": "< 0.2 (true diversification)"
+  },
+
+  "known_risks": {
+    "yahoo_data_quality": "Yahoo Finance continuous front-month contracts may have roll-date discontinuities. Check for price spikes around contract rolls.",
+    "carry_proxy_accuracy": "Zscore-based carry proxy is an approximation. Actual roll yield requires CME term structure data.",
+    "survival_bias": "Yahoo may not have data for all commodities back to 2005. Some may only go to 2007-2010. Check coverage.",
+    "liquidity": "Some agricultural futures (SB, CT) have lower liquidity. Slippage may be higher than 5 bps for these.",
+    "seasonal_patterns": "Commodities have strong seasonal patterns (grain planting/harvest). The 252d zscore captures this partially."
+  },
+
+  "validation_protocol": {
+    "train_period": "2005-2015",
+    "test_period": "2016-2020",
+    "oos_period": "2021-2026",
+    "pass_criteria": {
+      "min_period_sharpe": 0.3,
+      "avg_sharpe": 0.8,
+      "max_drawdown": 0.30
+    }
+  },
+
+  "next_steps": [
+    "Run phase1 validation script to confirm data downloads correctly",
+    "Walk-forward validation: train 2005-2015, test 2016-2020, OOS 2021-2026",
+    "Robustness: ±20% parameter perturbation on lookbacks",
+    "Correlation analysis with crypto_perps returns",
+    "If vol_mom_z overlay helps here → promote to L0 universal memory",
+    "CME DataMine data for actual roll yield when budget allows"
+  ],
+
+  "phase_history": [
+    {
+      "phase": 1,
+      "date": "2026-02-20",
+      "description": "Initial implementation: Yahoo data provider + features + 4 strategies",
+      "status": "complete",
+      "files_created": [
+        "nexus_quant/projects/commodity_cta/__init__.py",
+        "nexus_quant/projects/commodity_cta/project.yaml",
+        "nexus_quant/projects/commodity_cta/providers/yahoo_futures.py",
+        "nexus_quant/projects/commodity_cta/features.py",
+        "nexus_quant/projects/commodity_cta/costs/futures_fees.py",
+        "nexus_quant/projects/commodity_cta/strategies/trend_following.py",
+        "nexus_quant/projects/commodity_cta/strategies/carry_roll.py",
+        "nexus_quant/projects/commodity_cta/strategies/momentum_value.py",
+        "nexus_quant/projects/commodity_cta/strategies/cta_ensemble.py",
+        "configs/cta_trend.json",
+        "configs/cta_carry.json",
+        "configs/cta_mom_value.json",
+        "configs/cta_ensemble.json"
+      ]
+    }
+  ]
+}

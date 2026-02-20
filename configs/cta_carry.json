@@ -1,0 +1,55 @@
+{
+  "run_name": "cta_carry_v1",
+  "project": "commodity_cta",
+  "seed": 42,
+
+  "data": {
+    "provider": "yahoo_futures_v1",
+    "symbols": ["CL=F", "NG=F", "BZ=F", "GC=F", "SI=F", "HG=F", "PL=F", "ZW=F", "ZC=F", "ZS=F", "KC=F", "SB=F", "CT=F"],
+    "start": "2005-01-01",
+    "end": "2026-02-20",
+    "cache_dir": "data/cache/yahoo_futures",
+    "min_valid_bars": 300,
+    "request_delay": 0.5
+  },
+
+  "venue": {
+    "name": "cme_commodity",
+    "kind": "commodity_futures",
+    "maker_fee_rate": 0.0001,
+    "taker_fee_rate": 0.0001
+  },
+
+  "execution": {
+    "style": "taker",
+    "slippage_bps": 5.0,
+    "spread_bps": 1.0,
+    "impact": {"model": "none", "coef_bps": 0.0}
+  },
+
+  "costs": {
+    "fee_rate": 0.0001,
+    "slippage_rate": 0.0005,
+    "taker_fee_rate": 0.0001,
+    "maker_fee_rate": 0.0001,
+    "cost_multiplier": 1.0
+  },
+
+  "strategy": {
+    "name": "cta_carry",
+    "params": {
+      "max_gross_leverage": 1.5,
+      "max_position": 0.20,
+      "warmup": 130,
+      "carry_weight": 1.0,
+      "trend_threshold": 0.0,
+      "rebalance_freq": 5
+    }
+  },
+
+  "risk": {
+    "max_drawdown": 0.25,
+    "max_gross_leverage": 1.5,
+    "max_position_per_symbol": 0.20
+  }
+}

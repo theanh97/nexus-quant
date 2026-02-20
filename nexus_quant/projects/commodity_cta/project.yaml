@@ -1,0 +1,48 @@
+name: commodity_cta
+market: commodity
+asset_class: commodity_futures
+description: "Commodity futures CTA — multi-timeframe trend following, carry/roll yield, and momentum+value strategies on CME/ICE futures via Yahoo Finance"
+
+universe:
+  - CL=F    # WTI Crude Oil
+  - NG=F    # Natural Gas
+  - BZ=F    # Brent Crude
+  - GC=F    # Gold
+  - SI=F    # Silver
+  - HG=F    # Copper
+  - PL=F    # Platinum
+  - ZW=F    # Wheat
+  - ZC=F    # Corn
+  - ZS=F    # Soybeans
+  - KC=F    # Coffee
+  - SB=F    # Sugar
+  - CT=F    # Cotton
+
+data_provider: yahoo_futures_v1
+default_config: configs/cta_ensemble.json
+cost_model: commodity_futures
+
+features:
+  - volume
+  - open
+  - high
+  - low
+  - atr_14
+  - rv_20d
+  - mom_20d
+  - mom_60d
+  - mom_120d
+  - rsi_14
+  - zscore_60d
+  - ewma_signal
+  - vol_mom_z
+  - sector_momentum
+
+strategies:
+  - cta_trend
+  - cta_carry
+  - cta_mom_value
+  - cta_ensemble
+
+brain_interval: 3600
+enabled: true
