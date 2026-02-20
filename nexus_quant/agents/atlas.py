@@ -68,8 +68,8 @@ class AtlasAgent(BaseAgent):
     """Strategy research agent — proposes parameter / factor improvements."""
 
     name = "atlas"
-    default_model = "glm-4-long"
-    _smart_task_type = 'STRATEGY_RESEARCH'
+    default_model = "gemini-3-pro-preview"
+    _smart_task_type = "STRATEGY_RESEARCH"
 
     def run(self, context: AgentContext) -> AgentResult:
         fallback_parsed = _build_fallback(context.best_params)

@@ -153,6 +153,12 @@ def _parse_args() -> argparse.Namespace:
     trade_p.add_argument("--interval", type=int, default=3600, help="Seconds between cycles (default: 3600)")
     trade_p.add_argument("--max-cycles", type=int, default=0, help="Stop after N cycles (0=infinite)")
 
+    live_p = sub.add_parser("live", help="Run live trading engine (P91b champion on Binance USDM Futures)")
+    live_p.add_argument("--config", default="configs/production_p91b_champion.json", help="Production config path")
+    live_p.add_argument("--dry-run", action="store_true", help="Simulate trades without placing real orders")
+    live_p.add_argument("--testnet", action="store_true", help="Use Binance testnet instead of mainnet")
+    live_p.add_argument("--once", action="store_true", help="Run one cycle and exit (no loop)")
+
     return p.parse_args()
 
 
@@ -279,6 +285,15 @@ def main() -> int:
                 print(json.dumps(result, indent=2, default=str))
         return 0
 
+    if args.cmd == "live":
+        from .execution.live_engine import live_main
+        return live_main(
+            config_path=str(args.config),
+            dry_run=bool(getattr(args, "dry_run", False)),
+            testnet=bool(getattr(args, "testnet", False)),
+            once=bool(getattr(args, "once", False)),
+        )
+
     if args.cmd == "signal":
         from .live.signal_generator import SignalGenerator, generate_signal_cli
         import time as _time
@@ -311,13 +326,50 @@ def main() -> int:
     if args.cmd == "brain":
         from .brain.loop import NexusAutonomousLoop
         loop_obj = NexusAutonomousLoop(Path(args.config), Path(args.artifacts))
+        heartbeat_path = Path(args.artifacts) / "state" / "brain_heartbeat.json"
+        heartbeat_path.parent.mkdir(parents=True, exist_ok=True)
         if args.loop:
             import time
+            import traceback
             cycle = 0
+            consecutive_errors = 0
+            max_consecutive_errors = 10
+            base_backoff = 30
             while True:
-                result = loop_obj.run_cycle()
-                print(f"Cycle {result['cycle_number']}: sharpe={result.get('best_sharpe')} mood={result.get('mood')}")
-                cycle += 1
+                try:
+                    result = loop_obj.run_cycle()
+                    print(f"Cycle {result['cycle_number']}: sharpe={result.get('best_sharpe')} mood={result.get('mood')}", flush=True)
+                    cycle += 1
+                    consecutive_errors = 0
+                    # Write heartbeat
+                    heartbeat_path.write_text(json.dumps({
+                        "ts": time.time(),
+                        "cycle": cycle,
+                        "status": "ok",
+                        "last_sharpe": result.get("best_sharpe"),
+                    }), encoding="utf-8")
+                except KeyboardInterrupt:
+                    print("[BRAIN] Interrupted by user.", flush=True)
+                    break
+                except Exception as exc:
+                    consecutive_errors += 1
+                    backoff = min(300, base_backoff * (2 ** (consecutive_errors - 1)))
+                    print(f"[BRAIN] Error in cycle {cycle + 1} ({consecutive_errors}/{max_consecutive_errors}): {exc}", flush=True)
+                    traceback.print_exc()
+                    heartbeat_path.write_text(json.dumps({
+                        "ts": time.time(),
+                        "cycle": cycle,
+                        "status": "error",
+                        "error": str(exc),
+                        "consecutive_errors": consecutive_errors,
+                    }), encoding="utf-8")
+                    if consecutive_errors >= max_consecutive_errors:
+                        print(f"[BRAIN] {max_consecutive_errors} consecutive errors — pausing 10 min before reset.", flush=True)
+                        time.sleep(600)
+                        consecutive_errors = 0
+                    else:
+                        time.sleep(backoff)
+                    continue
                 time.sleep(args.interval)
         else:
             for i in range(args.cycles):

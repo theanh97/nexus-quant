@@ -1,25 +1,25 @@
 from __future__ import annotations
 
 """
-NEXUS Autonomous Research Cycle v2.
+NEXUS Autonomous Research Cycle v3 — Decision Network.
 
-A full research iteration that:
-1. Fetches live market data (Binance funding rates + overview)
-2. Searches arxiv for relevant papers
-3. Runs ATLAS strategy proposals + CIPHER risk check + ECHO validation
-4. Auto-creates Kanban tasks from agent proposals
-5. Stores findings in NEXUS memory + diary
-6. Returns a structured research report
+3-phase pipeline:
+  Phase 1 — GENERATE: ATLAS + CIPHER run in parallel (independent analysis)
+  Phase 2 — VALIDATE: ECHO runs with Phase 1 outputs (cross-validation, dual-model)
+  Phase 3 — DECIDE:   FLUX decision gate + Synthesis → approve/block/escalate
 
-Designed to run as part of the autonomous loop or on-demand via CLI / dashboard.
+Only APPROVED proposals become Kanban tasks. Blocked proposals are logged but not executed.
 """
 
 import json
+import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger("nexus.research_cycle")
 
 
 def _now_iso() -> str:
@@ -69,10 +69,15 @@ class ResearchCycle:
         self.max_workers = max_workers
         self._report: Dict[str, Any] = {
             "started_at": _now_iso(),
+            "pipeline_version": "v3-decision-network",
             "market_data": {},
             "arxiv_findings": [],
-            "agent_proposals": {},
+            "phase1_results": {},
+            "phase2_results": {},
+            "phase3_results": {},
+            "gate_decision": {},
             "tasks_created": [],
+            "tasks_blocked": [],
             "memory_stored": 0,
             "errors": [],
         }
@@ -372,16 +377,19 @@ class ResearchCycle:
         except Exception:
             pass
 
-    # ── Main orchestrator ───────────────────────────────────────────────
+    # ── Main orchestrator — 3-Phase Decision Network ───────────────────
 
     def run(self) -> Dict[str, Any]:
         """
-        Run the full research cycle and return a structured report.
-        Steps run in parallel where safe.
+        Run the full research cycle using the 3-phase Decision Network.
+
+        Phase 1 — GENERATE: ATLAS + CIPHER in parallel
+        Phase 2 — VALIDATE: ECHO with Phase 1 outputs (dual-model)
+        Phase 3 — DECIDE:   FLUX + Synthesis gate → approve/block/escalate
         """
         t0 = time.time()
 
-        # Phase A: Parallel data gathering
+        # ── Data Gathering (parallel) ────────────────────────────────
         market_data: Dict[str, Any] = {}
         arxiv_papers: List[Dict[str, Any]] = []
 
@@ -397,44 +405,100 @@ class ResearchCycle:
             for p in arxiv_papers
         ]
 
-        # Phase B: Build agent context
+        # ── Build base context ───────────────────────────────────────
         context = self._build_agent_context(market_data)
+        if context is None:
+            self._report["errors"].append("Failed to build agent context")
+            self._report["completed_at"] = _now_iso()
+            self._report["duration_sec"] = round(time.time() - t0, 2)
+            return self._report
 
-        # Phase C: Parallel agent dispatch
-        agent_results: Dict[str, Any] = {}
-        if context is not None:
-            agent_tasks = {
-                "atlas": self._run_atlas,
-                "cipher": self._run_cipher,
-                "echo": self._run_echo,
-                "flux": self._run_flux,
+        # ── PHASE 1: GENERATE (ATLAS + CIPHER in parallel) ──────────
+        logger.info("Phase 1 — GENERATE: running ATLAS + CIPHER in parallel")
+        phase1: Dict[str, Any] = {}
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            fut_atlas = pool.submit(self._run_atlas, context)
+            fut_cipher = pool.submit(self._run_cipher, context)
+            phase1["atlas"] = fut_atlas.result()
+            phase1["cipher"] = fut_cipher.result()
+
+        self._report["phase1_results"] = phase1
+        logger.info(
+            "Phase 1 done — ATLAS proposals: %d, CIPHER severity: %s",
+            len(phase1.get("atlas", {}).get("proposals", [])),
+            phase1.get("cipher", {}).get("severity", "?"),
+        )
+
+        # ── PHASE 2: VALIDATE (ECHO with Phase 1 outputs) ──────────
+        logger.info("Phase 2 — VALIDATE: running ECHO with Phase 1 cross-validation")
+        # Inject Phase 1 results into context for ECHO
+        context.phase1_results = phase1
+        echo_output = self._run_echo(context)
+        self._report["phase2_results"] = {"echo": echo_output}
+        logger.info(
+            "Phase 2 done — ECHO verdict: %s, overfit_score: %s/10",
+            echo_output.get("verdict", "?"),
+            echo_output.get("overfit_score", "?"),
+        )
+
+        # ── PHASE 3: DECIDE (FLUX + Synthesis gate) ─────────────────
+        logger.info("Phase 3 — DECIDE: running FLUX decision gate")
+        # FLUX sees ALL previous outputs
+        context.phase1_results["echo"] = echo_output
+        flux_output = self._run_flux(context)
+        self._report["phase3_results"] = {"flux": flux_output}
+
+        # Run deterministic synthesis gate
+        try:
+            from ..agents.synthesis import run_decision_gate
+            gate = run_decision_gate(
+                atlas_output=phase1.get("atlas", {}),
+                cipher_output=phase1.get("cipher", {}),
+                echo_output=echo_output,
+                flux_output=flux_output,
+            )
+            gate_dict = gate.to_dict()
+        except Exception as e:
+            self._report["errors"].append(f"synthesis_gate: {e}")
+            gate_dict = {
+                "decision": "block",
+                "approved_proposals": [],
+                "blocked_proposals": phase1.get("atlas", {}).get("proposals", []),
+                "reasons": [f"Synthesis gate failed: {e}"],
+                "escalate_to_human": True,
             }
-            with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
-                futures = {pool.submit(fn, context): name for name, fn in agent_tasks.items()}
-                for fut in as_completed(futures):
-                    name = futures[fut]
-                    try:
-                        agent_results[name] = fut.result()
-                    except Exception as e:
-                        self._report["errors"].append(f"agent_{name}: {e}")
+            gate = None
 
-        self._report["agent_proposals"] = agent_results
+        self._report["gate_decision"] = gate_dict
+        logger.info(
+            "Phase 3 done — gate: %s, approved: %d, blocked: %d",
+            gate_dict.get("decision", "?"),
+            gate_dict.get("approved_count", len(gate_dict.get("approved_proposals", []))),
+            gate_dict.get("blocked_count", len(gate_dict.get("blocked_proposals", []))),
+        )
 
-        # Phase D: Create Kanban tasks from proposals
-        atlas_proposals = (agent_results.get("atlas") or {}).get("proposals") or []
-        cipher_flags = (agent_results.get("cipher") or {}).get("flags") or []
-        echo_issues = (agent_results.get("echo") or {}).get("issues") or []
-        tasks_created = self._create_tasks_from_proposals(atlas_proposals, cipher_flags, echo_issues)
+        # ── Create Kanban tasks ONLY for APPROVED proposals ──────────
+        approved = gate_dict.get("approved_proposals", [])
+        blocked = gate_dict.get("blocked_proposals", [])
+        cipher_flags = phase1.get("cipher", {}).get("risk_flags", [])
+
+        tasks_created = self._create_tasks_from_proposals(
+            atlas_proposals=approved,
+            cipher_flags=[{"concern": f} for f in cipher_flags] if cipher_flags else [],
+            echo_issues=[],
+        )
         self._report["tasks_created"] = tasks_created
+        self._report["tasks_blocked"] = [p.get("name", "?") for p in blocked]
 
-        # Phase E: Store findings in memory
-        memory_count = self._store_findings(market_data, arxiv_papers, agent_results)
+        # ── Store findings ───────────────────────────────────────────
+        all_agent_results = {**phase1, "echo": echo_output, "flux": flux_output, "gate": gate_dict}
+        memory_count = self._store_findings(market_data, arxiv_papers, all_agent_results)
         self._report["memory_stored"] = memory_count
 
-        # Phase F: Write diary entry
-        self._write_diary(market_data, arxiv_papers, agent_results, tasks_created)
+        # ── Write diary ──────────────────────────────────────────────
+        self._write_diary(market_data, arxiv_papers, all_agent_results, tasks_created)
 
-        # Phase G: Save report to artifacts
+        # ── Save report ──────────────────────────────────────────────
         self._report["completed_at"] = _now_iso()
         self._report["duration_sec"] = round(time.time() - t0, 2)
 
@@ -446,31 +510,37 @@ class ResearchCycle:
         except Exception:
             pass
 
-        # Latest symlink-equivalent: overwrite "latest.json"
         latest_path = self.artifacts_dir / "research" / "latest_cycle.json"
         try:
             latest_path.write_text(json.dumps(self._report, indent=2, ensure_ascii=False), "utf-8")
         except Exception:
             pass
 
-        # Phase H: Autonomous strategy proposal generation
-        try:
-            from ..self_learn.strategy_generator import StrategyGenerator
-            sg = StrategyGenerator(self.artifacts_dir)
-            proposals = sg.generate_improvement_proposals(config_path=self.config_path)
-            task_ids = sg.queue_proposals_to_kanban(proposals, source="research_cycle")
-            self._report["strategy_proposals"] = len(proposals)
-            self._report["strategy_task_ids"] = task_ids
-        except Exception as e:
-            self._report["errors"].append(f"strategy_generator: {e}")
+        # ── Strategy proposals (only if gate approved) ───────────────
+        if gate_dict.get("decision") != "block":
+            try:
+                from ..self_learn.strategy_generator import StrategyGenerator
+                sg = StrategyGenerator(self.artifacts_dir)
+                proposals = sg.generate_improvement_proposals(config_path=self.config_path)
+                task_ids = sg.queue_proposals_to_kanban(proposals, source="research_cycle")
+                self._report["strategy_proposals"] = len(proposals)
+                self._report["strategy_task_ids"] = task_ids
+            except Exception as e:
+                self._report["errors"].append(f"strategy_generator: {e}")
 
-        # Notify
-        n_papers = len(arxiv_papers)
-        n_tasks = len(tasks_created)
-        n_errors = len(self._report["errors"])
-        self._notify(
-            f"Research cycle done in {self._report['duration_sec']}s: "
-            f"{n_papers} papers, {n_tasks} tasks created, {n_errors} errors"
+        # ── Notify ───────────────────────────────────────────────────
+        gate_str = gate_dict.get("decision", "?")
+        n_approved = len(approved)
+        n_blocked = len(blocked)
+        escalate = gate_dict.get("escalate_to_human", False)
+
+        summary = (
+            f"Research cycle ({self._report['duration_sec']}s) — "
+            f"Gate: {gate_str.upper()} | Approved: {n_approved} | Blocked: {n_blocked}"
         )
+        if escalate:
+            summary += f" | ⚠️ ESCALATED: {gate_dict.get('escalation_reason', '')}"
+
+        self._notify(summary)
 
         return self._report

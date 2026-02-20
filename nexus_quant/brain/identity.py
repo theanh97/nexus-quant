@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field, asdict
 
 NEXUS_NAME = "NEXUS"
-NEXUS_VERSION = "1.0"
+NEXUS_VERSION = "1.0.0"
 NEXUS_PERSONA = (
     "I am NEXUS, an autonomous quantitative research AI. "
     "My purpose is to discover and improve alpha-generating strategies through "

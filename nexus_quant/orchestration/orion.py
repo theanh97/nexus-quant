@@ -685,26 +685,84 @@ class Orion:
         )
 
     def run_agents(self) -> Dict[str, Any]:
-        """Run all LLM agents and collect their outputs. Logs results to memory."""
+        """
+        Run agents using the 3-phase Decision Network pipeline.
+
+        Phase 1 — GENERATE: ATLAS + CIPHER (parallel)
+        Phase 2 — VALIDATE: ECHO (cross-validates Phase 1 outputs, dual-model)
+        Phase 3 — DECIDE:   FLUX + Synthesis gate (approve/block/escalate)
+        """
+        from concurrent.futures import ThreadPoolExecutor
         context = self._build_agent_context()
-        results: Dict[str, Any] = {}
-        for AgentClass in [AtlasAgent, CipherAgent, EchoAgent, FluxAgent]:
-            agent = AgentClass()
+        results: Dict[str, Any] = {"pipeline": "v3-decision-network"}
+
+        def _run_and_log(agent_cls, ctx):
+            agent = agent_cls()
+            result = agent.run(ctx)
+            self.memory.add(
+                created_at=_utc_iso(),
+                kind="agent_output",
+                tags=["agent", result.agent_name, result.phase],
+                content=result.raw_response[:1000],
+                meta={
+                    "agent": result.agent_name,
+                    "model": result.model_used,
+                    "parsed": result.parsed,
+                    "phase": result.phase,
+                },
+                run_id=None,
+            )
+            return result
+
+        # ── Phase 1: GENERATE (ATLAS + CIPHER parallel) ──
+        phase1: Dict[str, Any] = {}
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            fut_atlas = pool.submit(_run_and_log, AtlasAgent, context)
+            fut_cipher = pool.submit(_run_and_log, CipherAgent, context)
             try:
-                result = agent.run(context)
-                results[result.agent_name] = result.to_dict()
-                self.memory.add(
-                    created_at=_utc_iso(),
-                    kind="agent_output",
-                    tags=["agent", result.agent_name],
-                    content=result.raw_response[:1000],
-                    meta={
-                        "agent": result.agent_name,
-                        "model": result.model_used,
-                        "parsed": result.parsed,
-                    },
-                    run_id=None,
-                )
+                atlas_result = fut_atlas.result()
+                phase1["atlas"] = atlas_result.parsed
+                results["atlas"] = atlas_result.to_dict()
             except Exception as e:
-                results[AgentClass.name] = {"error": str(e), "fallback_used": True}
+                phase1["atlas"] = {}
+                results["atlas"] = {"error": str(e), "fallback_used": True}
+            try:
+                cipher_result = fut_cipher.result()
+                phase1["cipher"] = cipher_result.parsed
+                results["cipher"] = cipher_result.to_dict()
+            except Exception as e:
+                phase1["cipher"] = {}
+                results["cipher"] = {"error": str(e), "fallback_used": True}
+
+        # ── Phase 2: VALIDATE (ECHO with Phase 1 context) ──
+        context.phase1_results = phase1
+        try:
+            echo_result = _run_and_log(EchoAgent, context)
+            results["echo"] = echo_result.to_dict()
+        except Exception as e:
+            echo_result = None
+            results["echo"] = {"error": str(e), "fallback_used": True}
+
+        # ── Phase 3: DECIDE (FLUX sees everything) ──
+        echo_parsed = echo_result.parsed if echo_result else {}
+        context.phase1_results["echo"] = echo_parsed
+        try:
+            flux_result = _run_and_log(FluxAgent, context)
+            results["flux"] = flux_result.to_dict()
+        except Exception as e:
+            results["flux"] = {"error": str(e), "fallback_used": True}
+
+        # ── Synthesis gate ──
+        try:
+            from ..agents.synthesis import run_decision_gate
+            gate = run_decision_gate(
+                atlas_output=phase1.get("atlas", {}),
+                cipher_output=phase1.get("cipher", {}),
+                echo_output=echo_parsed,
+                flux_output=flux_result.parsed if flux_result else {},
+            )
+            results["gate_decision"] = gate.to_dict()
+        except Exception as e:
+            results["gate_decision"] = {"decision": "block", "error": str(e)}
+
         return results

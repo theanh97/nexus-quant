@@ -3917,16 +3917,34 @@
       </div>
     </div>
 
-    <!-- Signal History -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+      <!-- Sub-Strategy Breakdown -->
+      <div class="card">
+        <h3 style="margin:0 0 12px">Sub-Strategy Breakdown</h3>
+        <div id="sig-subs" class="text-sm" style="font-family:monospace">Loading...</div>
+      </div>
+      <!-- Execution Status -->
+      <div class="card">
+        <h3 style="margin:0 0 12px">Execution Status</h3>
+        <div id="sig-exec-status" class="text-sm" style="font-family:monospace">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Paper P&L History -->
     <div class="card" style="margin-top:16px">
-      <h3 style="margin:0 0 12px">Signal History (<span id="sig-count">0</span> signals)</h3>
+      <h3 style="margin:0 0 12px">Paper P&L History (<span id="sig-count">0</span> signals)</h3>
       <div id="sig-history" class="text-sm" style="max-height:300px;overflow-y:auto;font-family:monospace">No signals yet.</div>
     </div>
 
-    <!-- Sub-Strategy Breakdown -->
-    <div class="card" style="margin-top:16px">
-      <h3 style="margin:0 0 12px">Sub-Strategy Breakdown</h3>
-      <div id="sig-subs" class="text-sm" style="font-family:monospace">Loading...</div>
+    <!-- Quick Start Guide -->
+    <div class="card" style="margin-top:16px;background:var(--info-bg,#EFF6FF);border:1px solid #BFDBFE">
+      <h3 style="margin:0 0 8px">Quick Start</h3>
+      <div class="text-sm" style="font-family:monospace">
+        <div><strong>Paper trading:</strong> <code>python3 -m nexus_quant trade --mode paper --loop</code></div>
+        <div><strong>One-shot signal:</strong> <code>python3 -m nexus_quant signal</code></div>
+        <div><strong>Testnet (needs API key):</strong> <code>python3 -m nexus_quant trade --mode testnet --loop</code></div>
+        <div><strong>Dashboard signal:</strong> Click "Generate Signal" above</div>
+      </div>
     </div>
   </div>
 

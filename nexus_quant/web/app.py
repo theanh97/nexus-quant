@@ -107,7 +107,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
     from fastapi.staticfiles import StaticFiles
     import uvicorn
 
-    app = FastAPI(title="NEXUS Quant Dashboard", version="1.0")
+    app = FastAPI(title="NEXUS Quant Dashboard", version="1.0.0")
     static_dir = Path(__file__).parent / "static"
     # FORCE RESOLVE TO OUR NEW GENERATED LOCAL DIRECTORY TO AVOID OS PERMISSION ERRORS
     artifacts_dir = Path("nexus_quant/artifacts").resolve()
