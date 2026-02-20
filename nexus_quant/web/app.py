@@ -17,6 +17,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 try:
+    from starlette.requests import Request as StarletteRequest
+except Exception:
+    StarletteRequest = Any  # type: ignore
+
+try:
     from pydantic import BaseModel
     class ChatRequest(BaseModel):
         message: str = ""
@@ -85,7 +90,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
     except ImportError:
         raise SystemExit("Dashboard requires FastAPI + uvicorn. Run: pip install fastapi uvicorn[standard]")
 
-    from fastapi import FastAPI, Request
+    from fastapi import FastAPI
     from fastapi.responses import HTMLResponse, JSONResponse
     from fastapi.staticfiles import StaticFiles
     import uvicorn
@@ -1353,7 +1358,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             return JSONResponse({"ok": False, "error": str(e)})
 
     @app.patch("/api/tasks/{task_id}/status")
-    async def api_tasks_update_status(task_id: str, request: Request) -> JSONResponse:
+    async def api_tasks_update_status(task_id: str, request: StarletteRequest) -> JSONResponse:
         """Quick status update endpoint (used by frontend done button)."""
         try:
             body = await request.json()
@@ -1503,7 +1508,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             return JSONResponse({"ok": False, "error": str(e)})
 
     @app.post("/api/computer/analyze")
-    async def api_computer_analyze(request: Request) -> JSONResponse:
+    async def api_computer_analyze(request: StarletteRequest) -> JSONResponse:
         """Screenshot + GLM-5 vision analysis."""
         import asyncio
         try:
@@ -1522,7 +1527,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             return JSONResponse({"ok": False, "error": str(e)})
 
     @app.post("/api/computer/open_url")
-    async def api_computer_open_url(request: Request) -> JSONResponse:
+    async def api_computer_open_url(request: StarletteRequest) -> JSONResponse:
         """Open a URL in Chrome."""
         try:
             body = await request.json()
@@ -1552,7 +1557,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
     # ── Browser Agent endpoints ─────────────────────────────────────────────
 
     @app.post("/api/browser/run")
-    async def api_browser_run(request: Request) -> JSONResponse:
+    async def api_browser_run(request: StarletteRequest) -> JSONResponse:
         """Run a browser task using Playwright agent."""
         import asyncio
         try:
@@ -1699,63 +1704,243 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
     print(f"[NEXUS Dashboard] http://{host}:{port}  artifacts={artifacts_dir}")
+
+    def _log_candidates(target: str) -> List[Path]:
+        t = str(target or "").strip().lower()
+        mapping: Dict[str, List[Path]] = {
+            "dashboard": [Path("/tmp/nexus_dash.log"), Path("/tmp/nexus_dashboard.log")],
+            "brain": [Path("/tmp/nexus_brain.log"), Path("/tmp/nexus_alpha_brain.log")],
+            "research": [Path("/tmp/nexus_research.log"), Path("/tmp/nexus_research_cycle.log")],
+            "backtest": [Path("/tmp/nexus_backtest.log"), Path("/tmp/nexus_alpha_v1_run.log")],
+        }
+        if t in mapping:
+            return mapping[t]
+        if t:
+            return [Path(f"/tmp/nexus_{t}.log")]
+        return mapping["brain"]
+
+    def _resolve_log_path(target: str) -> Path:
+        cands = _log_candidates(target)
+        for cand in cands:
+            if cand.exists():
+                return cand
+        return cands[0]
+
+    def _read_tail_lines(path: Path, n: int) -> List[str]:
+        if not path.exists():
+            return []
+        n_safe = max(1, min(int(n or 1), 4000))
+        try:
+            return path.read_text("utf-8", errors="replace").splitlines()[-n_safe:]
+        except Exception:
+            return []
+
+    def _parse_size_to_mb(token: str) -> Optional[float]:
+        import re
+        m = re.match(r"(?i)^([0-9]+(?:\.[0-9]+)?)([kmgt]?)$", str(token or "").strip())
+        if not m:
+            return None
+        num = float(m.group(1))
+        unit = (m.group(2) or "").upper()
+        factor = {
+            "": 1.0 / (1024.0 * 1024.0),
+            "K": 1.0 / 1024.0,
+            "M": 1.0,
+            "G": 1024.0,
+            "T": 1024.0 * 1024.0,
+        }.get(unit)
+        if factor is None:
+            return None
+        return num * factor
+
     @app.get("/api/processes")
     async def api_processes() -> JSONResponse:
-        """List running NEXUS processes."""
+        """List NEXUS process status in a UI-friendly schema."""
         import subprocess as _sp
-        lines = []
+        profiles: Dict[str, Dict[str, Any]] = {
+            "dashboard": {"name": "Dashboard", "patterns": ["-m nexus_quant dashboard"]},
+            "brain": {"name": "Brain Loop", "patterns": ["-m nexus_quant brain"]},
+            "research": {"name": "Research", "patterns": ["-m nexus_quant learn", "-m nexus_quant research"]},
+            "backtest": {"name": "Backtest", "patterns": ["-m nexus_quant run", "-m nexus_quant improve"]},
+        }
+        parsed: List[Dict[str, Any]] = []
         try:
-            r = _sp.run(["ps", "aux"], capture_output=True, text=True, timeout=5)
-            for ln in r.stdout.splitlines():
-                if any(k in ln for k in ["nexus_quant", "brain", "dashboard", "start_nexus"]):
-                    parts = ln.split(None, 10)
-                    if len(parts) >= 11:
-                        lines.append({
-                            "pid": parts[1],
-                            "cpu": parts[2],
-                            "mem": parts[3],
-                            "command": parts[10][:120],
-                        })
+            r = _sp.run(["ps", "-axo", "pid,%cpu,rss,command"], capture_output=True, text=True, timeout=5)
+            for ln in r.stdout.splitlines()[1:]:
+                parts = ln.strip().split(None, 3)
+                if len(parts) < 4:
+                    continue
+                pid_s, cpu_s, rss_s, cmd = parts
+                cmd_l = cmd.lower()
+                if "grep " in cmd_l:
+                    continue
+                try:
+                    pid = int(pid_s)
+                    cpu_pct = float(cpu_s)
+                    mem_mb = float(rss_s) / 1024.0
+                except Exception:
+                    continue
+                parsed.append({
+                    "pid": pid,
+                    "cpu_pct": cpu_pct,
+                    "mem_mb": mem_mb,
+                    "command": cmd,
+                    "command_l": cmd_l,
+                })
         except Exception as e:
-            lines = [{"error": str(e)}]
+            return JSONResponse({"processes": [], "error": str(e)})
 
-        # Read saved PIDs if any
-        pid_info: dict = {}
+        rows: List[Dict[str, Any]] = []
+        for target, meta in profiles.items():
+            pats = [str(p).lower() for p in (meta.get("patterns") or [])]
+            hits = [p for p in parsed if any(pat in p["command_l"] for pat in pats)]
+            if hits:
+                top = sorted(hits, key=lambda x: (x["cpu_pct"], x["mem_mb"]), reverse=True)[0]
+                rows.append({
+                    "target": target,
+                    "name": meta.get("name") or target.title(),
+                    "status": "running",
+                    "pid": str(top["pid"]),
+                    "cpu_pct": round(float(top["cpu_pct"]), 2),
+                    "mem_mb": round(float(top["mem_mb"]), 1),
+                    "command": str(top["command"])[:180],
+                })
+            else:
+                rows.append({
+                    "target": target,
+                    "name": meta.get("name") or target.title(),
+                    "status": "stopped",
+                    "pid": "",
+                    "cpu_pct": 0.0,
+                    "mem_mb": 0.0,
+                    "command": "",
+                })
+
+        known = [pat for meta in profiles.values() for pat in (meta.get("patterns") or [])]
+        extras = []
+        for p in parsed:
+            cmd_l = p["command_l"]
+            if "nexus_quant" not in cmd_l:
+                continue
+            if any(str(pat).lower() in cmd_l for pat in known):
+                continue
+            extras.append({
+                "target": "extra",
+                "name": "Other NEXUS",
+                "status": "running",
+                "pid": str(p["pid"]),
+                "cpu_pct": round(float(p["cpu_pct"]), 2),
+                "mem_mb": round(float(p["mem_mb"]), 1),
+                "command": str(p["command"])[:180],
+            })
+        rows.extend(extras[:8])
+
+        pid_info: Dict[str, str] = {}
         pid_file = Path("/tmp/nexus_pids.txt")
         if pid_file.exists():
-            saved = pid_file.read_text().strip().split()
+            saved = pid_file.read_text("utf-8", errors="replace").strip().split()
             labels = ["dashboard", "brain"]
             for i, pid in enumerate(saved):
                 if i < len(labels):
                     pid_info[labels[i]] = pid
 
-        return JSONResponse({
-            "processes": lines,
-            "saved_pids": pid_info,
-            "log_files": {
-                "brain": "/tmp/nexus_brain.log",
-                "dashboard": "/tmp/nexus_dashboard.log",
+        return JSONResponse(
+            {
+                "processes": rows,
+                "saved_pids": pid_info,
+                "log_files": {
+                    "dashboard": str(_resolve_log_path("dashboard")),
+                    "brain": str(_resolve_log_path("brain")),
+                    "research": str(_resolve_log_path("research")),
+                    "backtest": str(_resolve_log_path("backtest")),
+                },
             }
-        })
+        )
 
     @app.get("/api/log_tail")
     async def api_log_tail(target: str = "brain", n: int = 80) -> JSONResponse:
         """Return last N lines from a NEXUS log file."""
-        log_map = {
-            "brain": Path("/tmp/nexus_brain.log"),
-            "dashboard": Path("/tmp/nexus_dashboard.log"),
-            "research": Path("/tmp/nexus_research.log"),
-            "backtest": Path("/tmp/nexus_backtest.log"),
-        }
-        lp = log_map.get(target, Path(f"/tmp/nexus_{target}.log"))
+        t = str(target or "brain").strip().lower()
+        lp = _resolve_log_path(t)
         if not lp.exists():
-            return JSONResponse({"lines": [], "exists": False, "path": str(lp)})
+            return JSONResponse({"target": t, "lines": [], "exists": False, "path": str(lp)})
         try:
             text = lp.read_text("utf-8", errors="replace")
-            lines = text.splitlines()[-n:]
-            return JSONResponse({"lines": lines, "exists": True, "path": str(lp), "total_lines": len(text.splitlines())})
+            all_lines = text.splitlines()
+            lines = all_lines[-max(1, min(int(n or 80), 4000)) :]
+            return JSONResponse(
+                {
+                    "target": t,
+                    "lines": lines,
+                    "exists": True,
+                    "path": str(lp),
+                    "total_lines": len(all_lines),
+                }
+            )
         except Exception as e:
-            return JSONResponse({"lines": [], "error": str(e), "exists": True})
+            return JSONResponse({"target": t, "lines": [], "error": str(e), "exists": True, "path": str(lp)})
+
+    @app.get("/api/log_stream")
+    async def api_log_stream(request: StarletteRequest, target: str = "brain", n: int = 200):
+        """SSE stream of incremental log updates for Console tab."""
+        import asyncio
+        from fastapi.responses import StreamingResponse
+
+        t = str(target or "brain").strip().lower()
+        n_tail = max(20, min(int(n or 200), 2000))
+
+        async def _generator():
+            path = _resolve_log_path(t)
+            pos = 0
+            bootstrapped = False
+            while True:
+                if await request.is_disconnected():
+                    break
+                payload: Dict[str, Any] = {
+                    "target": t,
+                    "path": str(path),
+                    "exists": path.exists(),
+                    "lines": [],
+                    "ts": time.time(),
+                }
+                try:
+                    path = _resolve_log_path(t)
+                    payload["path"] = str(path)
+                    payload["exists"] = path.exists()
+                    if path.exists():
+                        if not bootstrapped:
+                            payload["lines"] = _read_tail_lines(path, n_tail)
+                            try:
+                                pos = int(path.stat().st_size)
+                            except Exception:
+                                pos = 0
+                            bootstrapped = True
+                        else:
+                            size = int(path.stat().st_size)
+                            if size < pos:
+                                pos = 0
+                            if size > pos:
+                                with path.open("rb") as f:
+                                    f.seek(pos)
+                                    chunk = f.read(size - pos)
+                                    pos = int(f.tell())
+                                if chunk:
+                                    text = chunk.decode("utf-8", errors="replace")
+                                    payload["lines"] = text.splitlines()[-400:]
+                except Exception as exc:
+                    payload["error"] = str(exc)
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                await asyncio.sleep(1.0)
+
+        return StreamingResponse(
+            _generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
+        )
 
     @app.post("/api/control")
     async def api_control(body: ControlRequest) -> JSONResponse:
@@ -1828,30 +2013,73 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
 
     @app.get("/api/system_status")
     async def api_system_status() -> JSONResponse:
-        """System resource usage: CPU, memory, disk, cache."""
+        """System resource usage for live console meters."""
+        import re
         import subprocess as _sp
-        status: dict = {}
+
+        status: Dict[str, Any] = {}
+        cpu_pct = 0.0
+        mem_pct = 0.0
+        disk_pct = 0.0
+
         try:
-            # CPU + memory via top
             r = _sp.run(["top", "-l", "1", "-n", "0"], capture_output=True, text=True, timeout=5)
             for line in r.stdout.splitlines():
                 if "CPU usage" in line:
                     status["cpu_line"] = line.strip()
-                if "PhysMem" in line:
+                    m = re.search(r"CPU usage:\s*([0-9.]+)% user,\s*([0-9.]+)% sys,\s*([0-9.]+)% idle", line)
+                    if m:
+                        cpu_pct = float(m.group(1)) + float(m.group(2))
+                elif "PhysMem" in line:
                     status["mem_line"] = line.strip()
+                    m2 = re.search(r"PhysMem:\s*([0-9.]+[KMGTP]?) used.*,\s*([0-9.]+[KMGTP]?) unused", line)
+                    if m2:
+                        used_mb = _parse_size_to_mb(m2.group(1))
+                        unused_mb = _parse_size_to_mb(m2.group(2))
+                        if used_mb is not None and unused_mb is not None and (used_mb + unused_mb) > 0:
+                            mem_pct = (used_mb / (used_mb + unused_mb)) * 100.0
         except Exception:
             pass
-        # Cache size
+
+        try:
+            df_target = str(artifacts_dir if artifacts_dir else Path("."))
+            dfr = _sp.run(["df", "-Pk", df_target], capture_output=True, text=True, timeout=5)
+            rows = [ln for ln in dfr.stdout.splitlines() if ln.strip()]
+            if len(rows) >= 2:
+                cols = rows[-1].split()
+                if len(cols) >= 5:
+                    disk_pct = float(str(cols[4]).strip().rstrip("%"))
+        except Exception:
+            pass
+
+        cache_size_mb: Optional[float] = None
+        cache_files = 0
         cache_dir = artifacts_dir.parent / ".cache" / "binance_rest" if artifacts_dir else Path(".cache/binance_rest")
         if cache_dir.exists():
             total = sum(f.stat().st_size for f in cache_dir.rglob("*") if f.is_file())
-            status["cache_size_mb"] = round(total / 1e6, 1)
-            status["cache_files"] = len(list(cache_dir.glob("*.json")))
-        # Artifacts size
+            cache_size_mb = round(total / 1e6, 1)
+            cache_files = len(list(cache_dir.glob("*.json")))
+
+        artifacts_size_mb: Optional[float] = None
+        run_count = 0
         if artifacts_dir and artifacts_dir.exists():
             total = sum(f.stat().st_size for f in artifacts_dir.rglob("*") if f.is_file())
-            status["artifacts_size_mb"] = round(total / 1e6, 1)
-            status["run_count"] = len(list((artifacts_dir / "runs").glob("*"))) if (artifacts_dir / "runs").exists() else 0
+            artifacts_size_mb = round(total / 1e6, 1)
+            run_count = len(list((artifacts_dir / "runs").glob("*"))) if (artifacts_dir / "runs").exists() else 0
+
+        status.update(
+            {
+                "cpu_pct": round(cpu_pct, 1),
+                "mem_pct": round(mem_pct, 1),
+                "disk_pct": round(disk_pct, 1),
+                "cache_size_mb": cache_size_mb,
+                "cache_files": cache_files,
+                "cache_size": f"{cache_size_mb:.1f} MB" if cache_size_mb is not None else "—",
+                "artifacts_size_mb": artifacts_size_mb,
+                "artifacts_size": f"{artifacts_size_mb:.1f} MB" if artifacts_size_mb is not None else "—",
+                "run_count": run_count,
+            }
+        )
         return JSONResponse(status)
 
     @app.get("/api/runs_history")

@@ -26,6 +26,12 @@ Run Orion autopilot (task bus: run -> research_ingest -> improve -> wisdom -> re
 python3 -m nexus_quant autopilot --config configs/run_synthetic_funding.json --bootstrap --steps 10
 ```
 
+Run self-healing supervisor for 24/7 mode (auto-restart + restart cap + optional budget guard):
+
+```bash
+python3 -m nexus_quant supervisor --config configs/run_synthetic_funding.json --autopilot-interval-seconds 60 --check-interval-seconds 60 --stale-seconds 1800 --max-restarts 5 --restart-window-seconds 1800 --max-log-mb 256 --budget-safety-multiplier 1.5
+```
+
 Curate long-horizon wisdom checkpoints (ledger + memory):
 
 ```bash
@@ -50,6 +56,10 @@ Monitor autopilot heartbeat:
 python3 -m nexus_quant guardian --artifacts artifacts --stale-seconds 900
 ```
 
+Supervisor control/status files:
+- `artifacts/state/orion_supervisor_control.json` (`mode=PAUSE|PAUSED|STOP` pauses restarts)
+- `artifacts/state/orion_supervisor_status.json` (live health/restart status)
+
 Promote an accepted self-learning candidate into the main config (dry-run by default):
 
 ```bash
@@ -69,6 +79,14 @@ python3 -m nexus_quant research ingest --path research/inbox --artifacts artifac
 ```
 
 Artifacts are written to `artifacts/` (reports + metrics + ledger JSONL).
+
+## Deploy online (full dashboard + API)
+
+Use GitHub + Render deployment guide:
+
+- `docs/DEPLOY_ONLINE.md`
+
+This keeps realtime endpoints (`/api/stream`, `/api/log_stream`) available for multi-device access.
 
 ## Runbook
 

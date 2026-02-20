@@ -5,10 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>NEXUS — Autonomous Quant Workforce</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root{
+  --font-ui:'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --bg:#F8FAFC;--surface:#FFFFFF;--surface2:#F1F5F9;--border:#E2E8F0;
   --accent:#2563EB;--accent-hover:#1D4ED8;--accent-light:#EFF6FF;
   --green:#16A34A;--green-light:#F0FDF4;--red:#DC2626;--red-light:#FEF2F2;
@@ -27,11 +30,21 @@
   --shadow:0 1px 2px rgba(0,0,0,.38);--shadow-md:0 10px 24px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--fg);font-size:14px;line-height:1.5;min-height:100vh}
+body{
+  font-family:var(--font-ui);
+  background:
+    radial-gradient(1200px 700px at 85% -10%, rgba(37,99,235,.12), transparent 60%),
+    radial-gradient(900px 500px at -10% 0%, rgba(16,185,129,.08), transparent 55%),
+    var(--bg);
+  color:var(--fg);
+  font-size:14px;
+  line-height:1.5;
+  min-height:100vh;
+}
 
 /* Header */
-.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:16px;height:54px;position:sticky;top:0;z-index:200;box-shadow:var(--shadow)}
-.logo{font-size:17px;font-weight:700;background:linear-gradient(135deg,#2563EB,#7C3AED);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px}
+.hdr{background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:16px;height:54px;position:sticky;top:0;z-index:200;box-shadow:var(--shadow)}
+.logo{font-size:17px;font-weight:800;background:linear-gradient(125deg,#1D4ED8,#0F766E);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.5px}
 .logo-sub{font-size:11px;color:var(--fg-muted);font-weight:400;margin-left:4px;-webkit-text-fill-color:var(--fg-muted)}
 .hdr-mini{display:flex;align-items:center;gap:6px;overflow-x:auto}
 .hdr-chip{font-size:10px;font-weight:600;padding:2px 9px;border:1px solid var(--border);border-radius:999px;background:var(--surface2);white-space:nowrap;transition:all .2s}
@@ -47,9 +60,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--fg);font-si
 @keyframes heartbeat{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(22,163,74,.4)}70%{transform:scale(1.1);box-shadow:0 0 0 8px rgba(22,163,74,0)}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(22,163,74,0)}}
 
 /* Tab bar */
-.tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.tab{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:500;color:var(--fg-muted);border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:color .15s;flex-shrink:0}
-.tab:hover{color:var(--fg)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tabs{background:color-mix(in srgb,var(--surface) 90%,transparent);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;position:sticky;top:54px;z-index:180;backdrop-filter:blur(8px)}
+.tab{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--fg-muted);border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:color .15s,background .15s;flex-shrink:0;border-radius:8px 8px 0 0}
+.tab:hover{color:var(--fg);background:var(--surface2)}.tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--accent-light)}
 
 /* KPI strip */
 .kpi-strip{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;gap:28px;overflow-x:auto;align-items:center}
@@ -70,7 +83,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--fg);font-si
 .page.active{display:block}
 
 /* Cards */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.card{background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
 .card:hover{border-color:color-mix(in oklab,var(--border) 60%,var(--accent));box-shadow:var(--shadow-md)}
 .ctitle{font-size:12px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .section-stamp{margin-left:auto;font-size:10px;font-weight:500;color:var(--fg-light);text-transform:none;letter-spacing:0}
@@ -159,11 +172,22 @@ tr:hover td{background:var(--surface2)}
 .log-tabs{display:flex;gap:0;border-bottom:1px solid var(--border)}
 .log-tab{padding:7px 14px;font-size:12px;cursor:pointer;border-bottom:2px solid transparent;color:var(--fg-muted)}
 .log-tab.active{border-bottom-color:var(--accent);color:var(--accent);font-weight:600}
-.log-body{flex:1;overflow-y:auto;padding:10px 12px;font-size:11px;font-family:monospace;line-height:1.5;background:#1E2030;color:#C5C8C6}
+.log-body{flex:1;overflow-y:auto;padding:10px 12px;font-size:11px;font-family:var(--font-mono);line-height:1.5;background:#0f172a;color:#cbd5e1}
 .log-body .lg-info{color:#7EC8E3}
 .log-body .lg-warn{color:#F9C74F}
 .log-body .lg-err{color:#FF6B6B}
 .log-body .lg-ok{color:#90EE90}
+.log-toolbar{margin-left:auto;display:flex;align-items:center;gap:8px;padding:4px 8px;flex-wrap:wrap}
+.log-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border:1px solid var(--border);border-radius:999px;font-size:11px;color:var(--fg-muted);background:var(--surface2)}
+.log-pill .dot{width:7px;height:7px;border-radius:50%;background:var(--yellow)}
+.log-pill.connected .dot{background:var(--green)}
+.log-pill.disconnected .dot{background:var(--red)}
+.log-pill.paused .dot{background:var(--yellow)}
+.log-search{width:180px;min-width:120px;padding:5px 9px;border-radius:6px;font-size:11px}
+.log-line{display:grid;grid-template-columns:52px 1fr;gap:10px;align-items:start}
+.log-ln{color:#64748b;user-select:none;text-align:right}
+.log-text{white-space:pre-wrap;word-break:break-word}
+:root[data-theme="dark"] .log-line .log-ln{color:#475569}
 .phase-timeline{display:flex;flex-direction:column;gap:4px}
 .phase-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;font-size:12px}
 .phase-item.done{background:var(--green-light)}
@@ -297,7 +321,7 @@ tr:hover td{background:var(--surface2)}
 .run-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;transition:all .15s}
 .run-item:hover{border-color:var(--accent);box-shadow:var(--shadow-md)}
 .run-name{font-size:12px;font-weight:600;color:var(--fg);margin-bottom:6px;word-break:break-all}
-.file-viewer{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;font-family:monospace;font-size:12px;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:10px}
+.file-viewer{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;font-family:var(--font-mono);font-size:12px;max-height:400px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:10px}
 .hide{display:none!important}
 
 /* Misc */
@@ -324,14 +348,17 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
   .logo-sub{display:none}
   .hdr-mini{order:3;width:100%}
   .hdr-actions{width:100%;justify-content:space-between}
+  .tabs{top:56px}
   .kpi-strip{padding:8px 12px;gap:14px}
   .page{padding:16px 12px}
   #tasks-lanes{grid-template-columns:1fr!important}
   #pitch-team{grid-template-columns:repeat(2,1fr)!important}
   .table-tools{flex-direction:column;align-items:stretch}
   .table-search{max-width:none;width:100%}
+  .log-toolbar{margin-left:0;width:100%;justify-content:flex-start}
+  .log-search{width:100%}
 }
-:root[data-theme="dark"] .log-body{background:#0c1324;color:#D5D9E4}
+:root[data-theme="dark"] .log-body{background:#0b1325;color:#dbe4f3}
 </style>
 </head>
 <body>
@@ -340,19 +367,23 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
 <header class="hdr">
   <div class="row gap-4">
     <span class="logo">NEXUS</span>
-    <span class="logo-sub">Autonomous Quant Workforce</span>
+    <span class="logo-sub" data-i18n="brand.sub">Nền tảng Quant tự động</span>
   </div>
   <div class="hdr-mini" id="hdr-mini">
-    <span class="hdr-chip" id="hc-sharpe">Sharpe —</span>
-    <span class="hdr-chip" id="hc-pnl">PnL —</span>
-    <span class="hdr-chip" id="hc-status">Status Connecting</span>
+    <span class="hdr-chip" id="hc-sharpe" data-i18n="hdr.sharpe">Sharpe —</span>
+    <span class="hdr-chip" id="hc-pnl" data-i18n="hdr.pnl">PnL —</span>
+    <span class="hdr-chip" id="hc-status" data-i18n="hdr.status_connecting">Trạng thái Đang kết nối</span>
   </div>
   <div class="hdr-actions">
     <span id="hdr-live" class="hdr-live connecting">
       <span id="live-heart" class="live-heart"></span>
-      <span id="live-label">Connecting…</span>
+      <span id="live-label" data-i18n="status.connecting">Đang kết nối…</span>
     </span>
-    <span id="hdr-badge" class="bdg bg-gray" style="font-size:12px">Connecting...</span>
+    <span id="hdr-badge" class="bdg bg-gray" style="font-size:12px" data-i18n="status.connecting_short">Đang kết nối...</span>
+    <select id="lang-select" class="btn btn-s btn-sm" style="padding:4px 8px" onchange="setLanguage(this.value)">
+      <option value="vi">VI</option>
+      <option value="en">EN</option>
+    </select>
     <button id="theme-toggle" class="btn btn-s btn-sm" onclick="toggleTheme()" title="Toggle dark mode (D)">🌙</button>
     <span id="hdr-clock" class="text-sm text-muted"></span>
   </div>
@@ -360,32 +391,32 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
 
 <!-- Tabs -->
 <nav class="tabs">
-  <div class="tab active" onclick="go('overview')">📊 Overview</div>
-  <div class="tab" onclick="go('chat')">💬 Chat</div>
-  <div class="tab" onclick="go('benchmark')">🏆 Benchmark</div>
-  <div class="tab" onclick="go('performance')">📈 Performance</div>
-  <div class="tab" onclick="go('risk')">⚠️ Risk</div>
-  <div class="tab" onclick="go('research')">🔬 Research</div>
-  <div class="tab" onclick="go('tasks')">✅ Tasks</div>
-  <div class="tab" onclick="go('files')">📁 Files</div>
-  <div class="tab" onclick="go('market')">📡 Market</div>
-  <div class="tab" onclick="go('pitch')">🎯 Pitch</div>
-  <div class="tab" onclick="go('logs')">📝 Logs</div>
-  <div class="tab" onclick="go('console')">⚙️ Console</div>
+  <div class="tab active" onclick="go('overview')">📊 <span data-i18n="tab.overview">Tổng quan</span></div>
+  <div class="tab" onclick="go('chat')">💬 <span data-i18n="tab.chat">Chat</span></div>
+  <div class="tab" onclick="go('benchmark')">🏆 <span data-i18n="tab.benchmark">Benchmark</span></div>
+  <div class="tab" onclick="go('performance')">📈 <span data-i18n="tab.performance">Hiệu suất</span></div>
+  <div class="tab" onclick="go('risk')">⚠️ <span data-i18n="tab.risk">Rủi ro</span></div>
+  <div class="tab" onclick="go('research')">🔬 <span data-i18n="tab.research">Nghiên cứu</span></div>
+  <div class="tab" onclick="go('tasks')">✅ <span data-i18n="tab.tasks">Nhiệm vụ</span></div>
+  <div class="tab" onclick="go('files')">📁 <span data-i18n="tab.files">Tệp</span></div>
+  <div class="tab" onclick="go('market')">📡 <span data-i18n="tab.market">Thị trường</span></div>
+  <div class="tab" onclick="go('pitch')">🎯 <span data-i18n="tab.pitch">Pitch</span></div>
+  <div class="tab" onclick="go('logs')">📝 <span data-i18n="tab.logs">Nhật ký</span></div>
+  <div class="tab" onclick="go('console')">⚙️ <span data-i18n="tab.console">Console</span></div>
 </nav>
 
 <!-- KPI Strip -->
 <div class="kpi-strip">
-  <div class="kpi" title="Sharpe Ratio: Risk-adjusted return per unit volatility. >1 = good, >2 = excellent. OOS ~1.0 expected."><span class="kpi-l">Sharpe</span><span id="k-sharpe" class="kpi-v acc">—</span></div>
-  <div class="kpi" title="Compound Annual Growth Rate: Annualized return. Strategy targets 6-10% at 0.35x leverage."><span class="kpi-l">CAGR</span><span id="k-cagr" class="kpi-v">—</span></div>
-  <div class="kpi" title="Maximum Drawdown: Largest peak-to-trough loss. Target <10% at current leverage."><span class="kpi-l">Max DD</span><span id="k-mdd" class="kpi-v">—</span></div>
-  <div class="kpi" title="Total Return since backtest start."><span class="kpi-l">Total Ret</span><span id="k-tot" class="kpi-v">—</span></div>
-  <div class="kpi" title="% of periods with positive P&L. ~49% = fine for a rank-reversal strategy (few big wins matter)."><span class="kpi-l">Win Rate</span><span id="k-wr" class="kpi-v">—</span></div>
-  <div class="kpi" title="Strategy name and signal mix: 35% carry + 45% momentum + 20% mean-reversion (48h)"><span class="kpi-l">Strategy</span><span id="k-strat" class="kpi-v acc" style="font-size:12px">—</span></div>
+  <div class="kpi" title="Sharpe Ratio: Risk-adjusted return per unit volatility. >1 = good, >2 = excellent. OOS ~1.0 expected."><span class="kpi-l" data-i18n="kpi.sharpe">Sharpe</span><span id="k-sharpe" class="kpi-v acc">—</span></div>
+  <div class="kpi" title="Compound Annual Growth Rate: Annualized return. Strategy targets 6-10% at 0.35x leverage."><span class="kpi-l" data-i18n="kpi.cagr">CAGR</span><span id="k-cagr" class="kpi-v">—</span></div>
+  <div class="kpi" title="Maximum Drawdown: Largest peak-to-trough loss. Target <10% at current leverage."><span class="kpi-l" data-i18n="kpi.mdd">Max DD</span><span id="k-mdd" class="kpi-v">—</span></div>
+  <div class="kpi" title="Total Return since backtest start."><span class="kpi-l" data-i18n="kpi.total_return">Tổng lợi nhuận</span><span id="k-tot" class="kpi-v">—</span></div>
+  <div class="kpi" title="% of periods with positive P&L. ~49% = fine for a rank-reversal strategy (few big wins matter)."><span class="kpi-l" data-i18n="kpi.win_rate">Tỷ lệ thắng</span><span id="k-wr" class="kpi-v">—</span></div>
+  <div class="kpi" title="Strategy name and signal mix: 35% carry + 45% momentum + 20% mean-reversion (48h)"><span class="kpi-l" data-i18n="kpi.strategy">Chiến lược</span><span id="k-strat" class="kpi-v acc" style="font-size:12px">—</span></div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
-    <span id="bt-progress" class="progress-pill idle"><span id="bt-progress-text">No active backtest</span><span class="progress-track"><span class="progress-fill"></span></span></span>
+    <span id="bt-progress" class="progress-pill idle"><span id="bt-progress-text" data-i18n="status.no_active_backtest">Không có backtest đang chạy</span><span class="progress-track"><span class="progress-fill"></span></span></span>
     <span class="text-sm text-muted" id="kpi-updated"></span>
-    <button class="btn btn-s btn-sm" onclick="refresh()">↻</button>
+    <button class="btn btn-s btn-sm" onclick="refresh()" data-i18n="btn.refresh">↻ Làm mới</button>
   </div>
 </div>
 
@@ -1143,7 +1174,7 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
     <div style="font-weight:600;margin-bottom:6px">💡 NEXUS Console — How to use</div>
     <div class="text-sm text-muted" style="line-height:1.7">
       <b>Process Monitor</b>: Shows running NEXUS processes (Dashboard, Brain Loop, Research). Use Start/Stop buttons to control them.<br>
-      <b>Log Viewer</b>: Switch between Dashboard/Brain logs to debug issues. Auto-refresh every 3s when enabled.<br>
+      <b>Log Viewer</b>: Switch between Dashboard/Brain logs to debug issues. Live stream via SSE with auto polling fallback.<br>
       <b>Quick Commands</b>: Run a backtest, start brain loop, or trigger research from this panel.<br>
       <b>Phase Timeline</b>: Historical milestones of NEXUS development.
     </div>
@@ -1219,16 +1250,20 @@ label{font-size:12px;font-weight:500;color:var(--fg-muted);margin-bottom:3px;dis
         <div class="log-tab" id="ltab-brain" onclick="switchLogTab('brain')">Brain</div>
         <div class="log-tab" id="ltab-research" onclick="switchLogTab('research')">Research</div>
         <div class="log-tab" id="ltab-backtest" onclick="switchLogTab('backtest')">Backtest</div>
-        <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:4px 8px">
+        <div class="log-toolbar">
+          <span id="log-stream-state" class="log-pill disconnected"><span class="dot"></span><span id="log-stream-label">Disconnected</span></span>
+          <input id="log-search" class="log-search" type="text" placeholder="Lọc dòng log..." data-i18n-placeholder="log.filter_placeholder" oninput="renderLogBody()">
           <label style="font-size:11px;color:var(--fg-muted);display:flex;align-items:center;gap:4px">
-            <input type="checkbox" id="log-auto" checked onchange="toggleLogAuto()"> Auto
+            <input type="checkbox" id="log-auto" checked onchange="toggleLogAuto()"> <span data-i18n="log.auto">Tự động</span>
           </label>
-          <button class="btn btn-s btn-sm" onclick="refreshLog()">↻</button>
+          <button class="btn btn-s btn-sm" id="log-pause-btn" onclick="toggleLogPause()" data-i18n="log.pause">Tạm dừng</button>
+          <button class="btn btn-s btn-sm" onclick="copyVisibleLogs()" data-i18n="log.copy">Sao chép</button>
+          <button class="btn btn-s btn-sm" onclick="refreshLog()" data-i18n="btn.refresh">↻ Làm mới</button>
         </div>
       </div>
-      <div class="log-body" id="log-body"><span style="color:#888">Connecting to log stream...</span></div>
+      <div class="log-body" id="log-body"><span style="color:#888" data-i18n="log.connecting">Đang kết nối log stream...</span></div>
       <div style="padding:6px 12px;border-top:1px solid var(--border);font-size:11px;color:var(--fg-muted);display:flex;justify-content:space-between">
-        <span id="log-info">Lines: 0</span>
+        <span id="log-info">Dòng: 0</span>
         <span id="log-updated">—</span>
       </div>
     </div>
@@ -1252,6 +1287,185 @@ function clr(v,pos=true){if(v==null)return'';return(pos?v>=0:v<=0)?'pos':'neg';}
 function now(){return new Date().toLocaleTimeString();}
 function toast(m,d=3){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d*1000);}
 function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB';}
+const LANG_KEY='nexus_lang';
+const I18N={
+  vi:{
+    'brand.sub':'Nền tảng Quant tự động',
+    'hdr.sharpe':'Sharpe —',
+    'hdr.pnl':'PnL —',
+    'hdr.status_connecting':'Trạng thái Đang kết nối',
+    'chip.sharpe':'Sharpe',
+    'chip.pnl':'PnL',
+    'chip.status':'Trạng thái',
+    'tab.overview':'Tổng quan',
+    'tab.chat':'Chat',
+    'tab.benchmark':'Benchmark',
+    'tab.performance':'Hiệu suất',
+    'tab.risk':'Rủi ro',
+    'tab.research':'Nghiên cứu',
+    'tab.tasks':'Nhiệm vụ',
+    'tab.files':'Tệp',
+    'tab.market':'Thị trường',
+    'tab.pitch':'Pitch',
+    'tab.logs':'Nhật ký',
+    'tab.console':'Console',
+    'kpi.sharpe':'Sharpe',
+    'kpi.cagr':'CAGR',
+    'kpi.mdd':'Max DD',
+    'kpi.total_return':'Tổng lợi nhuận',
+    'kpi.win_rate':'Tỷ lệ thắng',
+    'kpi.strategy':'Chiến lược',
+    'btn.refresh':'↻ Làm mới',
+    'status.connecting':'Đang kết nối…',
+    'status.connecting_short':'Đang kết nối...',
+    'status.live':'Trực tiếp',
+    'status.reconnecting':'Đang kết nối lại…',
+    'status.stale':'Trễ dữ liệu',
+    'status.updated':'Cập nhật {time}',
+    'status.live_dot':'Trực tiếp · {time}',
+    'status.no_active_backtest':'Không có backtest đang chạy',
+    'status.pass':'ĐẠT',
+    'status.fail':'KHÔNG ĐẠT',
+    'status.good':'TỐT',
+    'status.ok':'ỔN',
+    'status.weak':'YẾU',
+    'log.auto':'Tự động',
+    'log.auto_off':'Tự động tắt',
+    'log.pause':'Tạm dừng',
+    'log.resume':'Tiếp tục',
+    'log.copy':'Sao chép',
+    'log.filter_placeholder':'Lọc dòng log...',
+    'log.connecting':'Đang kết nối log stream...',
+    'log.disconnected':'Mất kết nối',
+    'log.streaming':'Đang stream',
+    'log.polling':'Đang polling',
+    'log.paused':'Đã tạm dừng',
+    'log.unavailable':'Không khả dụng',
+    'log.no_lines':'Chưa có dòng log cho mục này.',
+    'log.no_lines_filtered':'Không có dòng log phù hợp bộ lọc.',
+    'log.lines':'Dòng',
+    'log.filtered':'Đã lọc',
+    'log.copied':'Đã sao chép log',
+    'log.no_copy_data':'Không có log để sao chép',
+    'log.copy_failed':'Sao chép thất bại',
+    'console.no_processes':'Không có tiến trình NEXUS đang chạy',
+    'console.proc_unavailable':'Không thể tải process monitor',
+    'console.sys_unavailable':'Không thể tải thống kê hệ thống',
+    'console.request_failed':'Yêu cầu thất bại',
+  },
+  en:{
+    'brand.sub':'Autonomous Quant Platform',
+    'hdr.sharpe':'Sharpe —',
+    'hdr.pnl':'PnL —',
+    'hdr.status_connecting':'Status Connecting',
+    'chip.sharpe':'Sharpe',
+    'chip.pnl':'PnL',
+    'chip.status':'Status',
+    'tab.overview':'Overview',
+    'tab.chat':'Chat',
+    'tab.benchmark':'Benchmark',
+    'tab.performance':'Performance',
+    'tab.risk':'Risk',
+    'tab.research':'Research',
+    'tab.tasks':'Tasks',
+    'tab.files':'Files',
+    'tab.market':'Market',
+    'tab.pitch':'Pitch',
+    'tab.logs':'Logs',
+    'tab.console':'Console',
+    'kpi.sharpe':'Sharpe',
+    'kpi.cagr':'CAGR',
+    'kpi.mdd':'Max DD',
+    'kpi.total_return':'Total Return',
+    'kpi.win_rate':'Win Rate',
+    'kpi.strategy':'Strategy',
+    'btn.refresh':'↻ Refresh',
+    'status.connecting':'Connecting…',
+    'status.connecting_short':'Connecting...',
+    'status.live':'Live',
+    'status.reconnecting':'Reconnecting…',
+    'status.stale':'Stale',
+    'status.updated':'Updated {time}',
+    'status.live_dot':'Live · {time}',
+    'status.no_active_backtest':'No active backtest',
+    'status.pass':'PASS',
+    'status.fail':'FAIL',
+    'status.good':'GOOD',
+    'status.ok':'OK',
+    'status.weak':'WEAK',
+    'log.auto':'Auto',
+    'log.auto_off':'Auto Off',
+    'log.pause':'Pause',
+    'log.resume':'Resume',
+    'log.copy':'Copy',
+    'log.filter_placeholder':'Filter log lines...',
+    'log.connecting':'Connecting to log stream...',
+    'log.disconnected':'Disconnected',
+    'log.streaming':'Streaming',
+    'log.polling':'Polling',
+    'log.paused':'Paused',
+    'log.unavailable':'Unavailable',
+    'log.no_lines':'No log lines yet for this target.',
+    'log.no_lines_filtered':'No lines match this filter.',
+    'log.lines':'Lines',
+    'log.filtered':'Filtered',
+    'log.copied':'Logs copied',
+    'log.no_copy_data':'No log lines to copy',
+    'log.copy_failed':'Copy failed',
+    'console.no_processes':'No NEXUS processes running',
+    'console.proc_unavailable':'Process monitor unavailable',
+    'console.sys_unavailable':'System stats unavailable',
+    'console.request_failed':'Request failed',
+  }
+};
+let _lang='vi';
+function t(key,vars){
+  const dict=I18N[_lang]||I18N.vi;
+  let out=dict[key]??I18N.vi[key]??key;
+  if(vars&&typeof out==='string'){
+    Object.keys(vars).forEach(k=>{out=out.replace(new RegExp(`\\{${k}\\}`,'g'),String(vars[k]));});
+  }
+  return out;
+}
+function localizeVerdict(v){
+  const u=String(v||'').toUpperCase();
+  if(u==='PASS')return t('status.pass');
+  if(u==='FAIL')return t('status.fail');
+  if(u==='GOOD')return t('status.good');
+  if(u==='OK')return t('status.ok');
+  if(u==='WEAK')return t('status.weak');
+  return String(v||'—');
+}
+function applyI18n(){
+  document.documentElement.setAttribute('lang',_lang);
+  $$('[data-i18n]').forEach(el=>{
+    const k=el.getAttribute('data-i18n');
+    if(k)el.textContent=t(k);
+  });
+  $$('[data-i18n-placeholder]').forEach(el=>{
+    const k=el.getAttribute('data-i18n-placeholder');
+    if(k)el.setAttribute('placeholder',t(k));
+  });
+  const sel=$('lang-select');
+  if(sel)sel.value=_lang;
+  const pb=$('log-pause-btn');
+  if(pb)pb.textContent=(typeof _logPaused!=='undefined'&&_logPaused)?t('log.resume'):t('log.pause');
+}
+function setLanguage(lang){
+  _lang=lang==='en'?'en':'vi';
+  localStorage.setItem(LANG_KEY,_lang);
+  applyI18n();
+  setLiveStatus(APP_STATE.liveConnected?'connected':'connecting',APP_STATE.liveConnected?t('status.live'):t('status.connecting'));
+  if(!_logLastPath){
+    const info=$('log-info');
+    if(info&&/^(Lines|Dòng):/.test(info.textContent||''))info.textContent=`${t('log.lines')}: 0`;
+  }
+}
+function initLanguage(){
+  const saved=localStorage.getItem(LANG_KEY);
+  _lang=saved==='en'?'en':'vi';
+  applyI18n();
+}
 
 // ─── Tab system ───
 const TABS=['overview','chat','benchmark','performance','risk','research','tasks','files','market','pitch','logs','console'];
@@ -1286,7 +1500,7 @@ function setLiveStatus(state,label){
     live.classList.remove('connected','connecting','stale','disconnected');
     live.classList.add(state||'connecting');
   }
-  if(liveLabel)liveLabel.textContent=label||'Connecting…';
+  if(liveLabel)liveLabel.textContent=label||t('status.connecting');
   const dot=$('chat-sse-dot');
   if(dot)dot.className='sse-dot '+(state==='connected'?'':'yellow');
 }
@@ -1329,7 +1543,7 @@ function attachSectionStamps(){
     if(ct.querySelector('.section-stamp'))return;
     const st=document.createElement('span');
     st.className='section-stamp';
-    st.textContent='Updated —';
+    st.textContent=t('status.updated',{time:'—'});
     ct.appendChild(st);
   });
 }
@@ -1339,7 +1553,7 @@ function touchSection(id){
   const card=el.closest('.card');
   if(!card)return;
   const stamp=card.querySelector('.section-stamp');
-  if(stamp)stamp.textContent='Updated '+now();
+  if(stamp)stamp.textContent=t('status.updated',{time:now()});
 }
 function initCardExpansion(){
   $$('.card').forEach(card=>{
@@ -1462,17 +1676,18 @@ function loadKPI(){
     animateKpiText('k-tot',pct(tot),'kpi-v '+(tot>=0?'pos':'neg'));
     set('k-wr',pct(m.win_rate));
     set('k-strat',meta.strategy_name||m.strategy_name||m.run_name||d.run_name||'—');
-    set('kpi-updated','Updated '+now());
+    set('kpi-updated',t('status.updated',{time:now()}));
     // Header badge
     // verdict: check d.verdict.pass (nested), or derive from Sharpe
     const vObj=d.verdict||{};
     const vPass=vObj.pass;
     const v=m.strategy_verdict||(vPass===true?'PASS':vPass===false?'FAIL':(_sharpe>=1.5?'GOOD':_sharpe>=0.6?'OK':'WEAK'));
-    const b=$('hdr-badge');b.textContent=v;
+    const vLabel=localizeVerdict(v);
+    const b=$('hdr-badge');b.textContent=vLabel;
     b.className='bdg '+(v==='GOOD'||v==='PASS'?'bg-g':v==='OK'||v==='WARN'?'bg-y':'bg-r');
-    setHeaderChip('hc-sharpe','Sharpe '+n2(_sharpe),_sharpe>=1.5?'pos':_sharpe>=0.6?'neu':'neg');
-    setHeaderChip('hc-pnl','PnL '+pct(tot),tot>=0?'pos':'neg');
-    setHeaderChip('hc-status','Status '+v,v==='GOOD'||v==='PASS'?'pos':v==='OK'||v==='WARN'?'neu':'neg');
+    setHeaderChip('hc-sharpe',`${t('chip.sharpe')} ${n2(_sharpe)}`,_sharpe>=1.5?'pos':_sharpe>=0.6?'neu':'neg');
+    setHeaderChip('hc-pnl',`${t('chip.pnl')} ${pct(tot)}`,tot>=0?'pos':'neg');
+    setHeaderChip('hc-status',`${t('chip.status')} ${vLabel}`,v==='GOOD'||v==='PASS'?'pos':v==='OK'||v==='WARN'?'neu':'neg');
     // Update targets
     updateTargets(_sharpe);
     touchSection('eq-chart-wrap');
@@ -1722,7 +1937,7 @@ function loadChatMetrics(){
     if($('lm-sharpe-oos'))$('lm-sharpe-oos').textContent=oosS!=null?oosS.toFixed(2):'1.07';
     if($('lm-cagr'))$('lm-cagr').textContent=cagr!=null?pct(cagr,1):'—';
     if($('lm-mdd'))$('lm-mdd').textContent=mdd!=null?pct(mdd,1):'—';
-    if($('lm-updated'))$('lm-updated').textContent='Updated '+now();
+    if($('lm-updated'))$('lm-updated').textContent=t('status.updated',{time:now()});
     // Store in context
     CHAT_CTX.sharpe_is=sh;CHAT_CTX.sharpe_oos=oosS||1.07;CHAT_CTX.cagr=cagr;CHAT_CTX.mdd=mdd;
     touchSection('bp-metrics');
@@ -2277,7 +2492,7 @@ function loadMarket(){
   jx('/api/market').then(d=>{
     const items=d.market||d.data||d||[];
     const arr=Array.isArray(items)?items:Object.values(items);
-    set('mkt-ts','Updated '+now());
+    set('mkt-ts',t('status.updated',{time:now()}));
     if(!arr.length){html('mkt-funding','<div class="empty">No data</div>');return;}
     const frows=arr.map(it=>{
       const fr=+(it.funding_rate||it.fundingRate||0);
@@ -2564,14 +2779,14 @@ setInterval(()=>{if(LOADERS[_tab]&&_tab!=='chat'&&_tab!=='overview')LOADERS[_tab
 // ─── SSE live stream ───
 let _sseRetry=0;
 function _connectSSE(){
-  setLiveStatus('connecting','Connecting\u2026');
+  setLiveStatus('connecting',t('status.connecting'));
   APP_STATE.liveConnected=false;
   const src=new EventSource('/api/stream');
   src.onopen=()=>{
     _sseRetry=0;
     APP_STATE.liveConnected=true;
     APP_STATE.liveSeenAt=Date.now();
-    setLiveStatus('connected','Live');
+    setLiveStatus('connected',t('status.live'));
   };
   src.onmessage=(ev)=>{
     try{
@@ -2581,15 +2796,16 @@ function _connectSSE(){
       // Update header KPIs with animation
       if(d.sharpe!=null){
         animateKpiText('k-sharpe',n2(d.sharpe),'kpi-v '+(d.sharpe>=1.5?'pos':d.sharpe>=0.6?'neu':'neg'));
-        setHeaderChip('hc-sharpe','Sharpe '+n2(d.sharpe),d.sharpe>=1.5?'pos':d.sharpe>=0.6?'neu':'neg');
+        setHeaderChip('hc-sharpe',`${t('chip.sharpe')} ${n2(d.sharpe)}`,d.sharpe>=1.5?'pos':d.sharpe>=0.6?'neu':'neg');
       }
       if(d.mdd!=null){animateKpiText('k-mdd',pct(d.mdd),'kpi-v neg');}
-      if(d.latest_equity!=null){const r=d.latest_equity-1;animateKpiText('k-tot',pct(r),'kpi-v '+(r>=0?'pos':'neg'));setHeaderChip('hc-pnl','PnL '+pct(r),r>=0?'pos':'neg');}
+      if(d.latest_equity!=null){const r=d.latest_equity-1;animateKpiText('k-tot',pct(r),'kpi-v '+(r>=0?'pos':'neg'));setHeaderChip('hc-pnl',`${t('chip.pnl')} ${pct(r)}`,r>=0?'pos':'neg');}
       // Update header badge
       if(d.verdict!=null){
         const v=d.verdict?'PASS':'FAIL';
-        const b=$('hdr-badge');if(b){b.textContent=v;b.className='bdg '+(v==='PASS'?'bg-g':'bg-r');}
-        setHeaderChip('hc-status','Status '+v,v==='PASS'?'pos':'neg');
+        const vLabel=localizeVerdict(v);
+        const b=$('hdr-badge');if(b){b.textContent=vLabel;b.className='bdg '+(v==='PASS'?'bg-g':'bg-r');}
+        setHeaderChip('hc-status',`${t('chip.status')} ${vLabel}`,v==='PASS'?'pos':'neg');
       }
       // Live progress indicator
       if(d.active_run){
@@ -2600,8 +2816,8 @@ function _connectSSE(){
       } else if(APP_STATE.activeRun){
         APP_STATE.activeRun=null;
         const pill=$('bt-progress');
-        if(pill){pill.classList.add('idle');set('bt-progress-text','No active backtest');}
-        setLiveStatus('connected','Live');
+        if(pill){pill.classList.add('idle');set('bt-progress-text',t('status.no_active_backtest'));}
+        setLiveStatus('connected',t('status.live'));
       }
       // Push SSE events into chat feed
       if(d.event||d.kind){
@@ -2621,12 +2837,12 @@ function _connectSSE(){
       if(d.learning_velocity!=null){
         const lv=$('live-lv');if(lv)lv.textContent=(d.learning_velocity*100).toFixed(1)+'%';
       }
-      set('kpi-updated','Live \u00b7 '+now());
+      set('kpi-updated',t('status.live_dot',{time:now()}));
     }catch(e){}
   };
   src.onerror=()=>{
     APP_STATE.liveConnected=false;
-    setLiveStatus('connecting','Reconnecting\u2026');
+    setLiveStatus('connecting',t('status.reconnecting'));
     src.close();
     _sseRetry=Math.min(_sseRetry+1,5);
     setTimeout(_connectSSE,Math.pow(2,_sseRetry)*1000);
@@ -2802,6 +3018,11 @@ function renderYearBars(){
 let _logTarget='dashboard';
 let _logAutoRefresh=true;
 let _logTimer=null;
+let _logSource=null;
+let _logPaused=false;
+let _logBuffer=[];
+let _logLineCounter=0;
+let _logLastPath='';
 
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
@@ -2813,19 +3034,126 @@ function colorLine(line){
   return `<span>${escHtml(line)}</span>`;
 }
 
+function setLogStreamState(state,label){
+  const pill=$('log-stream-state');
+  const txt=$('log-stream-label');
+  if(pill){
+    pill.classList.remove('connected','disconnected','paused');
+    pill.classList.add(state||'disconnected');
+  }
+  if(txt)txt.textContent=label||'Disconnected';
+}
+
+function _isNearLogBottom(){
+  const el=$('log-body');
+  if(!el)return true;
+  return (el.scrollHeight-el.scrollTop-el.clientHeight)<40;
+}
+
+function appendLogLines(lines,replace=false){
+  const stickBottom=replace||_isNearLogBottom();
+  if(replace){
+    _logBuffer=[];
+    _logLineCounter=0;
+  }
+  (lines||[]).forEach(line=>{
+    _logLineCounter+=1;
+    _logBuffer.push({n:_logLineCounter,text:String(line||'')});
+  });
+  if(_logBuffer.length>4000)_logBuffer=_logBuffer.slice(-4000);
+  renderLogBody(stickBottom);
+}
+
+function renderLogBody(forceBottom){
+  const el=$('log-body');
+  if(!el)return;
+  const q=(($('log-search')||{}).value||'').trim().toLowerCase();
+  let rows=_logBuffer;
+  if(q)rows=rows.filter(r=>r.text.toLowerCase().includes(q));
+  const view=rows.slice(-1600);
+  if(!view.length){
+    el.innerHTML=`<span class="lg-warn">${q?t('log.no_lines_filtered'):t('log.no_lines')}</span>`;
+    set('log-info',q?`${t('log.lines')}: 0 (${t('log.filtered')})`:`${t('log.lines')}: 0`);
+    set('log-updated',t('status.updated',{time:now()}));
+    return;
+  }
+  el.innerHTML=view.map(r=>`<div class="log-line"><span class="log-ln">${r.n}</span><span class="log-text">${colorLine(r.text)}</span></div>`).join('');
+  if(forceBottom)el.scrollTop=el.scrollHeight;
+  const suffix=q?` · ${t('log.filtered')}: ${view.length}`:'';
+  set('log-info',`${t('log.lines')}: ${_logBuffer.length}${suffix}`);
+  set('log-updated',t('status.updated',{time:now()}));
+}
+
+function copyVisibleLogs(){
+  const q=(($('log-search')||{}).value||'').trim().toLowerCase();
+  let rows=_logBuffer;
+  if(q)rows=rows.filter(r=>r.text.toLowerCase().includes(q));
+  const text=rows.slice(-800).map(r=>r.text).join('\n');
+  if(!text){toast(t('log.no_copy_data'));return;}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>toast(t('log.copied'))).catch(()=>toast(t('log.copy_failed')));
+    return;
+  }
+  toast(t('log.copy_failed'));
+}
+
+function stopLogRealtime(){
+  if(_logSource){_logSource.close();_logSource=null;}
+  if(_logTimer){clearInterval(_logTimer);_logTimer=null;}
+}
+
+function startLogRealtime(){
+  stopLogRealtime();
+  if(!_logAutoRefresh||_logPaused){
+    setLogStreamState('paused',_logPaused?t('log.paused'):t('log.auto_off'));
+    return;
+  }
+  if(!window.EventSource){
+    setLogStreamState('disconnected',t('log.polling'));
+    refreshLog();
+    _logTimer=setInterval(refreshLog,3000);
+    return;
+  }
+  setLogStreamState('disconnected',t('status.connecting'));
+  const src=new EventSource(`/api/log_stream?target=${encodeURIComponent(_logTarget)}&n=220`);
+  _logSource=src;
+  src.onopen=()=>setLogStreamState('connected',t('log.streaming'));
+  src.onmessage=(ev)=>{
+    try{
+      const d=JSON.parse(ev.data||'{}');
+      if(d.path)_logLastPath=d.path;
+      if(d.error){
+        setLogStreamState('disconnected',t('log.disconnected'));
+        return;
+      }
+      if(Array.isArray(d.lines)&&d.lines.length){
+        appendLogLines(d.lines,false);
+      }else{
+        set('log-updated',t('status.updated',{time:now()}));
+      }
+    }catch(e){}
+  };
+  src.onerror=()=>{
+    if(_logSource!==src)return;
+    stopLogRealtime();
+    if(_logAutoRefresh&&!_logPaused){
+      setLogStreamState('disconnected',t('log.polling'));
+      refreshLog();
+      _logTimer=setInterval(refreshLog,3000);
+    }else{
+      setLogStreamState('paused',t('log.paused'));
+    }
+  };
+}
+
 function refreshLog(){
-  const logMap={dashboard:'/tmp/nexus_dash.log',brain:null,research:null,backtest:'/tmp/nexus_alpha_v1_run.log'};
-  jx(`/api/log_tail?n=200&target=${_logTarget}`).then(d=>{
-    const lines=(d.lines||[]);
-    const el=$('log-body');
-    if(!el)return;
-    el.innerHTML=lines.map(colorLine).join('<br>');
-    el.scrollTop=el.scrollHeight;
-    set('log-info',`Lines: ${lines.length}`);
-    set('log-updated','Updated: '+now());
+  jx(`/api/log_tail?n=300&target=${_logTarget}`).then(d=>{
+    _logLastPath=d.path||'';
+    appendLogLines(d.lines||[],true);
   }).catch(e=>{
     const el=$('log-body');
-    if(el)el.innerHTML=`<span class="lg-warn">Log unavailable: ${escHtml(String(e))}</span>`;
+    if(el)el.innerHTML=`<span class="lg-warn">${t('log.unavailable')}: ${escHtml(String(e))}</span>`;
+    setLogStreamState('disconnected',t('log.unavailable'));
   });
 }
 
@@ -2835,22 +3163,34 @@ function switchLogTab(name){
     const el=$('ltab-'+t);
     if(el)el.classList[t===name?'add':'remove']('active');
   });
+  _logBuffer=[];
+  _logLineCounter=0;
+  renderLogBody(true);
   refreshLog();
+  startLogRealtime();
 }
 
 function toggleLogAuto(){
   const cb=document.getElementById('log-auto');
   _logAutoRefresh=cb?cb.checked:true;
-  if(_logAutoRefresh){_logTimer=setInterval(refreshLog,3000);}
-  else{clearInterval(_logTimer);}
+  startLogRealtime();
+}
+
+function toggleLogPause(){
+  _logPaused=!_logPaused;
+  const btn=$('log-pause-btn');
+  if(btn)btn.textContent=_logPaused?t('log.resume'):t('log.pause');
+  if(_logPaused){setLogStreamState('paused',t('log.paused'));stopLogRealtime();return;}
+  startLogRealtime();
 }
 
 function refreshConsole(){
   // Processes
   jx('/api/processes').then(d=>{
     const procs=d.processes||[];
-    set('proc-count',procs.length);
-    if(!procs.length){html('proc-list','<div class="empty text-sm">No NEXUS processes running</div>');return;}
+    const running=procs.filter(p=>String(p.status||'')==='running').length;
+    set('proc-count',running);
+    if(!procs.length){html('proc-list',`<div class="empty text-sm">${t('console.no_processes')}</div>`);return;}
     html('proc-list',procs.map(p=>`
       <div class="proc-item ${p.status}">
         <div style="display:flex;align-items:center;gap:8px">
@@ -2865,7 +3205,7 @@ function refreshConsole(){
           <div>${escHtml(p.mem_mb!=null?p.mem_mb.toFixed(0)+' MB':'')}</div>
         </div>
       </div>`).join(''));
-  }).catch(()=>html('proc-list','<div class="empty text-sm">Process monitor unavailable</div>'));
+  }).catch(()=>html('proc-list',`<div class="empty text-sm">${t('console.proc_unavailable')}</div>`));
   // System status
   jx('/api/system_status').then(d=>{
     const cpu=d.cpu_pct||0,mem=d.mem_pct||0,disk=d.disk_pct||0;
@@ -2887,11 +3227,9 @@ function refreshConsole(){
       </div>
       <div style="font-size:11px;color:var(--fg-muted);margin-top:4px">Cache: ${escHtml(d.cache_size||'—')} · Artifacts: ${escHtml(d.artifacts_size||'—')}</div>
     `);
-  }).catch(()=>html('sys-status','<div class="text-sm text-muted">System stats unavailable</div>'));
-  // Start log auto-refresh
-  clearInterval(_logTimer);
+  }).catch(()=>html('sys-status',`<div class="text-sm text-muted">${t('console.sys_unavailable')}</div>`));
   refreshLog();
-  if(_logAutoRefresh)_logTimer=setInterval(refreshLog,3000);
+  startLogRealtime();
 }
 
 function ctrlAction(action,target){
@@ -2900,18 +3238,20 @@ function ctrlAction(action,target){
   fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({action,target,config:cfg||''})})
   .then(r=>r.json()).then(d=>{
-    const msg=d.status==='ok'?`✅ ${action} ${target}: ${d.message||'done'}`:
-      `❌ ${d.message||'Error'}`;
+    const ok=(d&&d.ok)!==false;
+    const extra=d&&d.pid?` (PID ${d.pid})`:'';
+    const msg=ok?`✅ ${action} ${target}${extra}`:`❌ ${d&&d.message?d.message:'Error'}`;
     set('ctrl-result',msg);
     toast(msg,3);
     setTimeout(refreshConsole,800);
-  }).catch(e=>{set('ctrl-result','❌ Request failed');});
+  }).catch(e=>{set('ctrl-result',`❌ ${t('console.request_failed')}`);});
 }
 
 // ─── Clock ───
 setInterval(()=>set('hdr-clock',new Date().toLocaleTimeString()),1000);
 
 // ─── Init ───
+initLanguage();
 initTheme();
 initKeyboardShortcuts();
 _connectSSE();
@@ -2923,7 +3263,7 @@ initCardExpansion();
 // Stale check — mark disconnected if no event in 30s
 setInterval(()=>{
   if(APP_STATE.liveConnected&&Date.now()-APP_STATE.liveSeenAt>30000){
-    setLiveStatus('stale','Stale');
+    setLiveStatus('stale',t('status.stale'));
   }
 },10000);
 </script>

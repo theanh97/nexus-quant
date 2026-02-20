@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: nexus-quant-dashboard
+    runtime: docker
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /api/status
+    envVars:
+      - key: ZAI_API_KEY
+        sync: false
+      - key: ZAI_ANTHROPIC_BASE_URL
+        value: https://api.z.ai/api/anthropic
+      - key: ZAI_DEFAULT_MODEL
+        value: glm-5
+      - key: NEXUS_ARTIFACTS_DIR
+        value: /app/artifacts
