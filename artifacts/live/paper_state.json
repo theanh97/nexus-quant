@@ -1,0 +1,39 @@
+{
+  "weights": {
+    "BTCUSDT": -0.0285,
+    "ETHUSDT": -0.040386,
+    "SOLUSDT": -0.003227,
+    "BNBUSDT": -0.048116,
+    "XRPUSDT": 0.054592,
+    "ADAUSDT": 0.019925,
+    "DOGEUSDT": 0.041468,
+    "AVAXUSDT": 0.0,
+    "DOTUSDT": -0.006888,
+    "LINKUSDT": 0.011131
+  },
+  "equity": 100000.0,
+  "entry_prices": {
+    "BTCUSDT": 66974.0,
+    "ETHUSDT": 1948.15,
+    "SOLUSDT": 82.46,
+    "BNBUSDT": 607.56,
+    "XRPUSDT": 1.4059,
+    "ADAUSDT": 0.2728,
+    "DOGEUSDT": 0.09831,
+    "AVAXUSDT": 8.896,
+    "DOTUSDT": 1.285,
+    "LINKUSDT": 8.572
+  },
+  "last_signal_epoch": 1771542000,
+  "pnl_history": [
+    {
+      "epoch": 1771542000,
+      "timestamp": "2026-02-20T13:51:14.013922+00:00",
+      "pnl": 0.0,
+      "equity": 100000.0,
+      "gross_leverage": 0.2542
+    }
+  ],
+  "created_at": "2026-02-20T13:51:14.014014+00:00",
+  "updated_at": "2026-02-20T13:51:14.014014+00:00"
+}

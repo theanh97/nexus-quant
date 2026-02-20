@@ -2626,6 +2626,7 @@
     <div class="tab" data-mode="ops" onclick="go('tasks')">✅ <span data-i18n="tab.tasks">Nhiệm vụ</span></div>
     <div class="tab" data-mode="ops" onclick="go('files')">📁 <span data-i18n="tab.files">Tệp</span></div>
     <div class="tab" data-mode="ops" onclick="go('logs')">📝 <span data-i18n="tab.logs">Nhật ký</span></div>
+    <div class="tab" data-mode="ops" onclick="go('signals')">📡 <span data-i18n="tab.signals">Tín hiệu</span></div>
     <div class="tab" data-mode="ops" onclick="go('console')">⚙️ <span data-i18n="tab.console">Console</span></div>
 
     <!-- Hidden Internal Tabs (Kept for compatibility, but hidden from UI) -->
@@ -3871,6 +3872,64 @@
     </div>
   </div>
 
+  <!-- ═══ LIVE SIGNALS (Paper Trading) ═══ -->
+  <div class="page" id="page-signals">
+    <div class="card" style="background:var(--info-bg,#EFF6FF);border:1px solid #BFDBFE;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600">📡 Live Signals — P91b Champion (Paper Trading)</div>
+          <div class="text-sm text-muted">Real-time signals from the champion strategy. Vol tilt overlay applied. Dollar-neutral.</div>
+        </div>
+        <button class="btn btn-p btn-sm" onclick="generateNewSignal()" id="btn-gen-signal">Generate Signal</button>
+      </div>
+    </div>
+
+    <!-- Paper Trading Summary -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="card" style="text-align:center">
+        <div class="text-sm text-muted">Paper Equity</div>
+        <div style="font-size:1.4em;font-weight:700" id="sig-equity">—</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="text-sm text-muted">Paper P&L</div>
+        <div style="font-size:1.4em;font-weight:700" id="sig-pnl">—</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="text-sm text-muted">Vol Tilt</div>
+        <div style="font-size:1.4em;font-weight:700" id="sig-voltilt">—</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="text-sm text-muted">Gross Leverage</div>
+        <div style="font-size:1.4em;font-weight:700" id="sig-leverage">—</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <!-- Left: Target Weights -->
+      <div class="card">
+        <h3 style="margin:0 0 12px">Target Weights</h3>
+        <div id="sig-weights" class="text-sm" style="font-family:monospace">Loading...</div>
+      </div>
+      <!-- Right: Trades Needed -->
+      <div class="card">
+        <h3 style="margin:0 0 12px">Trades Needed</h3>
+        <div id="sig-trades" class="text-sm" style="font-family:monospace">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Signal History -->
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin:0 0 12px">Signal History (<span id="sig-count">0</span> signals)</h3>
+      <div id="sig-history" class="text-sm" style="max-height:300px;overflow-y:auto;font-family:monospace">No signals yet.</div>
+    </div>
+
+    <!-- Sub-Strategy Breakdown -->
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin:0 0 12px">Sub-Strategy Breakdown</h3>
+      <div id="sig-subs" class="text-sm" style="font-family:monospace">Loading...</div>
+    </div>
+  </div>
+
   <!-- ═══ LOGS (Analysis Journal) ═══ -->
   <div class="page" id="page-logs">
     <div style="display:grid;grid-template-columns:1fr 380px;gap:16px">
@@ -4620,7 +4679,7 @@
     }
 
     // ─── Tab system ───
-    const TABS = ['home', 'performance-sc', 'how-it-works', 'live-demo', 'about', 'chat', 'research', 'tasks', 'files', 'logs', 'console', 'overview', 'benchmark', 'performance', 'risk', 'market', 'pitch'];
+    const TABS = ['home', 'performance-sc', 'how-it-works', 'live-demo', 'about', 'chat', 'research', 'tasks', 'files', 'signals', 'logs', 'console', 'overview', 'benchmark', 'performance', 'risk', 'market', 'pitch'];
 
     function buildShowcasePages() {
       if (window.showcaseBuilt) return;
@@ -6569,9 +6628,124 @@
       }).catch(e => toast('Error: ' + e.message));
     }
 
+    // ── Live Signals (Paper Trading) ─────────────────────────────
+    async function loadSignals() {
+      try {
+        const r = await fetch('/api/signals/latest');
+        const d = await r.json();
+        const sig = d.signal;
+        const paper = d.paper;
+
+        // Paper summary
+        if (paper) {
+          const pnl = paper.equity - 100000;
+          const pnlPct = (pnl / 100000 * 100).toFixed(2);
+          const color = pnl >= 0 ? '#16A34A' : '#DC2626';
+          document.getElementById('sig-equity').textContent = '$' + paper.equity.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+          document.getElementById('sig-pnl').innerHTML = `<span style="color:${color}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} (${pnlPct}%)</span>`;
+        }
+
+        if (!sig) {
+          document.getElementById('sig-weights').textContent = 'No signal generated yet. Click "Generate Signal" to start.';
+          document.getElementById('sig-trades').textContent = '—';
+          return;
+        }
+
+        // Vol tilt
+        const vtEl = document.getElementById('sig-voltilt');
+        if (sig.vol_tilt_active) {
+          vtEl.innerHTML = `<span style="color:#DC2626">ACTIVE (z=${sig.vol_tilt_z_score.toFixed(2)})</span>`;
+        } else {
+          vtEl.innerHTML = `<span style="color:#16A34A">OFF (z=${sig.vol_tilt_z_score.toFixed(2)})</span>`;
+        }
+        document.getElementById('sig-leverage').textContent = sig.gross_leverage.toFixed(4);
+
+        // Target weights
+        const wEntries = Object.entries(sig.target_weights)
+          .filter(([,w]) => Math.abs(w) > 0.001)
+          .sort((a,b) => Math.abs(b[1]) - Math.abs(a[1]));
+        let wHtml = '<table style="width:100%;border-collapse:collapse">';
+        wHtml += '<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left">Symbol</th><th style="text-align:right">Weight</th><th style="text-align:center">Side</th></tr>';
+        for (const [sym, w] of wEntries) {
+          const side = w > 0 ? '<span style="color:#16A34A">LONG</span>' : '<span style="color:#DC2626">SHORT</span>';
+          wHtml += `<tr><td>${sym}</td><td style="text-align:right">${w > 0 ? '+' : ''}${w.toFixed(4)}</td><td style="text-align:center">${side}</td></tr>`;
+        }
+        wHtml += '</table>';
+        document.getElementById('sig-weights').innerHTML = wHtml;
+
+        // Trades needed
+        if (sig.trades_needed && sig.trades_needed.length > 0) {
+          let tHtml = '<table style="width:100%;border-collapse:collapse">';
+          tHtml += '<tr style="border-bottom:1px solid var(--border)"><th>Dir</th><th>Symbol</th><th style="text-align:right">Delta</th><th style="text-align:right">Notional</th></tr>';
+          for (const t of sig.trades_needed) {
+            const dirColor = t.direction === 'BUY' ? '#16A34A' : '#DC2626';
+            tHtml += `<tr><td style="color:${dirColor};font-weight:600">${t.direction}</td><td>${t.symbol}</td>`;
+            tHtml += `<td style="text-align:right">${t.delta > 0 ? '+' : ''}${t.delta.toFixed(4)}</td>`;
+            tHtml += `<td style="text-align:right">$${t.notional_usd.toLocaleString()}</td></tr>`;
+          }
+          tHtml += '</table>';
+          document.getElementById('sig-trades').innerHTML = tHtml;
+        } else {
+          document.getElementById('sig-trades').textContent = 'No trades needed (positions unchanged)';
+        }
+
+        // Sub-strategy breakdown
+        if (sig.sub_signals) {
+          let sHtml = '<table style="width:100%;border-collapse:collapse">';
+          sHtml += '<tr style="border-bottom:1px solid var(--border)"><th>Signal</th>';
+          const syms = Object.keys(sig.target_weights).filter(s => Math.abs(sig.target_weights[s]) > 0.001);
+          for (const s of syms) sHtml += `<th style="text-align:right">${s.replace('USDT','')}</th>`;
+          sHtml += '</tr>';
+          for (const [sigName, weights] of Object.entries(sig.sub_signals)) {
+            sHtml += `<tr><td style="font-weight:600">${sigName}</td>`;
+            for (const s of syms) {
+              const w = weights[s] || 0;
+              const c = w > 0 ? '#16A34A' : w < 0 ? '#DC2626' : '#888';
+              sHtml += `<td style="text-align:right;color:${c}">${w.toFixed(3)}</td>`;
+            }
+            sHtml += '</tr>';
+          }
+          sHtml += '</table>';
+          document.getElementById('sig-subs').innerHTML = sHtml;
+        }
+
+        // History count
+        document.getElementById('sig-count').textContent = d.history_count;
+
+        // Signal timestamp
+        const ts = new Date(sig.timestamp).toLocaleString();
+        document.getElementById('sig-history').innerHTML = `<div class="text-muted">Latest signal: ${ts} (bar: ${sig.meta?.last_bar_utc || '—'})</div>`;
+
+      } catch (e) {
+        console.error('loadSignals error:', e);
+      }
+    }
+
+    async function generateNewSignal() {
+      const btn = document.getElementById('btn-gen-signal');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      try {
+        const r = await fetch('/api/signals/generate', { method: 'POST' });
+        const d = await r.json();
+        if (d.ok) {
+          toast('Signal generated successfully', 3);
+          await loadSignals();
+        } else {
+          toast('Error: ' + (d.error || 'unknown'), 5);
+        }
+      } catch (e) {
+        toast('Network error: ' + e.message, 5);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Signal';
+      }
+    }
+
     const LOADERS = {
       overview: loadOv, chat: loadChat, benchmark: loadBM, performance: loadPerf,
       risk: loadRisk, research: loadResearch, tasks: loadTasks, files: loadFiles, market: loadMarket, pitch: loadPitch,
+      signals: loadSignals,
       logs: () => { loadLogs({ replace: true, skipStats: false }); startAnalysisLogRealtime(false); },
       console: () => refreshConsole({ includeLogs: true, forceLogRefresh: true, forceStream: true })
     };
@@ -6587,6 +6761,7 @@
       files: 30000,
       market: 8000,
       pitch: 30000,
+      signals: 60000,
       logs: 8000,
       console: 2500,
     };
@@ -6602,6 +6777,7 @@
       files: loadFiles,
       market: loadMarket,
       pitch: loadPitch,
+      signals: loadSignals,
       logs: () => {
         if (!_analysisAutoRefreshEnabled()) {
           stopAnalysisLogRealtime();

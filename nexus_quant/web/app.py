@@ -2294,6 +2294,63 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             "available": sum(1 for m in models if m["available"]),
         })
 
+    # ── Live Signals (Paper Trading) ─────────────────────────────────
+    @app.get("/api/signals/latest")
+    async def api_signals_latest() -> JSONResponse:
+        """Return latest signal and paper trading state."""
+        import json as _json
+        signals_log = project_root / "artifacts" / "live" / "signals_log.jsonl"
+        paper_state = project_root / "artifacts" / "live" / "paper_state.json"
+
+        result: dict = {"signal": None, "paper": None, "history_count": 0}
+
+        # Latest signal from JSONL
+        if signals_log.exists():
+            lines = signals_log.read_text().strip().splitlines()
+            result["history_count"] = len(lines)
+            if lines:
+                try:
+                    result["signal"] = _json.loads(lines[-1])
+                except Exception:
+                    pass
+
+        # Paper state
+        if paper_state.exists():
+            try:
+                result["paper"] = _json.loads(paper_state.read_text())
+            except Exception:
+                pass
+
+        return JSONResponse(result)
+
+    @app.get("/api/signals/history")
+    async def api_signals_history(n: int = 50) -> JSONResponse:
+        """Return last N signals."""
+        import json as _json
+        signals_log = project_root / "artifacts" / "live" / "signals_log.jsonl"
+        if not signals_log.exists():
+            return JSONResponse({"signals": [], "total": 0})
+        lines = signals_log.read_text().strip().splitlines()
+        recent = lines[-n:] if len(lines) > n else lines
+        signals = []
+        for line in reversed(recent):
+            try:
+                signals.append(_json.loads(line))
+            except Exception:
+                pass
+        return JSONResponse({"signals": signals, "total": len(lines)})
+
+    @app.post("/api/signals/generate")
+    async def api_signals_generate() -> JSONResponse:
+        """Generate a new signal NOW (triggers Binance data fetch)."""
+        try:
+            from ..live.signal_generator import SignalGenerator
+            gen = SignalGenerator.from_production_config()
+            signal = gen.generate()
+            return JSONResponse({"ok": True, "signal": signal.to_dict()})
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
     # ── Analysis Log (Research Journal) ──────────────────────────────
     @app.get("/api/analysis_log")
     async def api_analysis_log(

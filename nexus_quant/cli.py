@@ -139,6 +139,12 @@ def _parse_args() -> argparse.Namespace:
     al_p.add_argument("--interval", type=int, default=3600, help="Seconds between cycles (default: 3600=1h)")
     al_p.add_argument("--max-cycles", type=int, default=0, help="Stop after N cycles (0=infinite)")
 
+    sig_p = sub.add_parser("signal", help="Generate real-time trading signal from P91b champion")
+    sig_p.add_argument("--config", default=None, help="Production config (default: configs/production_p91b_champion.json)")
+    sig_p.add_argument("--loop", action="store_true", help="Run continuously (generate signal every hour)")
+    sig_p.add_argument("--interval", type=int, default=3600, help="Seconds between signals in loop mode (default: 3600)")
+    sig_p.add_argument("--json", action="store_true", help="Output signal as JSON only (for piping)")
+
     return p.parse_args()
 
 
@@ -248,6 +254,31 @@ def main() -> int:
             print(json.dumps({"var": var, "regime": regime}, indent=2))
         else:
             print("No returns data found.")
+        return 0
+
+    if args.cmd == "signal":
+        from .live.signal_generator import SignalGenerator, generate_signal_cli
+        import time as _time
+        cfg_p = args.config
+        if args.loop:
+            gen = SignalGenerator.from_production_config(cfg_p)
+            while True:
+                try:
+                    if getattr(args, "json", False):
+                        sig = gen.generate()
+                        print(json.dumps(sig.to_dict(), indent=2))
+                    else:
+                        generate_signal_cli(cfg_p)
+                except Exception as e:
+                    print(f"[SIGNAL] Error: {e}", flush=True)
+                _time.sleep(args.interval)
+        else:
+            if getattr(args, "json", False):
+                gen = SignalGenerator.from_production_config(cfg_p)
+                sig = gen.generate()
+                print(json.dumps(sig.to_dict(), indent=2))
+            else:
+                generate_signal_cli(cfg_p)
         return 0
 
     cfg_path = Path(args.config)
