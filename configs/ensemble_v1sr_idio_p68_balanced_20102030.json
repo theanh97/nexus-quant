@@ -1,0 +1,11 @@
+{
+  "_comment": "Phase 68 BALANCED champion: V1(20%)+SR(10%)+Idio(20%)+F144(30%)+F168(20%). AVG=1.826, MIN=1.112. Best in class with MIN>1.11. Uses funding_momentum_alpha for both fund signals.",
+  "run_name": "ensemble_v1sr_idio_p68_balanced",
+  "_strategies": {
+    "v1": {"weight": 0.20, "name": "nexus_alpha_v1"},
+    "sr_437": {"weight": 0.10, "name": "sharpe_ratio_alpha"},
+    "idio_437": {"weight": 0.20, "name": "idio_momentum_alpha"},
+    "fund_144": {"weight": 0.30, "name": "funding_momentum_alpha", "params": {"funding_lookback_bars": 144, "direction": "contrarian"}},
+    "fund_168": {"weight": 0.20, "name": "funding_momentum_alpha", "params": {"funding_lookback_bars": 168, "direction": "contrarian"}}
+  }
+}
