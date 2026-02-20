@@ -34,6 +34,7 @@ from typing import Any, Dict, List, Optional
 from .binance_client import BinanceFuturesClient
 from .position_manager import PositionManager, RebalanceResult
 from .risk_gate import RiskGate, RiskReport
+from .notifier import TradeNotifier
 
 log = logging.getLogger("nexus.live")
 
@@ -101,6 +102,9 @@ class LiveEngine:
 
         # Mock balance for dry-run without API keys
         self._mock_balance = 100000.0
+
+        # Telegram notifier (no-op if env vars not set)
+        self.notifier = TradeNotifier()
 
         # State
         STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -243,15 +247,18 @@ class LiveEngine:
             report["signal"] = {
                 "vol_tilt_active": sig.vol_tilt_active,
                 "vol_tilt_z": round(sig.vol_tilt_z_score, 4),
+                "price_vol_active": sig.price_vol_active,
+                "price_vol": round(sig.price_vol_value, 4),
                 "gross_leverage": round(sig.gross_leverage, 4),
                 "net_exposure": round(sig.net_exposure, 4),
                 "trades_needed": len(sig.trades_needed),
                 "data_bars": sig.meta.get("data_bars"),
             }
             log.info(
-                "Signal: gross=%.4f net=%.4f vol_tilt=%s trades=%d",
+                "Signal: gross=%.4f net=%.4f vol_tilt=%s price_vol=%s(%.2f) trades=%d",
                 sig.gross_leverage, sig.net_exposure,
-                sig.vol_tilt_active, len(sig.trades_needed),
+                sig.vol_tilt_active, sig.price_vol_active,
+                sig.price_vol_value, len(sig.trades_needed),
             )
         except Exception as e:
             report["status"] = "signal_error"
@@ -285,9 +292,12 @@ class LiveEngine:
             if not risk_report.can_trade:
                 report["status"] = "halted"
                 log.critical("HALTED: %s", risk_report.halt_reason)
+                self.notifier.risk_halt(risk_report.halt_reason)
                 self._log_cycle(report)
                 return report
 
+            if risk_report.warnings:
+                self.notifier.risk_warning(risk_report.warnings)
             for w in risk_report.warnings:
                 log.warning("Risk: %s", w)
 
@@ -353,6 +363,7 @@ class LiveEngine:
         report["elapsed_seconds"] = round(time.time() - cycle_start, 1)
 
         self._log_cycle(report)
+        self.notifier.cycle_complete(report)
         return report
 
     # ------------------------------------------------------------------
@@ -381,6 +392,13 @@ class LiveEngine:
         log.info("Symbols: %s", ", ".join(self.config["data"]["symbols"]))
         log.info("Interval: %ds", self.interval_seconds)
         log.info("=" * 60)
+
+        # Notify start
+        self.notifier.engine_start(
+            mode=mode,
+            config_name=self.config.get("run_name", "?"),
+            symbols=self.config["data"]["symbols"],
+        )
 
         # Pre-flight
         pf = self.preflight()
@@ -418,6 +436,7 @@ class LiveEngine:
             self._interruptible_sleep(sleep_sec)
 
         log.info("Live engine stopped after %d cycles", cycle_num)
+        self.notifier.engine_stop(cycle_num)
 
     def stop(self) -> None:
         """Graceful stop — finishes current cycle then exits."""
@@ -460,6 +479,7 @@ class LiveEngine:
                     "quantity": qty, "status": f"ERROR: {e}",
                 })
 
+        self.notifier.emergency_close(results)
         return results
 
     # ------------------------------------------------------------------

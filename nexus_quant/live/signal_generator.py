@@ -46,6 +46,8 @@ class Signal:
     trades_needed: List[Dict[str, Any]]
     vol_tilt_active: bool
     vol_tilt_z_score: float
+    price_vol_active: bool
+    price_vol_value: float
     gross_leverage: float
     net_exposure: float
     sub_signals: Dict[str, Dict[str, float]]
@@ -61,6 +63,8 @@ class Signal:
             "trades_needed": self.trades_needed,
             "vol_tilt_active": self.vol_tilt_active,
             "vol_tilt_z_score": round(self.vol_tilt_z_score, 4),
+            "price_vol_active": self.price_vol_active,
+            "price_vol_value": round(self.price_vol_value, 4),
             "gross_leverage": round(self.gross_leverage, 4),
             "net_exposure": round(self.net_exposure, 4),
             "sub_signals": self.sub_signals,
@@ -129,6 +133,11 @@ class SignalGenerator:
         vol_tilt_lookback: int = 168,
         vol_tilt_ratio: float = 0.65,
         vol_tilt_enabled: bool = True,
+        price_vol_enabled: bool = True,
+        price_vol_window: int = 168,
+        price_vol_threshold: float = 0.50,
+        price_vol_scale: float = 0.50,
+        price_vol_f144_boost: float = 0.20,
         warmup_bars: int = 600,
         paper_equity: float = 100000.0,
     ) -> None:
@@ -138,6 +147,11 @@ class SignalGenerator:
         self.vol_tilt_lookback = vol_tilt_lookback
         self.vol_tilt_ratio = vol_tilt_ratio
         self.vol_tilt_enabled = vol_tilt_enabled
+        self.price_vol_enabled = price_vol_enabled
+        self.price_vol_window = price_vol_window
+        self.price_vol_threshold = price_vol_threshold
+        self.price_vol_scale = price_vol_scale
+        self.price_vol_f144_boost = price_vol_f144_boost
         self.warmup_bars = warmup_bars
         self.paper_equity = paper_equity
 
@@ -155,6 +169,7 @@ class SignalGenerator:
         symbols = cfg["data"]["symbols"]
         ens = cfg["ensemble"]
         vol = cfg.get("volume_tilt", {})
+        pvol = cfg.get("vol_regime_overlay", {})
 
         return cls(
             symbols=symbols,
@@ -163,6 +178,11 @@ class SignalGenerator:
             vol_tilt_lookback=vol.get("lookback_bars", 168),
             vol_tilt_ratio=vol.get("tilt_ratio", 0.65),
             vol_tilt_enabled=vol.get("enabled", True),
+            price_vol_enabled=pvol.get("enabled", True),
+            price_vol_window=pvol.get("window_bars", 168),
+            price_vol_threshold=pvol.get("threshold", 0.50),
+            price_vol_scale=pvol.get("scale_factor", 0.50),
+            price_vol_f144_boost=pvol.get("f144_boost", 0.20),
             warmup_bars=cfg.get("operational", {}).get("warmup_bars_required", 600),
         )
 
@@ -239,6 +259,28 @@ class SignalGenerator:
             return 0.0
         return float((mom_last - mu) / sigma)
 
+    def _compute_price_vol(self, dataset: MarketDataset) -> float:
+        """Compute rolling annualized BTC price volatility at the last bar.
+        Uses BTCUSDT close prices over price_vol_window bars (causal)."""
+        n = len(dataset.timeline)
+        if n < self.price_vol_window + 2:
+            return 0.0
+
+        # Compute BTC hourly returns
+        rets = []
+        for i in range(max(1, n - self.price_vol_window - 1), n):
+            c0 = dataset.close("BTCUSDT", i - 1)
+            c1 = dataset.close("BTCUSDT", i)
+            rets.append((c1 / c0 - 1.0) if c0 > 0 else 0.0)
+
+        if len(rets) < self.price_vol_window:
+            return 0.0
+
+        # Use last price_vol_window returns
+        window_rets = np.array(rets[-self.price_vol_window:], dtype=np.float64)
+        ann_vol = float(np.std(window_rets)) * np.sqrt(8760)
+        return ann_vol
+
     def generate(self) -> Signal:
         """
         Generate a signal at the current moment.
@@ -262,7 +304,27 @@ class SignalGenerator:
             for s in self.symbols:
                 blended[s] += bw * sw.get(s, 0.0)
 
-        # 4. Compute vol tilt
+        # 4a. Compute price vol overlay (Phase 129)
+        price_vol_val = self._compute_price_vol(dataset)
+        price_vol_active = (self.price_vol_enabled
+                            and price_vol_val > self.price_vol_threshold)
+
+        if price_vol_active:
+            # Tilt weights toward F144 + reduce leverage
+            boost_from_each = self.price_vol_f144_boost / max(1, len(self.ensemble_weights) - 1)
+            for s in self.symbols:
+                # Recompute blended with boosted F144 weights
+                val = 0.0
+                for sig_key, bw in self.ensemble_weights.items():
+                    if sig_key == "f144":
+                        adj_bw = min(0.60, bw + self.price_vol_f144_boost)
+                    else:
+                        adj_bw = max(0.05, bw - boost_from_each)
+                    sw = sub_weights.get(sig_key, {})
+                    val += adj_bw * sw.get(s, 0.0)
+                blended[s] = val * self.price_vol_scale
+
+        # 4b. Compute vol tilt (volume momentum)
         vol_z = self._compute_vol_z(dataset)
         vol_tilt_active = self.vol_tilt_enabled and vol_z > 0
 
@@ -313,6 +375,8 @@ class SignalGenerator:
             trades_needed=trades_needed,
             vol_tilt_active=vol_tilt_active,
             vol_tilt_z_score=vol_z,
+            price_vol_active=price_vol_active,
+            price_vol_value=price_vol_val,
             gross_leverage=gross,
             net_exposure=net,
             sub_signals={k: {s: round(v.get(s, 0.0), 6) for s in self.symbols} for k, v in sub_weights.items()},
@@ -393,6 +457,7 @@ def generate_signal_cli(config_path: Optional[str] = None) -> Signal:
     print(f"{'='*70}", flush=True)
     print(f"  Data bars: {signal.meta['data_bars']} | Last bar: {signal.meta['last_bar_utc']}", flush=True)
     print(f"  Vol tilt: {'ACTIVE (z={signal.vol_tilt_z_score:.2f})' if signal.vol_tilt_active else f'OFF (z={signal.vol_tilt_z_score:.2f})'}", flush=True)
+    print(f"  Price vol: {'ACTIVE' if signal.price_vol_active else 'OFF'} (BTC ann.vol={signal.price_vol_value:.2f})", flush=True)
     print(f"  Gross leverage: {signal.gross_leverage:.4f} | Net exposure: {signal.net_exposure:.4f}", flush=True)
 
     print(f"\n  TARGET WEIGHTS:", flush=True)

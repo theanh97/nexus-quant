@@ -1,0 +1,73 @@
+{
+  "phase": 129,
+  "description": "Overlay Interaction Test",
+  "elapsed_seconds": 137.3,
+  "variants": {
+    "baseline": {
+      "yearly": {
+        "2021": 1.6744,
+        "2022": 1.496,
+        "2023": 1.3221,
+        "2024": 2.2707,
+        "2025": 1.8981
+      },
+      "avg_sharpe": 1.7323,
+      "min_sharpe": 1.3221,
+      "obj": 1.5672
+    },
+    "vol_tilt_only": {
+      "yearly": {
+        "2021": 1.6744,
+        "2022": 1.496,
+        "2023": 1.3221,
+        "2024": 2.2707,
+        "2025": 1.8981
+      },
+      "avg_sharpe": 1.7323,
+      "min_sharpe": 1.3221,
+      "obj": 1.5672
+    },
+    "price_vol_only": {
+      "yearly": {
+        "2021": 2.1128,
+        "2022": 1.4311,
+        "2023": 1.5719,
+        "2024": 2.248,
+        "2025": 2.0586
+      },
+      "avg_sharpe": 1.8845,
+      "min_sharpe": 1.4311,
+      "obj": 1.7236
+    },
+    "both_combined": {
+      "yearly": {
+        "2021": 2.1128,
+        "2022": 1.4311,
+        "2023": 1.5719,
+        "2024": 2.248,
+        "2025": 2.0586
+      },
+      "avg_sharpe": 1.8845,
+      "min_sharpe": 1.4311,
+      "obj": 1.7236
+    }
+  },
+  "baseline_obj": 1.5672,
+  "best": {
+    "label": "price_vol_only",
+    "yearly": {
+      "2021": 2.1128,
+      "2022": 1.4311,
+      "2023": 1.5719,
+      "2024": 2.248,
+      "2025": 2.0586
+    },
+    "avg_sharpe": 1.8845,
+    "min_sharpe": 1.4311,
+    "obj": 1.7236
+  },
+  "interaction": "ADDITIVE",
+  "recommendation": "REPLACE \u2014 price vol overlay beats vol tilt",
+  "partial": false,
+  "timestamp": "2026-02-20T22:05:31"
+}
