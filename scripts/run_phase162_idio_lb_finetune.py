@@ -174,6 +174,14 @@ def fund_ts(ds):
     if FTS_LONG_W < n: sp[:FTS_LONG_W] = sp[FTS_LONG_W]
     return sp
 
+def _wkey(sk):
+    """Map signal key to weight dict key (f144 signal may be keyed as f168 in regime weights)."""
+    if sk == "f144":
+        for regime_w in WEIGHTS.values():
+            if "f168" in regime_w:
+                return "f168"
+    return sk
+
 def blend(sig_rets, bv, brd_p, fdo_p, fts_p):
     sks = list(sig_rets.keys())
     ml = min(len(sig_rets[sk]) for sk in sks)
@@ -186,11 +194,12 @@ def blend(sig_rets, bv, brd_p, fdo_p, fts_p):
         if not np.isnan(bv_[i]) and bv_[i] > VOL_THRESHOLD:
             bo = VOL_F168_BOOST / max(1, n_oth); ri = 0.0
             for sk in sks:
-                aw = min(0.60, w[sk]+VOL_F168_BOOST) if sk=="f144" else max(0.05, w[sk]-bo)
+                wk = _wkey(sk)
+                aw = min(0.60, w[wk]+VOL_F168_BOOST) if sk=="f144" else max(0.05, w[wk]-bo)
                 ri += aw * sig_rets[sk][i]
             ri *= VOL_SCALE
         else:
-            ri = sum(w[sk]*sig_rets[sk][i] for sk in sks)
+            ri = sum(w[_wkey(sk)]*sig_rets[sk][i] for sk in sks)
         if fdo_[i] > FDO_PCT: ri *= FDO_SCALE
         sp = fts_[i]
         if sp >= FTS_RT: ri *= FTS_RS
