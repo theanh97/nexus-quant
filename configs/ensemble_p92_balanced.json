@@ -1,0 +1,37 @@
+{
+  "phase": 92,
+  "section": "P91b_baseline",
+  "avg_sharpe": 2.0101,
+  "min_sharpe": 1.5761,
+  "yby_sharpes": {
+    "2021": 2.876,
+    "2022": 1.577,
+    "2023": 1.576,
+    "2024": 2.445,
+    "2025": 1.576
+  },
+  "weights": {
+    "v1": 0.2747,
+    "i460bw168": 0.1967,
+    "i415bw216": 0.3247,
+    "f144": 0.2039
+  },
+  "signal_config": {
+    "strat_names": [
+      "v1",
+      "i460bw168",
+      "i415bw216",
+      "f144"
+    ],
+    "architecture": "4 or 5 signal ensemble \u2014 see weights",
+    "notes": {
+      "v1": "nexus_alpha_v1 k=2",
+      "i460bw168": "idio_momentum_alpha lb=460 bw=168 k=4",
+      "i410bw216": "idio_momentum_alpha lb=410 bw=216 k=4",
+      "i415bw216": "idio_momentum_alpha lb=415 bw=216 k=4",
+      "i474bw216": "idio_momentum_alpha lb=474 bw=216 k=4",
+      "i600": "idio_momentum_alpha lb=600 bw=168 k=2",
+      "f144": "funding_momentum_alpha lb=144 k=2"
+    }
+  }
+}

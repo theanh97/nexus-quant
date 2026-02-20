@@ -1,0 +1,14 @@
+{
+  "phase": 92,
+  "section": "D:AVGmax-extended",
+  "type": "avg_max",
+  "avg_sharpe": 2.3201,
+  "min_sharpe": 1.0911,
+  "weights": {
+    "v1": 0.0425,
+    "i415bw216": 0.04,
+    "i474bw216": 0.4925,
+    "i600": 0.05,
+    "f144": 0.375
+  }
+}

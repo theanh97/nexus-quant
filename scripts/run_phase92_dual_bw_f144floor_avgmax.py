@@ -243,8 +243,9 @@ print("=" * 70, flush=True)
 # ─────────────────────────────────────────────────────────────────────────────
 # SECTION A: Load P90/P91 artifacts + run I410_bw216 fresh
 # ─────────────────────────────────────────────────────────────────────────────
-print("\nSECTION A: Load reference signals + run I410_bw216", flush=True)
+print("\nSECTION A: Load reference signals (re-run if missing) + I410_bw216", flush=True)
 
+# Try loading from P90/P91 artifacts first; re-run fresh into P92 if missing
 v1_data    = load_strategy("p90_v1",           P90_OUT_DIR)
 i460_bw168 = load_strategy("p90_i460_bw168_k4",P90_OUT_DIR)
 i415_bw216 = load_strategy("p90_i415_bw216_k4",P90_OUT_DIR)
@@ -252,14 +253,33 @@ i474_bw216 = load_strategy("p90_i474_bw216_k4",P90_OUT_DIR)
 i600_k2    = load_strategy("p90_i600_k2",      P90_OUT_DIR)
 fund_144   = load_strategy("p90_fund144",       P90_OUT_DIR)
 
+# Also try loading from P92 (in case we already ran them)
+def _try_load(var, p90_label, p92_label, strat_name, params):
+    if var and var.get("_avg", 0) > 0 and all(var.get(y, {}).get("returns_np") is not None for y in YEARS):
+        return var
+    cached = load_strategy(p92_label, OUT_DIR)
+    if cached and cached.get("_avg", 0) > 0 and all(cached.get(y, {}).get("returns_np") is not None for y in YEARS):
+        return cached
+    print(f"  Re-running {p92_label} (artifacts missing)...", flush=True)
+    return run_strategy(p92_label, strat_name, params)
+
+v1_data    = _try_load(v1_data,    "p90_v1",            "p92_v1",            "nexus_alpha_v1",       V1_PARAMS)
+i460_bw168 = _try_load(i460_bw168, "p90_i460_bw168_k4", "p92_i460_bw168_k4", "idio_momentum_alpha",  make_idio_params(460, 168, k=4))
+i415_bw216 = _try_load(i415_bw216, "p90_i415_bw216_k4", "p92_i415_bw216_k4", "idio_momentum_alpha",  make_idio_params(415, 216, k=4))
+i474_bw216 = _try_load(i474_bw216, "p90_i474_bw216_k4", "p92_i474_bw216_k4", "idio_momentum_alpha",  make_idio_params(474, 216, k=4))
+i600_k2    = _try_load(i600_k2,    "p90_i600_k2",       "p92_i600_k2",       "idio_momentum_alpha",  make_idio_params(600, 168, k=2))
+fund_144   = _try_load(fund_144,   "p90_fund144",        "p92_fund144",        "funding_momentum_alpha", make_fund_params(144, k=2))
+
 for name, data in [("V1", v1_data), ("I460bw168", i460_bw168), ("I415bw216", i415_bw216),
                    ("I474bw216", i474_bw216), ("I600", i600_k2), ("F144", fund_144)]:
     status = f"AVG={data['_avg']:.3f} ✓" if data and data.get("_avg", 0) > 0 else "MISSING!"
     print(f"  {name}: {status}", flush=True)
 
-# Run I410_bw216 fresh (P88 artifacts deleted)
-i410_bw216 = run_strategy("p92_i410_bw216_k4", "idio_momentum_alpha",
-                          make_idio_params(410, 216, k=4))
+# Run I410_bw216 fresh (or load if already cached in P92)
+i410_bw216 = load_strategy("p92_i410_bw216_k4", OUT_DIR)
+if not (i410_bw216 and i410_bw216.get("_avg", 0) > 0 and all(i410_bw216.get(y, {}).get("returns_np") is not None for y in YEARS)):
+    i410_bw216 = run_strategy("p92_i410_bw216_k4", "idio_momentum_alpha",
+                              make_idio_params(410, 216, k=4))
 
 print("\n" + "─"*60)
 print("SIGNAL PROFILE:", flush=True)
