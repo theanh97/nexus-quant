@@ -1,8 +1,8 @@
 {
   "_comment": "PRODUCTION CONFIG — P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
-  "_version": "2.10.0",
+  "_version": "2.11.0",
   "_created": "2026-02-20",
-  "_validated": "Phases 91-129: walk-forward stable, OOS validated; breadth regime switching v2.2.0; dispersion v2.3.0; TS overlay v2.4.0; TS fine-tune v2.5.0; F168 v2.6.0; vol fine-tune v2.7.0; breadth lb=192 LOYO 5/5 v2.8.0 OBJ=2.2095; TS short=12h long=96h LOYO 4/5 WF 2/2 v2.9.0 OBJ=2.2423; TS thresh re-sweep P168 rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 v2.10.0 OBJ=2.3510 (Δ=+0.1087)",
+  "_validated": "Phases 91-129: walk-forward stable, OOS validated; breadth regime switching v2.2.0; dispersion v2.3.0; TS overlay v2.4.0; TS fine-tune v2.5.0; F168 v2.6.0; vol fine-tune v2.7.0; breadth lb=192 LOYO 5/5 v2.8.0 OBJ=2.2095; TS short=12h long=96h LOYO 4/5 WF 2/2 v2.9.0 OBJ=2.2423; TS thresh re-sweep P168 rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 v2.10.0 OBJ=2.3510 (Δ=+0.1087); boost fine-tune P169 bt=0.25 bs=1.50 LOYO 3/5 v2.11.0 OBJ=2.3599 (Δ=+0.0089)",
   "run_name": "production_p91b",
   "seed": 42,
   "venue": {
@@ -152,7 +152,7 @@
       "daily_turnover_above_pct": 50.0
     },
     "expected_performance": {
-      "annual_sharpe_backtest": 2.35,
+      "annual_sharpe_backtest": 2.36,
       "annual_sharpe_realistic": 0.8,
       "annual_sharpe_conservative": 0.7,
       "max_drawdown_backtest_pct": 25.1,
@@ -259,7 +259,7 @@
   },
   "funding_term_structure_overlay": {
     "_comment": "Phase 150/152/164-165: Bidirectional funding term structure spread overlay — windows fine-tuned P164-165",
-    "_validated": "P150b LOYO 4/5, avg_delta=+0.1600, OBJ=2.0079; P152 WF 2/2 avg_delta=+0.1077, fine-tuned OBJ=2.0851; P164-165 window sweep: short=12h long=96h LOYO 4/5 WF 2/2 avg_delta=+0.1264 OBJ=2.2423 (Δ=+0.0328 vs v2.8.0)",
+    "_validated": "P150b LOYO 4/5, avg_delta=+0.1600, OBJ=2.0079; P152 WF 2/2 avg_delta=+0.1077, fine-tuned OBJ=2.0851; P164-165 window sweep: short=12h long=96h LOYO 4/5 WF 2/2 avg_delta=+0.1264 OBJ=2.2423 (Δ=+0.0328 vs v2.8.0); P168 threshold re-sweep rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 OBJ=2.3510; P169 boost fine-tune bt=0.25 bs=1.50 LOYO 3/5 OBJ=2.3599 (Δ=+0.0089)",
     "enabled": true,
     "signal": "funding_term_structure_spread",
     "short_window_bars": 12,
@@ -267,8 +267,8 @@
     "rolling_percentile_window": 336,
     "reduce_threshold": 0.6,
     "reduce_scale": 0.4,
-    "boost_threshold": 0.3,
-    "boost_scale": 1.25,
-    "mechanism": "spread = rolling_mean(cross-sectional funding, 12h) - rolling_mean(cross-sectional funding, 96h). Rolling percentile (336h). If spread_pct > 60th: scale×0.40 (more aggressive reduce — triggers more often). If spread_pct < 30th: scale×1.25 (bigger boost when TS cooling). P168 re-sweep: new rolling-window method changed optimal thresholds; rt=0.70→0.60 (lower trigger), rs=0.60→0.40 (stronger reduce), bs=1.15→1.25 (stronger boost). LOYO 4/5 avg_delta=+0.1087. 2025 only miss."
+    "boost_threshold": 0.25,
+    "boost_scale": 1.5,
+    "mechanism": "spread = rolling_mean(cross-sectional funding, 12h) - rolling_mean(cross-sectional funding, 96h). Rolling percentile (336h). If spread_pct > 60th: scale×0.40. If spread_pct < 25th: scale×1.50. P168 re-sweep: rt=0.70→0.60, rs=0.60→0.40, bs=1.15→1.25. P169 fine-tune: bt=0.30→0.25 (tighter boost window), bs=1.25→1.50 (stronger boost). Peak at bs=1.50 confirmed (bs=1.60 regresses). LOYO 3/5 Δ=+0.0089."
   }
 }
