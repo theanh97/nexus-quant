@@ -8,10 +8,10 @@
 | 71 | V1+Idio_437+Idio_600+F144+F168 | 1.861 | 1.097 | 15/21/14/40/10 (dual-idio!) |
 | 72 | V1+I437_bw336+I600_bw168+F144+F168 | 1.933 | 0.894 | 10/20/20/35/15 (AVG-max) |
 | 73 | V1+I437_bw168+I600_bw168+F144+F168 | 1.909 | 1.170 | 15/15/20/45/5 (balanced) |
-| 74 | V1+I437_bw168+I600_bw168+F144 | 1.902 | 1.199 | 17.5/12.5/22.5/47.5 (2.5% grid, best MIN) |
-| 75 | V1+I437_bw336+I600_bw168+F144+F168 | 1.934 | 0.972 | 12.5/20/17.5/40/10 (AVG-max) |
-| 76 | V1+I437_bw168_k3+I600_bw168+F144 | 1.914 | 1.191 | 17.5/12.5/22.5/47.5 (k3 breakthrough) |
-| **78** | **V1+I437_bw168_k3+I600_bw168+F144** | **1.919** | **1.206** | **17.5/17.5/20.0/45.0 (NEW BALANCED CHAMP)** |
+| 74 | V1+I437_bw168+I600_bw168+F144 | 1.902 | 1.199 | 17.5/12.5/22.5/47.5 (2.5% grid) |
+| 76 | V1+I437_bw168_k3+I600_bw168+F144 | 1.914 | 1.191 | 17.5/12.5/22.5/47.5 (k3) |
+| **78** | **V1+I437_bw168_k3+I600_bw168+F144** | **1.919** | **1.206** | **17.5/17.5/20.0/45.0 (BEST BALANCED)** |
+| **79** | **V1+I437_bw168_k3+I600_bw168+F144+F168** | **1.934** | **1.098** | **10/25/17.5/42.5/5 (BEST AVG-MAX, bw168+k3)** |
 
 ## Critical Strategy Name Distinction
 - `"funding_momentum_alpha"` = cumulative funding sum (uses `funding_lookback_bars`) ← CORRECT
@@ -44,22 +44,34 @@
 - Config saved: `configs/ensemble_p78_k3i437_17p5_balanced.json`
 - Strictly dominates P76 (1.914/1.191) on BOTH metrics
 
-**Phase 75 AVG-max**: `V1(12.5%) + I437_bw336(20%) + I600_bw168(17.5%) + F144(40%) + F168(10%)`
-- AVG=1.934, MIN=0.972
-- Config saved: `configs/ensemble_p75_bw336x168_avgmax.json`
+**Phase 78 balanced champion**: `V1(17.5%) + I437_bw168_k3(17.5%) + I600_bw168_k2(20.0%) + F144(45.0%)`
+- AVG=1.919, MIN=1.206, all 5 years positive, YbY: [3.446, 1.206, 1.207, 2.489, 1.249]
+- Config saved: `configs/ensemble_p78_k3i437_17p5_balanced.json`
 
-## Pareto Frontier (AVG vs MIN trade-off)
-- Higher AVG → worse MIN (unavoidable trade-off)
-- Phase 74 balanced: 1.902/1.199 (F168=0, k2 idio, best MIN at the time)
-- Phase 76 k=3: 1.914/1.191 (k=3 for I437 with P74 weights)
-- **Phase 78 balanced: 1.919/1.206 (k=3 + I437_wt=17.5%, current best balanced)**
-- Phase 75 AVG-max: 1.934/0.972 (bw336 for AVG)
-- Key insight: I437_k3 weight=17.5% (up from 12.5%) improves both AVG AND MIN
+**Phase 79 AVG-max champion**: `V1(10%) + I437_bw168_k3(25%) + I600_bw168_k2(17.5%) + F144(42.5%) + F168(5%)`
+- AVG=1.934, MIN=1.098 (strictly better than P75 bw336 AVG-max which had MIN=0.972)
+- Uses bw168+k3 (not bw336); I437_k3=25% is max tested
+- Config saved: `configs/ensemble_p79_k3i437_avgmax.json`
+
+## Pareto Frontier (fully characterized in Phases 78-79, k3 I437 space)
+Key non-dominated points:
+| AVG   | MIN   | Config |
+|-------|-------|--------|
+| 1.934 | 1.098 | V1=10%, I437_k3=25%, I600=17.5%, F144=42.5%, F168=5% |
+| 1.933 | 1.148 | V1=12.5%, I437_k3=22.5%, I600=17.5%, F144=45%, F168=2.5% |
+| 1.928 | 1.179 | V1=15%, I437_k3=22.5%, I600=17.5%, F144=42.5%, F168=2.5% |
+| 1.919 | 1.206 | V1=17.5%, I437_k3=17.5%, I600=20%, F144=45% ← P78 BALANCED |
+| 1.907 | 1.223 | V1=20%, I437_k3=17.5%, I600=20%, F144=42.5% |
+| 1.902 | 1.226 | V1=20%, I437_k3=20%, I600=20%, F144=40% |
+| 1.871 | 1.254 | V1=25%, I437_k3=12.5%, I600=22.5%, F144=37.5%, F168=2.5% |
+- **No configuration achieves AVG≥1.920 AND MIN≥1.207 simultaneously in this signal space**
+- I437_k3 optimal weight: 17.5% for balanced; 25% for AVG-max
 
 ## Weight Sensitivity Notes
-- I437_k3=17.5% is optimal (vs 12.5% in P74/P76) when using k=3
-- High-MIN region: V1=20%, I437_k3=17.5%, I600=20%, F144=42.5% → AVG=1.907, MIN=1.223 (best MIN seen)
-- P73→P76 gradient is monotone: higher F144/V1 → lower AVG, higher MIN
+- I437_k3=17.5% is optimal for balanced config (P79 sweep confirms peak)
+- I437_k3=25% pushes AVG to 1.934 but MIN stays at 1.098
+- High-MIN frontier: V1=20-25% with lower F144 floor (≥35%) → MIN can reach 1.254
+- Phase 79 confirmed: P78 balanced champion is Pareto-optimal in current signal space
 
 ## Research Phases Summary
 - Phases 59-66: Established V1+Idio+F144/F168 structure, found funding>vol signals
@@ -74,7 +86,8 @@
 - Phase 75: bw336×168 frontier → new AVG-max 1.934/0.972; single-I600 fails (1.881)
 - Phase 76: F160 test (good 2022), I800 fails, k=3 I437 → BALANCED CHAMP 1.914/1.191
 - Phase 77: k=3 fine grid (bug: 0 configs), bw336_k3 weaker, k3 I600 hurts MIN
-- Phase 78: Fixed grid (636 configs), V1 k=3 FAILS, F160 pure inferior, **NEW CHAMP 1.919/1.206** (I437_k3=17.5%)
+- Phase 78: Fixed grid (636 configs), V1 k=3 FAILS, F160 pure inferior, **NEW BALANCED CHAMP 1.919/1.206** (I437_k3=17.5%)
+- Phase 79: Extended grid (578 configs), P78 confirmed Pareto-optimal balanced; **NEW AVG-MAX 1.934/1.098** (k3 I437=25%, strictly dominates P75 bw336 AVG-max)
 
 ## Workflow Notes
 - All backtests: 5 OOS years (2021-2025), hourly bars, 10 crypto perps, Binance USDm
