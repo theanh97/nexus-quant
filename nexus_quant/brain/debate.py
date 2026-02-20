@@ -1,12 +1,13 @@
 """
 NEXUS Multi-Model Debate Engine
-Calls Claude, GPT-5.2 (Codex), Gemini Pro, GLM-5 on the same question,
+Calls Claude, GPT-5.2 (Codex), Gemini (API or CLI), GLM-5 on the same question,
 then has each model critique the others, then synthesizes a final verdict.
 
 Model tiers (cost-optimized):
 - Claude Sonnet 4.6: Deep architecture reasoning [PAID via ZAI]
 - GPT-5.2 (Codex): Code-centric analysis [PAID]
-- Gemini 2.5 Pro: Complex reasoning + cross-verification [FREE]
+- Gemini 2.5 Pro (API): Complex reasoning + cross-verification [FREE]
+- Gemini CLI: Headless CLI with OAuth — fallback when no API key [FREE]
 - GLM-5: Quick synthesis, low-cost [PAID via ZAI]
 """
 
@@ -57,6 +58,25 @@ class DebateEngine:
         self.debate_dir = self.artifacts_dir / "debate"
         self.debate_dir.mkdir(parents=True, exist_ok=True)
         self.history_file = self.debate_dir / "history.jsonl"
+
+    @staticmethod
+    def _gemini_cli_available() -> bool:
+        """Check if Gemini CLI binary exists on PATH."""
+        import shutil
+        return bool(shutil.which("gemini") or os.path.isfile("/opt/homebrew/bin/gemini"))
+
+    def _resolve_models(self, models: list = None) -> list:
+        """Resolve model list, substituting gemini-cli when API key unavailable."""
+        models = list(models or self.DEFAULT_MODELS)
+        has_gemini_key = bool(os.environ.get("GEMINI_API_KEY"))
+        has_cli = self._gemini_cli_available()
+        resolved = []
+        for m in models:
+            if m in ("gemini-2.5-pro", "gemini-2.5-flash") and not has_gemini_key and has_cli:
+                resolved.append("gemini-cli" if "pro" in m else "gemini-cli-flash")
+            else:
+                resolved.append(m)
+        return resolved
 
     # ------------------------------------------------------------------
     # Low-level model caller
@@ -146,6 +166,35 @@ class DebateEngine:
                 tokens = (data.get("usage") or {}).get("completion_tokens", len(text.split()))
                 return text, tokens
 
+            # ---- Gemini CLI (local binary, OAuth — no API key needed) ----
+            elif model in ("gemini-cli", "gemini-cli-pro", "gemini-cli-flash"):
+                import subprocess
+                import shutil
+
+                gemini_bin = shutil.which("gemini") or "/opt/homebrew/bin/gemini"
+                if not os.path.isfile(gemini_bin):
+                    return "(Gemini CLI not installed)", 0
+
+                cli_model = {
+                    "gemini-cli": "gemini-2.5-pro",
+                    "gemini-cli-pro": "gemini-2.5-pro",
+                    "gemini-cli-flash": "gemini-2.5-flash",
+                }.get(model, "gemini-2.5-pro")
+
+                combined = f"SYSTEM: {system}\n\nUSER: {prompt}"
+                result = subprocess.run(
+                    [gemini_bin, "-p", combined, "-m", cli_model, "-o", "text"],
+                    capture_output=True,
+                    timeout=90,
+                    cwd=os.environ.get("HOME", "/tmp"),
+                )
+                text = result.stdout.decode(errors="replace").strip()
+                # Strip Gemini CLI boilerplate lines
+                lines = text.splitlines()
+                clean = [l for l in lines if not l.startswith("Loaded cached") and not l.startswith("Hook registry")]
+                text = "\n".join(clean).strip() or "(no response)"
+                return text, len(text.split())
+
             # ---- MiniMax family (legacy, prefer Gemini) ----------------
             elif model in ("minimax-2.5", "minimax"):
                 try:
@@ -179,8 +228,7 @@ class DebateEngine:
     # ------------------------------------------------------------------
 
     def run_debate(self, topic: str, context: str = "", models: list = None) -> DebateRound:
-        if models is None:
-            models = list(self.DEFAULT_MODELS)
+        models = self._resolve_models(models)
 
         round_id = str(uuid.uuid4())[:8]
         contributions: List[DebateContribution] = []

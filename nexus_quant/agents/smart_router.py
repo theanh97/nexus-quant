@@ -112,6 +112,29 @@ GOOGLE_GEMINI_FLASH = ModelSpec(
 )
 
 
+# ─── Gemini CLI (local binary, OAuth — no API key needed) — FREE tier ───
+
+GEMINI_CLI_PRO = ModelSpec(
+    name="gemini-cli-pro",
+    provider="gemini-cli",
+    base_url="",
+    api_key_env="",
+    max_tokens=4096,
+    cost_tier="free",
+    strengths=["complex reasoning", "long context", "cross-verification", "no API key"],
+)
+
+GEMINI_CLI_FLASH = ModelSpec(
+    name="gemini-cli-flash",
+    provider="gemini-cli",
+    base_url="",
+    api_key_env="",
+    max_tokens=4096,
+    cost_tier="free",
+    strengths=["fast", "high throughput", "no API key"],
+)
+
+
 ROUTING_TABLE: Dict[TaskType, ModelSpec] = {
     TaskType.CODE_GENERATION: OPENAI_GPT52_CODEX,       # GPT-5.2 [PAID] — best for code
     TaskType.STRATEGY_RESEARCH: ZAI_CLAUDE_SONNET_46,    # Claude [PAID] — architecture thinking
@@ -150,17 +173,29 @@ class SmartRouter:
         except Exception:
             return None
 
+    @staticmethod
+    def _gemini_cli_available() -> bool:
+        import shutil
+        return bool(shutil.which("gemini") or os.path.isfile("/opt/homebrew/bin/gemini"))
+
     def route(self, task_type: TaskType) -> ModelSpec:
         """
         Return the best available model spec for this task type.
 
-        For CODE_GENERATION, prefer OpenAI if OPENAI_API_KEY is configured,
-        otherwise route to GLM-5 via ZAI.
+        Auto-fallback logic:
+        - CODE_GENERATION: OpenAI → GLM-5 if no key
+        - Gemini API → Gemini CLI if no GEMINI_API_KEY but CLI available
         """
         spec = self._routing_table.get(task_type, self._fallback_model)
         if task_type == TaskType.CODE_GENERATION and spec.provider == "openai":
             if not os.environ.get(spec.api_key_env):
                 spec = self._fallback_model
+
+        # Auto-fallback: Gemini API → Gemini CLI when no API key
+        if spec.provider == "google" and not os.environ.get(spec.api_key_env):
+            if self._gemini_cli_available():
+                cli_spec = GEMINI_CLI_PRO if "pro" in spec.name else GEMINI_CLI_FLASH
+                spec = cli_spec
 
         if spec.provider == "zai":
             spec = replace(spec, base_url=_zai_base_url())
@@ -218,15 +253,15 @@ class SmartRouter:
         if spec.provider == "openai":
             models_to_try = [spec.name]
             if task_type == TaskType.CODE_GENERATION:
-                # If GPT-5.2 isn't available, try gpt-4o before falling back to GLM-5.
                 models_to_try.append("gpt-4o")
             return self._call_openai(spec, system=system, user=user, max_tokens=max_tokens, models=models_to_try)
         if spec.provider == "google":
-            # Gemini uses OpenAI-compatible endpoint — same format, different base_url
             models_to_try = [spec.name]
             if "pro" in spec.name:
-                models_to_try.append("gemini-2.5-flash")  # fallback to Flash
+                models_to_try.append("gemini-2.5-flash")
             return self._call_openai(spec, system=system, user=user, max_tokens=max_tokens, models=models_to_try)
+        if spec.provider == "gemini-cli":
+            return self._call_gemini_cli(spec, system=system, user=user)
         if spec.provider == "zai":
             return self._call_anthropic(spec, system=system, user=user, max_tokens=max_tokens)
         raise ValueError(f"Unknown provider: {spec.provider}")
@@ -328,6 +363,34 @@ class SmartRouter:
                 break
 
         raise RuntimeError(f"OpenAI call failed for models={models}: {last_error}") from last_error
+
+    @staticmethod
+    def _call_gemini_cli(spec: ModelSpec, system: str, user: str) -> str:
+        """Call Gemini via local CLI binary (uses OAuth, no API key)."""
+        import shutil
+        import subprocess
+
+        gemini_bin = shutil.which("gemini") or "/opt/homebrew/bin/gemini"
+        if not os.path.isfile(gemini_bin):
+            raise RuntimeError("Gemini CLI not installed")
+
+        cli_model = "gemini-2.5-pro" if "pro" in spec.name else "gemini-2.5-flash"
+        combined = f"SYSTEM: {system}\n\nUSER: {user}"
+
+        result = subprocess.run(
+            [gemini_bin, "-p", combined, "-m", cli_model, "-o", "text"],
+            capture_output=True,
+            timeout=90,
+            cwd=os.environ.get("HOME", "/tmp"),
+        )
+        text = result.stdout.decode(errors="replace").strip()
+        # Strip Gemini CLI boilerplate
+        lines = text.splitlines()
+        clean = [l for l in lines if not l.startswith("Loaded cached") and not l.startswith("Hook registry")]
+        text = "\n".join(clean).strip()
+        if not text:
+            raise RuntimeError(f"Gemini CLI returned empty (stderr: {result.stderr.decode(errors='replace')[:200]})")
+        return text
 
     def _log_event(self, event: Dict[str, Any]) -> None:
         try:
