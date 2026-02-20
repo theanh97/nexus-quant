@@ -1,0 +1,365 @@
+{
+  "phase": 128,
+  "description": "Walk-Forward Validation of Combined Vol Overlay",
+  "elapsed_seconds": 41.7,
+  "overlay_params": {
+    "vol_window": 168,
+    "threshold_pct": 85,
+    "scale_factor": 0.5,
+    "f144_boost": 0.2
+  },
+  "baseline": {
+    "yearly_sharpes": {
+      "2021": 1.6744,
+      "2022": 1.496,
+      "2023": 1.3221,
+      "2024": 2.2707,
+      "2025": 1.8981
+    },
+    "avg_sharpe": 1.7323,
+    "min_sharpe": 1.3221,
+    "obj": 1.5672
+  },
+  "loyo": {
+    "results": [
+      {
+        "test_year": "2021",
+        "train_years": [
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "vol_threshold_calibrated": 0.6538,
+        "baseline_sharpe": 1.6744,
+        "overlay_sharpe": 2.3841,
+        "delta": 0.7097,
+        "high_vol_bars": 4578,
+        "total_bars": 7991,
+        "high_vol_pct": 57.3
+      },
+      {
+        "test_year": "2022",
+        "train_years": [
+          "2021",
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "vol_threshold_calibrated": 0.7245,
+        "baseline_sharpe": 1.496,
+        "overlay_sharpe": 1.7351,
+        "delta": 0.2391,
+        "high_vol_bars": 1671,
+        "total_bars": 8735,
+        "high_vol_pct": 19.1
+      },
+      {
+        "test_year": "2023",
+        "train_years": [
+          "2021",
+          "2022",
+          "2024",
+          "2025"
+        ],
+        "vol_threshold_calibrated": 0.762,
+        "baseline_sharpe": 1.3221,
+        "overlay_sharpe": 1.2978,
+        "delta": -0.0243,
+        "high_vol_bars": 156,
+        "total_bars": 8735,
+        "high_vol_pct": 1.8
+      },
+      {
+        "test_year": "2024",
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2025"
+        ],
+        "vol_threshold_calibrated": 0.7584,
+        "baseline_sharpe": 2.2707,
+        "overlay_sharpe": 2.5219,
+        "delta": 0.2512,
+        "high_vol_bars": 401,
+        "total_bars": 8759,
+        "high_vol_pct": 4.6
+      },
+      {
+        "test_year": "2025",
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "vol_threshold_calibrated": 0.7528,
+        "baseline_sharpe": 1.8981,
+        "overlay_sharpe": 1.884,
+        "delta": -0.0141,
+        "high_vol_bars": 516,
+        "total_bars": 8735,
+        "high_vol_pct": 5.9
+      }
+    ],
+    "wins": "3/5",
+    "avg_delta": 0.2323,
+    "avg_sharpe": 1.9646,
+    "min_sharpe": 1.2978,
+    "obj": 1.7421,
+    "pass": true
+  },
+  "expanding_window": {
+    "results": [
+      {
+        "test_year": "2021",
+        "train_years": [],
+        "note": "SKIP \u2014 no prior years for calibration",
+        "baseline_sharpe": 1.6744,
+        "overlay_sharpe": null,
+        "delta": null
+      },
+      {
+        "test_year": "2022",
+        "train_years": [
+          "2021"
+        ],
+        "vol_threshold_calibrated": 0.9564,
+        "baseline_sharpe": 1.496,
+        "overlay_sharpe": 1.7543,
+        "delta": 0.2583,
+        "high_vol_bars": 724,
+        "total_bars": 8735,
+        "high_vol_pct": 8.3
+      },
+      {
+        "test_year": "2023",
+        "train_years": [
+          "2021",
+          "2022"
+        ],
+        "vol_threshold_calibrated": 0.8848,
+        "baseline_sharpe": 1.3221,
+        "overlay_sharpe": 1.3221,
+        "delta": 0.0,
+        "high_vol_bars": 0,
+        "total_bars": 8735,
+        "high_vol_pct": 0.0
+      },
+      {
+        "test_year": "2024",
+        "train_years": [
+          "2021",
+          "2022",
+          "2023"
+        ],
+        "vol_threshold_calibrated": 0.7948,
+        "baseline_sharpe": 2.2707,
+        "overlay_sharpe": 2.4583,
+        "delta": 0.1876,
+        "high_vol_bars": 292,
+        "total_bars": 8759,
+        "high_vol_pct": 3.3
+      },
+      {
+        "test_year": "2025",
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "vol_threshold_calibrated": 0.7528,
+        "baseline_sharpe": 1.8981,
+        "overlay_sharpe": 1.884,
+        "delta": -0.0141,
+        "high_vol_bars": 516,
+        "total_bars": 8735,
+        "high_vol_pct": 5.9
+      }
+    ],
+    "wins": "2/4",
+    "avg_delta": 0.1079,
+    "pass": true
+  },
+  "fixed_threshold": [
+    {
+      "threshold": 0.4,
+      "yearly": {
+        "2021": {
+          "sharpe": 1.8536,
+          "high_vol_pct": 100.0
+        },
+        "2022": {
+          "sharpe": 1.3506,
+          "high_vol_pct": 85.2
+        },
+        "2023": {
+          "sharpe": 1.084,
+          "high_vol_pct": 45.5
+        },
+        "2024": {
+          "sharpe": 2.0396,
+          "high_vol_pct": 77.4
+        },
+        "2025": {
+          "sharpe": 1.6466,
+          "high_vol_pct": 44.5
+        }
+      },
+      "avg_sharpe": 1.5949,
+      "min_sharpe": 1.084,
+      "obj": 1.4234,
+      "delta_obj": -0.1438
+    },
+    {
+      "threshold": 0.5,
+      "yearly": {
+        "2021": {
+          "sharpe": 2.1128,
+          "high_vol_pct": 95.9
+        },
+        "2022": {
+          "sharpe": 1.4311,
+          "high_vol_pct": 59.3
+        },
+        "2023": {
+          "sharpe": 1.5719,
+          "high_vol_pct": 17.9
+        },
+        "2024": {
+          "sharpe": 2.248,
+          "high_vol_pct": 41.0
+        },
+        "2025": {
+          "sharpe": 2.0586,
+          "high_vol_pct": 19.4
+        }
+      },
+      "avg_sharpe": 1.8845,
+      "min_sharpe": 1.4311,
+      "obj": 1.7236,
+      "delta_obj": 0.1564
+    },
+    {
+      "threshold": 0.6,
+      "yearly": {
+        "2021": {
+          "sharpe": 2.4153,
+          "high_vol_pct": 71.0
+        },
+        "2022": {
+          "sharpe": 1.5698,
+          "high_vol_pct": 42.9
+        },
+        "2023": {
+          "sharpe": 1.2669,
+          "high_vol_pct": 10.1
+        },
+        "2024": {
+          "sharpe": 2.6792,
+          "high_vol_pct": 22.3
+        },
+        "2025": {
+          "sharpe": 1.8784,
+          "high_vol_pct": 12.0
+        }
+      },
+      "avg_sharpe": 1.9619,
+      "min_sharpe": 1.2669,
+      "obj": 1.7008,
+      "delta_obj": 0.1336
+    },
+    {
+      "threshold": 0.7,
+      "yearly": {
+        "2021": {
+          "sharpe": 2.0914,
+          "high_vol_pct": 48.9
+        },
+        "2022": {
+          "sharpe": 1.7242,
+          "high_vol_pct": 23.3
+        },
+        "2023": {
+          "sharpe": 1.3165,
+          "high_vol_pct": 4.9
+        },
+        "2024": {
+          "sharpe": 2.4513,
+          "high_vol_pct": 10.6
+        },
+        "2025": {
+          "sharpe": 1.9301,
+          "high_vol_pct": 6.4
+        }
+      },
+      "avg_sharpe": 1.9027,
+      "min_sharpe": 1.3165,
+      "obj": 1.7139,
+      "delta_obj": 0.1467
+    },
+    {
+      "threshold": 0.8,
+      "yearly": {
+        "2021": {
+          "sharpe": 1.9613,
+          "high_vol_pct": 30.0
+        },
+        "2022": {
+          "sharpe": 1.8915,
+          "high_vol_pct": 13.4
+        },
+        "2023": {
+          "sharpe": 1.2618,
+          "high_vol_pct": 1.6
+        },
+        "2024": {
+          "sharpe": 2.4217,
+          "high_vol_pct": 3.2
+        },
+        "2025": {
+          "sharpe": 1.8398,
+          "high_vol_pct": 2.9
+        }
+      },
+      "avg_sharpe": 1.8752,
+      "min_sharpe": 1.2618,
+      "obj": 1.6903,
+      "delta_obj": 0.1231
+    },
+    {
+      "threshold": 1.0,
+      "yearly": {
+        "2021": {
+          "sharpe": 2.0045,
+          "high_vol_pct": 12.5
+        },
+        "2022": {
+          "sharpe": 1.7894,
+          "high_vol_pct": 7.0
+        },
+        "2023": {
+          "sharpe": 1.3221,
+          "high_vol_pct": 0.0
+        },
+        "2024": {
+          "sharpe": 2.3115,
+          "high_vol_pct": 0.5
+        },
+        "2025": {
+          "sharpe": 1.9453,
+          "high_vol_pct": 0.7
+        }
+      },
+      "avg_sharpe": 1.8746,
+      "min_sharpe": 1.3221,
+      "obj": 1.7125,
+      "delta_obj": 0.1453
+    }
+  ],
+  "verdict": "VALIDATED \u2014 overlay survives walk-forward, consider for production",
+  "partial": false,
+  "timestamp": "2026-02-20T21:59:32"
+}
