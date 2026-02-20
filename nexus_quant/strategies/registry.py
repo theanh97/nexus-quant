@@ -104,6 +104,7 @@ from .pair_spread_alpha import PairSpreadAlphaStrategy
 from .vol_regime_mom_alpha import VolRegimeMomAlphaStrategy
 from .momentum_breakout_alpha import MomentumBreakoutAlphaStrategy
 from .p91b_ensemble import P91bEnsembleStrategy
+from .breadth_adaptive_ensemble import BreadthAdaptiveEnsembleStrategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -237,6 +238,9 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
 
     if name == "p91b_ensemble":
         return P91bEnsembleStrategy(params=params)
+
+    if name == "breadth_adaptive_ensemble":
+        return BreadthAdaptiveEnsembleStrategy(params=params)
 
     if name == "ensemble_v1":
         sub_cfgs = params.pop("sub_strategies", [])
