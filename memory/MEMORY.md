@@ -155,6 +155,14 @@
 - Phase 91: I600=0% BREAKTHROUGH → remove I600! 4-signal: V1+I460bw168+I415bw216+F144 → 2.040/1.571; lb=415 CONFIRMED OPTIMAL (sharp cliff at lb=420: 2023 drops 1.143→0.758)
 - Phase 91b: Ultra-fine balanced → 2.010/1.576 (F144=20.39%!); AVG-max 2.319 (I474bw216=47.25%!); I420/I430 with I415 get only 2.5% weight, not useful
 
+## Failed Research Directions
+- **Commodity CTA with EMA signals (Phases 139-140, 2026-02-21): KILLED**
+  - TrendFollowing EMA (12/26+20/50) on 8 commodities: FULL=-0.032, OOS_MIN=-0.184
+  - CTAEnsemble (Trend40%+Carry30%+MomValue30%): FULL=-0.298 (Carry is massive drag: -0.498)
+  - 14-sym (comm+FX+bonds) with Trend-only: OOS_MIN=-0.220 (WORSE than 8-comm)
+  - Root cause: EMA signals on daily commodity data lack edge. Front-month continuous = no carry signal.
+  - Verdict: Commodity CTA with EMA is not viable. Move to Deribit Skew MR or P91b improvements.
+
 ## Workflow Notes
 - All backtests: 5 OOS years (2021-2025), hourly bars, 10 crypto perps, Binance USDm
 - Sharpe formula: `(mean/pstd) × sqrt(8760)` for hourly returns (pstd = population std, ddof=0)
