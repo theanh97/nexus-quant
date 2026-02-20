@@ -1,0 +1,108 @@
+{
+  "phase": 116,
+  "description": "Comprehensive R&D Final Report",
+  "timestamp": "2026-02-20T17:42:50.072001",
+  "elapsed_seconds": 15.9,
+  "champion": {
+    "name": "P91b + vol_mom_z_168 @ r=0.65",
+    "config": "configs/production_p91b_champion.json",
+    "version": "2.0.0",
+    "ensemble_weights": {
+      "v1": 0.2747,
+      "i460bw168": 0.1967,
+      "i415bw216": 0.3247,
+      "f144": 0.2039
+    },
+    "vol_tilt": {
+      "lookback": 168,
+      "ratio": 0.65
+    }
+  },
+  "yearly_metrics": {
+    "2021": {
+      "sharpe": 2.9261,
+      "sortino": 3.9322,
+      "mdd_pct": -4.64,
+      "cagr_pct": 24.11,
+      "calmar": 5.1987,
+      "monthly_win_rate": 63.6,
+      "n_bars": 8759,
+      "n_months": 11
+    },
+    "2022": {
+      "sharpe": 1.4265,
+      "sortino": 1.9839,
+      "mdd_pct": -2.04,
+      "cagr_pct": 5.23,
+      "calmar": 2.5702,
+      "monthly_win_rate": 72.7,
+      "n_bars": 8759,
+      "n_months": 11
+    },
+    "2023": {
+      "sharpe": 1.4386,
+      "sortino": 1.8094,
+      "mdd_pct": -2.65,
+      "cagr_pct": 5.57,
+      "calmar": 2.0997,
+      "monthly_win_rate": 63.6,
+      "n_bars": 8759,
+      "n_months": 11
+    },
+    "2024": {
+      "sharpe": 2.1978,
+      "sortino": 2.8872,
+      "mdd_pct": -2.7,
+      "cagr_pct": 9.87,
+      "calmar": 3.6585,
+      "monthly_win_rate": 66.7,
+      "n_bars": 8783,
+      "n_months": 12
+    },
+    "2025": {
+      "sharpe": 2.0375,
+      "sortino": 2.9135,
+      "mdd_pct": -1.59,
+      "cagr_pct": 7.14,
+      "calmar": 4.4871,
+      "monthly_win_rate": 72.7,
+      "n_bars": 8759,
+      "n_months": 11
+    },
+    "2026_oos": {
+      "sharpe": 1.5121,
+      "sortino": 1.8927,
+      "mdd_pct": -0.5,
+      "cagr_pct": 2.98,
+      "calmar": 6.0082,
+      "monthly_win_rate": 0.0,
+      "n_bars": 1199,
+      "n_months": 1
+    }
+  },
+  "is_summary": {
+    "avg_sharpe": 2.0053,
+    "min_sharpe": 1.4265,
+    "max_sharpe": 2.9261,
+    "obj": 1.7159,
+    "worst_mdd": -4.64
+  },
+  "oos_2026": {
+    "sharpe": 1.5121,
+    "sortino": 1.8927,
+    "mdd_pct": -0.5,
+    "cagr_pct": 2.98,
+    "calmar": 6.0082,
+    "monthly_win_rate": 0.0,
+    "n_bars": 1199,
+    "n_months": 1
+  },
+  "rd_statistics": {
+    "total_phases": 116,
+    "signals_tested": "40+",
+    "param_variants": "200+",
+    "overlay_signals_tested": "25+",
+    "wf_validated_overlays": 1,
+    "alt_data_sources": 5
+  }
+}
