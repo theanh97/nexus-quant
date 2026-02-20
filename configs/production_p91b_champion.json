@@ -1,0 +1,166 @@
+{
+  "_comment": "PRODUCTION CONFIG — P91b Champion Ensemble (Phase 92, validated through Phase 102)",
+  "_version": "1.0.0",
+  "_created": "2026-02-20",
+  "_validated": "Phases 91-102: walk-forward stable, OOS validated, cost-robust, regime-insured",
+
+  "run_name": "production_p91b",
+  "seed": 42,
+
+  "venue": {
+    "name": "binance_usdm",
+    "kind": "crypto_perp",
+    "vip_tier": 0,
+    "maker_fee_rate": 0.0002,
+    "taker_fee_rate": 0.0005
+  },
+
+  "data": {
+    "provider": "binance_rest_v1",
+    "symbols": [
+      "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
+      "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT"
+    ],
+    "bar_interval": "1h",
+    "cache_dir": ".cache/binance_rest"
+  },
+
+  "execution": {
+    "style": "taker",
+    "slippage_bps": 3.0,
+    "spread_bps": 0.0,
+    "impact": {
+      "model": "none",
+      "coef_bps": 0.0
+    }
+  },
+
+  "costs": {
+    "fee_rate": 0.0005,
+    "slippage_rate": 0.0003,
+    "taker_fee_rate": 0.0005,
+    "maker_fee_rate": 0.0002,
+    "cost_multiplier": 1.0
+  },
+
+  "risk": {
+    "max_drawdown": 0.25,
+    "max_turnover_per_rebalance": 0.80,
+    "max_gross_leverage": 0.70,
+    "max_position_per_symbol": 0.30
+  },
+
+  "ensemble": {
+    "_comment": "4-signal blend — DO NOT remove v1 (regime insurance, Phase 102)",
+    "weights": {
+      "v1": 0.2747,
+      "i460bw168": 0.1967,
+      "i415bw216": 0.3247,
+      "f144": 0.2039
+    },
+    "signals": {
+      "v1": {
+        "strategy": "nexus_alpha_v1",
+        "params": {
+          "k_per_side": 2,
+          "w_carry": 0.35,
+          "w_mom": 0.45,
+          "w_mean_reversion": 0.20,
+          "momentum_lookback_bars": 336,
+          "mean_reversion_lookback_bars": 72,
+          "vol_lookback_bars": 168,
+          "target_gross_leverage": 0.35,
+          "rebalance_interval_bars": 60
+        }
+      },
+      "i460bw168": {
+        "strategy": "idio_momentum_alpha",
+        "params": {
+          "k_per_side": 4,
+          "lookback_bars": 460,
+          "beta_window_bars": 168,
+          "target_gross_leverage": 0.30,
+          "rebalance_interval_bars": 48
+        }
+      },
+      "i415bw216": {
+        "strategy": "idio_momentum_alpha",
+        "params": {
+          "k_per_side": 4,
+          "lookback_bars": 415,
+          "beta_window_bars": 216,
+          "target_gross_leverage": 0.30,
+          "rebalance_interval_bars": 48
+        }
+      },
+      "f144": {
+        "strategy": "funding_momentum_alpha",
+        "params": {
+          "k_per_side": 2,
+          "funding_lookback_bars": 144,
+          "direction": "contrarian",
+          "target_gross_leverage": 0.25,
+          "rebalance_interval_bars": 24
+        }
+      }
+    }
+  },
+
+  "monitoring": {
+    "_comment": "Thresholds for live monitoring — halt trading if breached",
+    "halt_conditions": {
+      "rolling_30d_sharpe_below": -1.0,
+      "max_drawdown_pct": 15.0,
+      "max_daily_loss_pct": 5.0,
+      "correlation_with_btc_above": 0.60,
+      "consecutive_losing_days": 14
+    },
+    "warning_conditions": {
+      "rolling_30d_sharpe_below": 0.0,
+      "drawdown_pct_above": 8.0,
+      "daily_turnover_above_pct": 50.0
+    },
+    "expected_performance": {
+      "annual_sharpe_backtest": 2.01,
+      "annual_sharpe_realistic": 0.78,
+      "annual_sharpe_conservative": 0.68,
+      "max_drawdown_backtest_pct": 25.1,
+      "expected_live_drawdown_pct": 15.0,
+      "is_oos_degradation_ratio": 0.50
+    }
+  },
+
+  "position_sizing": {
+    "_comment": "Guidelines for different account sizes",
+    "target_gross_leverage": 0.35,
+    "max_gross_leverage": 0.70,
+    "sizing_rules": {
+      "small_account_under_10k": {
+        "note": "Minimum viable: $10K. Below this, fees eat too much alpha.",
+        "leverage": 0.35,
+        "max_position_usd": 3500
+      },
+      "medium_account_10k_100k": {
+        "note": "Sweet spot. Full strategy as designed.",
+        "leverage": 0.35,
+        "max_position_usd_pct": 0.30
+      },
+      "large_account_100k_plus": {
+        "note": "May need to reduce leverage or add execution optimization.",
+        "leverage": 0.25,
+        "max_position_usd_pct": 0.20,
+        "consider_maker_orders": true
+      }
+    }
+  },
+
+  "operational": {
+    "rebalance_frequency": "hourly",
+    "data_refresh_interval_minutes": 60,
+    "warmup_bars_required": 500,
+    "timezone": "UTC",
+    "api_rate_limit_buffer_pct": 20,
+    "max_retries_on_api_error": 3,
+    "retry_delay_seconds": 5
+  }
+}
