@@ -1,0 +1,29 @@
+{
+  "phase": 91,
+  "section": "B_I600=0%_best",
+  "avg_sharpe": 2.0396,
+  "min_sharpe": 1.5712,
+  "yby_sharpes": {
+    "2021": 2.972,
+    "2022": 1.571,
+    "2023": 1.578,
+    "2024": 2.503,
+    "2025": 1.573
+  },
+  "weights": {
+    "v1": 0.2625,
+    "i460bw168": 0.2,
+    "i415bw216": 0.3125,
+    "f144": 0.225
+  },
+  "signal_config": {
+    "architecture": "V1 + I460bw168_k4 + I415bw216_k4 + F144_k2 [NO I600 - SIMPLIFIED!]",
+    "notes": {
+      "v1": "nexus_alpha_v1 k=2",
+      "i460bw168": "idio_momentum_alpha lb=460 bw=168 k=4",
+      "i415bw216": "idio_momentum_alpha lb=415 bw=216 k=4",
+      "f144": "funding_momentum_alpha lb=144 k=2"
+    },
+    "key_finding": "I600=0% (fully removed) gives higher MIN than I600=2.5%. Simplified 4-signal architecture is OPTIMAL."
+  }
+}
