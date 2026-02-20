@@ -1,0 +1,51 @@
+{
+  "phase": 115,
+  "description": "Cross-asset regime tilt",
+  "timestamp": "2026-02-20T17:40:38.753304",
+  "elapsed_seconds": 19.2,
+  "tradfi_data": {
+    "sp500": 1438,
+    "gold": 1441,
+    "dxy": 1441
+  },
+  "baseline_obj": 1.7159,
+  "results": {
+    "sp500_mom_14": {
+      "verdict": "NO_VALUE"
+    },
+    "sp500_mom_30": {
+      "verdict": "NO_VALUE"
+    },
+    "sp500_mom_60": {
+      "verdict": "NO_VALUE"
+    },
+    "gold_mom_14": {
+      "verdict": "NO_VALUE"
+    },
+    "gold_mom_30": {
+      "verdict": "NO_VALUE"
+    },
+    "gold_mom_60": {
+      "verdict": "NO_VALUE"
+    },
+    "dxy_mom_14": {
+      "verdict": "NO_VALUE"
+    },
+    "dxy_mom_30": {
+      "verdict": "NO_VALUE"
+    },
+    "dxy_mom_60": {
+      "verdict": "NO_VALUE"
+    },
+    "risk_composite_14": {
+      "verdict": "NO_VALUE"
+    },
+    "risk_composite_30": {
+      "verdict": "NO_VALUE"
+    },
+    "risk_composite_60": {
+      "verdict": "NO_VALUE"
+    }
+  },
+  "validated": []
+}
