@@ -44,6 +44,7 @@ from .skip_gram_momentum_alpha import SkipGramMomentumAlphaStrategy
 from .pure_momentum_alpha import PureMomentumAlphaStrategy
 from .funding_momentum_alpha import FundingMomentumAlphaStrategy
 from .vol_adjusted_momentum_alpha import VolAdjustedMomentumAlphaStrategy
+from .funding_vol_alpha import FundingVolAlphaStrategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -162,6 +163,9 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
 
     if name == "vol_adjusted_momentum_alpha":
         return VolAdjustedMomentumAlphaStrategy(params=params)
+
+    if name == "funding_vol_alpha":
+        return FundingVolAlphaStrategy(params=params)
 
     if name == "ensemble_v1":
         sub_cfgs = params.pop("sub_strategies", [])
