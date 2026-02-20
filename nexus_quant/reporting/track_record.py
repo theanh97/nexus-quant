@@ -251,9 +251,10 @@ class NexusTrackRecord:
 
     def _add_commodity_cta(self) -> None:
         """
-        commodity_cta: Phase 137 — real backtest validated on Yahoo Finance data.
+        commodity_cta: Phase 138 — diversification research complete.
         Strategy: EMA(12/26 + 20/50) + mom_20d, vol-targeting, monthly rebalance.
         Data: 13 commodity futures, 2007-2026, 7bps RT transaction cost.
+        Phase 138: FX EMA tested (FAIL), Bond EMA tested (complements commodity).
         """
         pr = ProjectRecord(
             name="commodity_cta",
@@ -262,22 +263,33 @@ class NexusTrackRecord:
             description=(
                 "CTA EMA Trend on 13 commodity futures (Energy/Metals/Grains/Softs). "
                 "Signal: EMA(12/26+20/50) crossovers + 20d momentum, vol-targeting. "
-                "Monthly rebalancing. Realistic costs 7bps RT."
+                "Monthly rebalancing. Realistic costs 7bps RT. "
+                "Phase 138: +TLT/IEF bond EMA reduces OOS1 drag to near-zero."
             ),
             champion_config="configs/cta_trend.json",
-            target_sharpe=0.3,  # realistic for commodity-only (vs 0.5-0.7 for diversified CTA)
+            target_sharpe=0.3,  # realistic for commodity CTA (SG CTA Index ~0.3-0.5)
             status="development",
             inception_date="2026-02-20",
             notes=(
-                "Phase 137: Real data validated (2007-2026, Yahoo Finance). "
-                "FULL Sharpe=+0.338, CAGR=5.6%, MaxDD=64.8%. "
-                "IS (2007-2015) Sharpe=+0.524. OOS1 (2016-2020) Sharpe=-0.206 "
-                "(commodity bear market 2015-2019 — regime failure). "
-                "OOS2 (2021-2026) Sharpe=+0.252. "
-                "WF verdict: FAIL on strict criteria. "
-                "Limitation: commodity-only cannot diversify through bond/FX crashes. "
+                "Phase 137: Commodity-only EMA CTA validated (2007-2026, Yahoo Finance). "
+                "FULL Sharpe=+0.338, IS=+0.524, OOS1=-0.206, OOS2=+0.252. WF FAIL. "
+                "Phase 138 Research: "
+                "(1) FX EMA (EURUSD/GBPUSD/JPYUSD/AUDUSD/CADUSD/CHFUSD): FAIL. "
+                "FX full Sharpe=+0.06 — EMA crossover does not work for FX. "
+                "FX needs carry signals (rate differential), not price momentum. "
+                "(2) Diversified (comm+FX+bond): WORSE than commodity-only. "
+                "FX pollutes portfolio, full Sharpe drops to +0.068. "
+                "(3) Bond EMA (TLT+IEF): COMPLEMENTARY to commodities. "
+                "Bond IS=+0.319, OOS1=+0.455 (when commodity OOS1=-0.197!). "
+                "Bond 2022=+0.35 (shorts bonds during rate hike crash). "
+                "Commodity+Bond combined: FULL=+0.410, OOS1=-0.090 (equal budget) "
+                "or OOS1=+0.015 (with commodity x0.5, bond x2.0 — hindsight bias). "
+                "WF MARGINAL FAIL: OOS1 improves -0.197 → -0.090 but stays negative. "
+                "Conclusion: Commodity CTA Sharpe~0.3-0.4 matches SG CTA Index. "
+                "Target >0.8 unreachable for commodity-only EMA trend following. "
                 "Key wins: 2008 +101%, 2014 +51%, 2020 +44%, 2021 +12%, 2022 +12%. "
-                "Next: expand to FX + bond instruments for proper diversification."
+                "Structural failure: 2016-2017, 2019 commodity bear market years. "
+                "Next: FX Carry (rate differential) or move to Crypto Options."
             ),
         )
 
@@ -307,17 +319,27 @@ class NexusTrackRecord:
         self.projects["commodity_cta"] = pr
 
     def _add_fx_majors(self) -> None:
-        """fx_majors: Template only, not yet active."""
+        """fx_majors: Phase 138b — EMA trend tested, carry strategy needed."""
         pr = ProjectRecord(
             name="fx_majors",
             market="fx",
             asset_class="spot_fx",
-            description="FX major pairs strategy (EURUSD, GBPUSD, JPYUSD, etc.). Template only.",
+            description="FX major pairs strategy (EURUSD, GBPUSD, JPYUSD, etc.). EMA trend tested, carry approach needed.",
             champion_config="",
             target_sharpe=0.8,
             status="planned",
             inception_date="",
-            notes="Template project. No strategy implemented yet.",
+            notes=(
+                "Phase 138b: EMA crossover trend tested on 6 FX pairs (EURUSD, GBPUSD, JPYUSD, AUDUSD, CADUSD, CHFUSD). "
+                "EMA FULL Sharpe=+0.060 (near zero, not additive). "
+                "Faster EMA (5/20 weekly) WORSE: FULL=-0.190. "
+                "Conclusion: EMA momentum does NOT work for FX spot. "
+                "FX is driven by rate differentials (carry), not price trends. "
+                "Next approach: FX Carry strategy (long high-yield, short low-yield currencies). "
+                "Historical carry leaders: AUD, NZD (high yield). "
+                "Historical carry funders: JPY, CHF (low yield). "
+                "Carry strategy academically validated (AQR, Lustig et al. 2011)."
+            ),
         )
         pr.compute_aggregates()
         self.projects["fx_majors"] = pr
@@ -426,7 +448,7 @@ class NexusTrackRecord:
             "meta": {
                 "crypto_perps_status": "OOS validated — 5yr avg Sharpe 2.005",
                 "crypto_options_status": "VRP validated — 5yr avg Sharpe 1.520, min 1.273",
-                "commodity_cta_status": "Infrastructure complete — backtest pending real data",
+                "commodity_cta_status": "Phase 138 complete — EMA Sharpe~0.3 (commodity-only), FX EMA FAIL, Bond EMA complements. WF marginal fail.",
                 "target": "Each project > Sharpe 0.8 min, diversified across markets",
             },
         }
