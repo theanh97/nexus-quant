@@ -40,6 +40,10 @@ from .amihud_illiquidity_alpha import AmihudIlliquidityAlphaStrategy
 from .ewma_sharpe_alpha import EWMASharpeAlphaStrategy
 from .sortino_alpha import SortinoAlphaStrategy
 from .idio_momentum_alpha import IdioMomentumAlphaStrategy
+from .skip_gram_momentum_alpha import SkipGramMomentumAlphaStrategy
+from .pure_momentum_alpha import PureMomentumAlphaStrategy
+from .funding_momentum_alpha import FundingMomentumAlphaStrategy
+from .vol_adjusted_momentum_alpha import VolAdjustedMomentumAlphaStrategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -146,6 +150,18 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
 
     if name == "idio_momentum_alpha":
         return IdioMomentumAlphaStrategy(params=params)
+
+    if name == "skip_gram_momentum_alpha":
+        return SkipGramMomentumAlphaStrategy(params=params)
+
+    if name == "pure_momentum_alpha":
+        return PureMomentumAlphaStrategy(params=params)
+
+    if name == "funding_momentum_alpha":
+        return FundingMomentumAlphaStrategy(params=params)
+
+    if name == "vol_adjusted_momentum_alpha":
+        return VolAdjustedMomentumAlphaStrategy(params=params)
 
     if name == "ensemble_v1":
         sub_cfgs = params.pop("sub_strategies", [])
