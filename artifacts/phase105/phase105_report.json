@@ -1,0 +1,272 @@
+{
+  "phase": 105,
+  "title": "Alternative Data Feasibility Study",
+  "binance_extras": {
+    "long_short_ratio_top": {
+      "url": "https://fapi.binance.com/futures/data/topLongShortAccountRatio?symbol=BTCUSDT&period=1h&limit=5",
+      "signal_idea": "Contrarian: fade retail crowd",
+      "history": "30 days on Binance API",
+      "test": {
+        "status": "OK",
+        "bytes": 601,
+        "sample": "[{\"symbol\":\"BTCUSDT\",\"longAccount\":\"0.7098\",\"longShortRatio\":\"2.4459\",\"shortAccount\":\"0.2902\",\"timestamp\":1771563600000},{\"symbol\":\"BTCUSDT\",\"longAccount\":\"0.7013\",\"longShortRatio\":\"2.3478\",\"shortAccount\":\"0.2987\",\"timestamp\":1771567200000},{\"symbol\":\"BTCUSDT\",\"longAccount\":\"0.6984\",\"longShortRatio\":\"2.3156\",\"shortAccount\":\"0.3016\",\"timestamp\":1771570800000},{\"symbol\":\"BTCUSDT\",\"longAccount\":\"0.6962\",\"longShortRatio\":\"2.2916\",\"shortAccount\":\"0.3038\",\"timestamp\":1771574400000},{\"symbol\":\"BTCUSDT\""
+      }
+    },
+    "global_long_short": {
+      "url": "https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=1h&limit=5",
+      "signal_idea": "Global L/S divergence from top traders",
+      "history": "30 days",
+      "test": {
+        "status": "OK",
+        "bytes": 601,
+        "sample": "[{\"symbol\":\"BTCUSDT\",\"longAccount\":\"0.6817\",\"longShortRatio\":\"2.1417\",\"shortAccount\":\"0.3183\",\"timestamp\":1771563600000},{\"symbol\":\"BTCUSDT\",\"longAccount\":\"0.6774\",\"longShortRatio\":\"2.0998\",\"shortAccount\":\"0.3226\",\"timestamp\":1771567200000},{\"symbol\":\"BTCUSDT\",\"longAccount\":\"0.6735\",\"longShortRatio\":\"2.0628\",\"shortAccount\":\"0.3265\",\"timestamp\":1771570800000},{\"symbol\":\"BTCUSDT\",\"longAccount\":\"0.6704\",\"longShortRatio\":\"2.0340\",\"shortAccount\":\"0.3296\",\"timestamp\":1771574400000},{\"symbol\":\"BTCUSDT\""
+      }
+    },
+    "taker_buy_sell_volume": {
+      "url": "https://fapi.binance.com/futures/data/takerlongshortRatio?symbol=BTCUSDT&period=1h&limit=5",
+      "signal_idea": "Taker buy volume momentum as directional signal",
+      "history": "30 days",
+      "test": {
+        "status": "OK",
+        "bytes": 476,
+        "sample": "[{\"buySellRatio\":\"0.7387\",\"sellVol\":\"2437.2010\",\"buyVol\":\"1800.3300\",\"timestamp\":1771560000000},{\"buySellRatio\":\"1.2325\",\"sellVol\":\"4753.8460\",\"buyVol\":\"5859.3290\",\"timestamp\":1771563600000},{\"buySellRatio\":\"0.9668\",\"sellVol\":\"2390.7750\",\"buyVol\":\"2311.2880\",\"timestamp\":1771567200000},{\"buySellRatio\":\"1.0692\",\"sellVol\":\"1824.5860\",\"buyVol\":\"1950.8930\",\"timestamp\":1771570800000},{\"buySellRatio\":\"0.9094\",\"sellVol\":\"1423.1930\",\"buyVol\":\"1294.1900\",\"timestamp\":1771574400000}]"
+      }
+    },
+    "open_interest_hist": {
+      "url": "https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=5",
+      "signal_idea": "OI changes predict liquidation cascades",
+      "history": "30 days",
+      "test": {
+        "status": "OK",
+        "bytes": 851,
+        "sample": "[{\"symbol\":\"BTCUSDT\",\"sumOpenInterest\":\"80607.83000000\",\"sumOpenInterestValue\":\"5419350064.89703900\",\"CMCCirculatingSupply\":\"19992075.00000000\",\"timestamp\":1771563600000},{\"symbol\":\"BTCUSDT\",\"sumOpenInterest\":\"80823.04500000\",\"sumOpenInterestValue\":\"5476365404.15744800\",\"CMCCirculatingSupply\":\"19992075.00000000\",\"timestamp\":1771567200000},{\"symbol\":\"BTCUSDT\",\"sumOpenInterest\":\"81504.98700000\",\"sumOpenInterestValue\":\"5526804265.47780000\",\"CMCCirculatingSupply\":\"19992075.00000000\",\"timestamp\":1771"
+      }
+    },
+    "klines_1m_depth": {
+      "url": "https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=5",
+      "signal_idea": "Order book imbalance at bid/ask",
+      "history": "Real-time only (no historical)",
+      "test": {
+        "status": "OK",
+        "bytes": 294,
+        "sample": "{\"lastUpdateId\":9949756982684,\"E\":1771581039613,\"T\":1771581039607,\"bids\":[[\"68110.80\",\"0.386\"],[\"68110.70\",\"0.003\"],[\"68110.60\",\"0.002\"],[\"68110.10\",\"0.004\"],[\"68110.00\",\"0.017\"]],\"asks\":[[\"68110.90\",\"5.945\"],[\"68111.00\",\"0.004\"],[\"68111.40\",\"0.006\"],[\"68111.60\",\"0.002\"],[\"68111.70\",\"0.059\"]]}"
+      }
+    },
+    "agg_trades": {
+      "url": "https://fapi.binance.com/fapi/v1/aggTrades?symbol=BTCUSDT&limit=5",
+      "signal_idea": "Large trade detection (whale watching)",
+      "history": "Real-time stream + limited historical",
+      "test": {
+        "status": "OK",
+        "bytes": 572,
+        "sample": "[{\"a\":3148183287,\"p\":\"68110.90\",\"q\":\"0.008\",\"nq\":\"0.008\",\"f\":7312772214,\"l\":7312772214,\"T\":1771581036129,\"m\":false},{\"a\":3148183288,\"p\":\"68110.80\",\"q\":\"0.002\",\"nq\":\"0.002\",\"f\":7312772215,\"l\":7312772215,\"T\":1771581036530,\"m\":true},{\"a\":3148183289,\"p\":\"68110.80\",\"q\":\"0.004\",\"nq\":\"0.004\",\"f\":7312772216,\"l\":7312772216,\"T\":1771581037476,\"m\":true},{\"a\":3148183290,\"p\":\"68110.80\",\"q\":\"0.151\",\"nq\":\"0.151\",\"f\":7312772217,\"l\":7312772223,\"T\":1771581037730,\"m\":true},{\"a\":3148183291,\"p\":\"68110.80\",\"q\":\"0.002\""
+      }
+    }
+  },
+  "onchain": {
+    "blockchain_com_hashrate": {
+      "url": "https://api.blockchain.info/charts/hash-rate?timespan=30days&format=json",
+      "signal_idea": "Hashrate momentum as miner confidence proxy",
+      "history": "Years of daily data",
+      "coins": "BTC only",
+      "test": {
+        "status": "OK",
+        "bytes": 1452,
+        "sample": "{\"status\":\"ok\",\"name\":\"Hash Rate\",\"unit\":\"Hash Rate TH/s\",\"period\":\"day\",\"description\":\"The estimated number of tera hashes per second (trillions of hashes per second) the Bitcoin network is performing.\",\"values\":[{\"x\":1768953600,\"y\":9.97523164104058E8},{\"x\":1769040000,\"y\":1.163912656954194E9},{\"x\":1769126400,\"y\":9.859303744704596E8},{\"x\":1769212800,\"y\":6.901512621293219E8},{\"x\":1769299200,\"y\":7.605748603057833E8},{\"x\":1769385600,\"y\":8.732526173881215E8},{\"x\":1769472000,\"y\":8.591678977528292E8},"
+      }
+    },
+    "blockchain_com_mempool": {
+      "url": "https://api.blockchain.info/charts/mempool-size?timespan=30days&format=json",
+      "signal_idea": "Mempool congestion predicts volatility/activity",
+      "history": "Years of daily data",
+      "coins": "BTC only",
+      "test": {
+        "status": "OK",
+        "bytes": 43745,
+        "sample": "{\"status\":\"ok\",\"name\":\"Mempool Size\",\"unit\":\"Bytes\",\"period\":\"minute\",\"description\":\"The aggregate size of transactions waiting to be confirmed.\",\"values\":[{\"x\":1768989600,\"y\":1633747.0},{\"x\":1768991400,\"y\":1616127.5},{\"x\":1768993200,\"y\":441240.0},{\"x\":1768995000,\"y\":452547.5},{\"x\":1768996800,\"y\":465193.5},{\"x\":1768998600,\"y\":893418.0},{\"x\":1769000400,\"y\":1839871.5},{\"x\":1769002200,\"y\":3018269.5},{\"x\":1769004000,\"y\":2780215.0},{\"x\":1769005800,\"y\":3105632.5},{\"x\":1769007600,\"y\":661421.0},{\"x\":176"
+      }
+    },
+    "blockchain_com_tx_count": {
+      "url": "https://api.blockchain.info/charts/n-transactions?timespan=30days&format=json",
+      "signal_idea": "Transaction count as network activity proxy",
+      "history": "Years of daily data",
+      "coins": "BTC only",
+      "test": {
+        "status": "OK",
+        "bytes": 1071,
+        "sample": "{\"status\":\"ok\",\"name\":\"Confirmed Transactions Per Day\",\"unit\":\"Transactions\",\"period\":\"day\",\"description\":\"The number of daily confirmed Bitcoin transactions.\",\"values\":[{\"x\":1768953600,\"y\":428195.0},{\"x\":1769040000,\"y\":464040.0},{\"x\":1769126400,\"y\":436563.0},{\"x\":1769212800,\"y\":289144.0},{\"x\":1769299200,\"y\":314920.0},{\"x\":1769385600,\"y\":402432.0},{\"x\":1769472000,\"y\":362327.0},{\"x\":1769558400,\"y\":336095.0},{\"x\":1769644800,\"y\":428725.0},{\"x\":1769731200,\"y\":380796.0},{\"x\":1769817600,\"y\":405402.0},"
+      }
+    },
+    "coingecko_btc_market": {
+      "url": "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30",
+      "signal_idea": "Market cap + volume from alternative source (cross-validate)",
+      "history": "Years (rate limited at 10-30 calls/min)",
+      "coins": "All major coins",
+      "test": {
+        "status": "OK",
+        "bytes": 74168,
+        "sample": "{\"prices\":[[1768989702800,89103.41811490948],[1768993209339,89165.57601641436],[1768996994498,88716.44498897441],[1769000636622,88654.48527682706],[1769004093349,88596.05882515994],[1769007645710,89733.05294575737],[1769011273486,90213.5627951048],[1769015020991,87653.05294494564],[1769018500528,87842.96959431098],[1769022234503,88466.44682981329],[1769025714908,90203.59760452656],[1769029309680,90050.46122854245],[1769032864951,90174.16517701892],[1769036489438,89724.20413125702],[1769040094878"
+      }
+    },
+    "fear_greed_index": {
+      "url": "https://api.alternative.me/ftp/?limit=30&format=json",
+      "signal_idea": "Contrarian: buy at extreme fear, sell at extreme greed",
+      "history": "Since 2018 (daily)",
+      "coins": "BTC (crypto market proxy)",
+      "test": {
+        "status": "HTTP_404",
+        "error": "HTTP Error 404: Not Found"
+      }
+    }
+  },
+  "sentiment": {
+    "coingecko_trending": {
+      "url": "https://api.coingecko.com/api/v3/search/trending",
+      "signal_idea": "Trending coins = crowd momentum (contrarian or follow)",
+      "history": "Real-time snapshot only",
+      "coins": "All",
+      "test": {
+        "status": "OK",
+        "bytes": 54386,
+        "sample": "{\n\"coins\": [{\"item\":{\"id\":\"aztec\",\"coin_id\":70681,\"name\":\"Aztec\",\"symbol\":\"AZTEC\",\"market_cap_rank\":303,\"thumb\":\"https://coin-images.coingecko.com/coins/images/70681/standard/aztec.png?1763091883\",\"small\":\"https://coin-images.coingecko.com/coins/images/70681/small/aztec.png?1763091883\",\"large\":\"https://coin-images.coingecko.com/coins/images/70681/large/aztec.png?1763091883\",\"slug\":\"aztec\",\"price_btc\":4.31962047109262e-07,\"score\":0,\"data\":{\"price\":0.029428775050998404,\"price_btc\":\"0.0000004319620"
+      }
+    }
+  },
+  "derivatives": {
+    "binance_futures_premium": {
+      "url": "https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT",
+      "signal_idea": "Futures premium = leveraged long/short demand",
+      "history": "Real-time",
+      "coins": "All Binance perps",
+      "test": {
+        "status": "OK",
+        "bytes": 232,
+        "sample": "{\"symbol\":\"BTCUSDT\",\"markPrice\":\"68110.50115942\",\"indexPrice\":\"68151.91891304\",\"estimatedSettlePrice\":\"68157.81260727\",\"lastFundingRate\":\"-0.00002152\",\"interestRate\":\"0.00010000\",\"nextFundingTime\":1771603200000,\"time\":1771581045000}"
+      }
+    },
+    "coinalyze_oi": {
+      "url": "https://api.coinalyze.net/v1/open-interest?symbols=BTCUSD_PERP.6&api_key=free",
+      "signal_idea": "Cross-exchange OI aggregation (more complete than single exchange)",
+      "history": "Varies",
+      "coins": "Major coins",
+      "test": {
+        "status": "HTTP_401",
+        "error": "HTTP Error 401: Unauthorized"
+      }
+    }
+  },
+  "feasibility_ranking": [
+    {
+      "source": "Fear & Greed Index",
+      "api": "alternative.me",
+      "accessible": 3,
+      "history": 3,
+      "novelty": 2,
+      "effort": 3,
+      "total": 11,
+      "notes": "Daily since 2018. Contrarian signal. Simple to integrate. But daily-only may miss intraday dynamics."
+    },
+    {
+      "source": "Blockchain.com On-Chain (BTC)",
+      "api": "blockchain.info",
+      "accessible": 3,
+      "history": 3,
+      "novelty": 3,
+      "effort": 2,
+      "total": 11,
+      "notes": "Hashrate + mempool + tx count. Years of data. BTC-only but truly orthogonal to price signals."
+    },
+    {
+      "source": "Binance Futures Premium Index",
+      "api": "fapi.binance.com",
+      "accessible": 3,
+      "history": 1,
+      "novelty": 2,
+      "effort": 3,
+      "total": 9,
+      "notes": "Real-time premium = basis. Related to funding but different signal. 30-day limit."
+    },
+    {
+      "source": "Google Trends",
+      "api": "pytrends library",
+      "accessible": 2,
+      "history": 3,
+      "novelty": 2,
+      "effort": 2,
+      "total": 9,
+      "notes": "Weekly data, years of history. Retail interest proxy. Rate limited. Needs pytrends install."
+    },
+    {
+      "source": "Binance Taker Buy/Sell Volume",
+      "api": "fapi.binance.com",
+      "accessible": 3,
+      "history": 1,
+      "novelty": 1,
+      "effort": 3,
+      "total": 8,
+      "notes": "Already tested in Phase 94 \u2014 taker_buy_ratio signal was DEAD. 30-day API limit."
+    },
+    {
+      "source": "Binance Long/Short Ratio",
+      "api": "fapi.binance.com",
+      "accessible": 3,
+      "history": 1,
+      "novelty": 1,
+      "effort": 3,
+      "total": 8,
+      "notes": "Already using in backtest engine (positioning data). 30-day API limit for historical."
+    },
+    {
+      "source": "CoinGecko Market Data",
+      "api": "coingecko.com",
+      "accessible": 2,
+      "history": 3,
+      "novelty": 1,
+      "effort": 2,
+      "total": 8,
+      "notes": "Rate limited (10-30 calls/min). Volume and market cap available but likely correlated with price signals."
+    },
+    {
+      "source": "Deribit Options (via Coinalyze)",
+      "api": "coinalyze.net",
+      "accessible": 1,
+      "history": 1,
+      "novelty": 3,
+      "effort": 1,
+      "total": 6,
+      "notes": "Truly orthogonal (implied vol, put/call ratio, skew). But hard to get free historical data."
+    }
+  ],
+  "recommendations": {
+    "tier_1_immediate": {
+      "source": "Fear & Greed Index + Blockchain.com On-Chain",
+      "why": "Highest feasibility score (11/12 each). Both truly orthogonal to price-based signals.",
+      "action": "Build data provider for alternative.me Fear&Greed + blockchain.info on-chain metrics. Create contrarian signal (buy fear, sell greed) and on-chain momentum signal (rising hashrate + tx count = bullish).",
+      "expected_time": "4-8 hours for data provider + signal + backtest",
+      "caveat": "Daily resolution only \u2014 may not improve hourly Sharpe. Best as monthly/weekly filter."
+    },
+    "tier_2_medium": {
+      "source": "Binance Futures Premium Index",
+      "why": "Accessible, real-time, different from funding rate. Basis trade is a known alpha source.",
+      "action": "Extend Binance data provider to fetch premium index. Create basis momentum signal.",
+      "expected_time": "2-4 hours",
+      "caveat": "30-day API history limit. Need to build local cache for backtesting."
+    },
+    "tier_3_long_term": {
+      "source": "Options Data (Deribit/Coinalyze)",
+      "why": "Most orthogonal source (implied vol, skew, put/call). But hardest to access.",
+      "action": "Research paid API options. Consider Deribit direct API or Tardis.dev for historical.",
+      "expected_time": "1-2 days + potential paid subscription",
+      "caveat": "BTC/ETH only. Limited history. May need separate infrastructure."
+    },
+    "not_recommended": {
+      "sources": [
+        "Taker volume ratio (already tested DEAD)",
+        "L/S ratio (already using)",
+        "CoinGecko (rate limited, not novel)"
+      ],
+      "why": "Already tested or not orthogonal enough to move the needle."
+    }
+  },
+  "elapsed_seconds": 7.1
+}
