@@ -99,6 +99,9 @@ class LiveEngine:
         # Signal generator (lazy init — imports strategy modules)
         self._signal_gen = None
 
+        # Mock balance for dry-run without API keys
+        self._mock_balance = 100000.0
+
         # State
         STATE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -148,35 +151,44 @@ class LiveEngine:
         issues: List[str] = []
         warnings: List[str] = []
 
-        # 1. Check API connectivity
-        try:
-            if self.client.ping():
-                log.info("Binance API: OK")
-            else:
-                issues.append("Binance API: ping failed (check keys)")
-        except Exception as e:
-            issues.append(f"Binance API: {e}")
+        has_keys = bool(self.client._api_key and self.client._api_secret)
 
-        # 2. Check balance
-        try:
-            balance = self.client.get_balance()
-            if balance < 10:
-                issues.append(f"Balance too low: ${balance:.2f} (min $10)")
-            elif balance < 1000:
-                warnings.append(f"Low balance: ${balance:.2f} (recommended $10K+)")
-            else:
-                log.info("Balance: $%.2f", balance)
-        except Exception as e:
-            issues.append(f"Balance check failed: {e}")
+        if has_keys:
+            # 1. Check API connectivity
+            try:
+                if self.client.ping():
+                    log.info("Binance API: OK")
+                else:
+                    issues.append("Binance API: ping failed (check keys)")
+            except Exception as e:
+                issues.append(f"Binance API: {e}")
 
-        # 3. Check leverage settings
-        try:
-            for sym in self.config["data"]["symbols"][:2]:
-                self.client.set_margin_type(sym, "CROSSED")
-                self.client.set_leverage(sym, 1)
-            log.info("Leverage/margin: OK (1x CROSSED)")
-        except Exception as e:
-            warnings.append(f"Leverage setup: {e}")
+            # 2. Check balance
+            try:
+                balance = self.client.get_balance()
+                if balance < 10:
+                    issues.append(f"Balance too low: ${balance:.2f} (min $10)")
+                elif balance < 1000:
+                    warnings.append(f"Low balance: ${balance:.2f} (recommended $10K+)")
+                else:
+                    log.info("Balance: $%.2f", balance)
+            except Exception as e:
+                issues.append(f"Balance check failed: {e}")
+
+            # 3. Check leverage settings
+            try:
+                for sym in self.config["data"]["symbols"][:2]:
+                    self.client.set_margin_type(sym, "CROSSED")
+                    self.client.set_leverage(sym, 1)
+                log.info("Leverage/margin: OK (1x CROSSED)")
+            except Exception as e:
+                warnings.append(f"Leverage setup: {e}")
+        else:
+            if self.dry_run:
+                warnings.append("No API keys — dry-run will use mock balance ($100K)")
+                log.info("No API keys set — using mock balance for dry-run")
+            else:
+                issues.append("BINANCE_API_KEY / BINANCE_API_SECRET not set")
 
         # 4. Check risk gate state
         if self.risk_gate.is_halted():
@@ -250,7 +262,12 @@ class LiveEngine:
 
         # Step 2: Get balance + risk check
         try:
-            balance = self.client.get_balance()
+            if self.dry_run and not self.client._api_key:
+                # Dry-run without API keys: use mock balance
+                balance = self._mock_balance
+                log.info("Dry-run (no API key): using mock balance $%.2f", balance)
+            else:
+                balance = self.client.get_balance()
             report["balance_usd"] = round(balance, 2)
 
             risk_report = self.risk_gate.evaluate(balance)
@@ -283,10 +300,14 @@ class LiveEngine:
 
         # Step 3: Execute rebalance
         try:
-            rebal = self.pos_manager.execute_rebalance(
-                target_weights=target_weights,
-                dry_run=self.dry_run,
-            )
+            if self.dry_run and not self.client._api_key:
+                # Dry-run without API keys: simulate rebalance from signal data
+                rebal = self._mock_rebalance(target_weights, balance, sig)
+            else:
+                rebal = self.pos_manager.execute_rebalance(
+                    target_weights=target_weights,
+                    dry_run=self.dry_run,
+                )
             report["rebalance"] = {
                 "orders_planned": rebal.orders_planned,
                 "orders_executed": rebal.orders_executed,
@@ -319,7 +340,10 @@ class LiveEngine:
 
         # Step 4: Update equity tracking
         try:
-            post_balance = self.client.get_balance() if not self.dry_run else balance
+            if self.dry_run:
+                post_balance = balance
+            else:
+                post_balance = self.client.get_balance()
             self.risk_gate.update_equity(post_balance)
             report["post_balance_usd"] = round(post_balance, 2)
         except Exception as e:
@@ -441,6 +465,38 @@ class LiveEngine:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    def _mock_rebalance(
+        self, target_weights: Dict[str, float], balance: float, sig
+    ) -> RebalanceResult:
+        """Simulate rebalance without any Binance API calls (for dry-run without keys)."""
+        ts = datetime.now(timezone.utc).isoformat()
+        fills = []
+        for s, w in target_weights.items():
+            if abs(w) > 0.001:
+                notional = abs(w) * balance
+                price = sig.prices.get(s, 0)
+                qty = notional / price if price > 0 else 0
+                fills.append({
+                    "symbol": s,
+                    "side": "BUY" if w > 0 else "SELL",
+                    "quantity": round(qty, 6),
+                    "notional_usd": round(notional, 2),
+                    "status": "DRY_RUN_MOCK",
+                })
+
+        turnover = sum(f["notional_usd"] for f in fills)
+        return RebalanceResult(
+            timestamp=ts,
+            balance_usd=balance,
+            target_weights=target_weights,
+            current_weights={s: 0.0 for s in target_weights},
+            orders_planned=len(fills),
+            orders_executed=len(fills),
+            orders_failed=0,
+            total_turnover_usd=turnover,
+            fills=fills,
+        )
 
     def _seconds_until_next_hour(self) -> float:
         """Seconds until the top of the next UTC hour (+ 60s buffer)."""
