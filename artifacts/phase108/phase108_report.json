@@ -1,0 +1,554 @@
+{
+  "phase": 108,
+  "walk_forward": {
+    "composite_14": [
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023"
+        ],
+        "test_years": [
+          "2024"
+        ],
+        "optimal_ratio": 0.2,
+        "train_obj": 1.9401,
+        "train_sharpes": {
+          "2021": 3.4587,
+          "2022": 1.9986,
+          "2023": 1.5459
+        },
+        "test_sharpes": {
+          "2024": 2.237
+        },
+        "test_baseline": {
+          "2024": 2.2799
+        },
+        "test_delta": {
+          "2024": -0.0429
+        }
+      },
+      {
+        "train_years": [
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test_years": [
+          "2025"
+        ],
+        "optimal_ratio": 0.2,
+        "train_obj": 1.7365,
+        "train_sharpes": {
+          "2022": 1.9986,
+          "2023": 1.5459,
+          "2024": 2.237
+        },
+        "test_sharpes": {
+          "2025": 1.2436
+        },
+        "test_baseline": {
+          "2025": 1.9739
+        },
+        "test_delta": {
+          "2025": -0.7303
+        }
+      },
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test_years": [
+          "2025"
+        ],
+        "optimal_ratio": 0.2,
+        "train_obj": 1.928,
+        "train_sharpes": {
+          "2021": 3.4587,
+          "2022": 1.9986,
+          "2023": 1.5459,
+          "2024": 2.237
+        },
+        "test_sharpes": {
+          "2025": 1.2436
+        },
+        "test_baseline": {
+          "2025": 1.9739
+        },
+        "test_delta": {
+          "2025": -0.7303
+        }
+      },
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "test_years": [
+          "2026_oos"
+        ],
+        "optimal_ratio": 0.4,
+        "train_obj": 1.8285,
+        "train_sharpes": {
+          "2021": 3.4597,
+          "2022": 1.8868,
+          "2023": 1.5198,
+          "2024": 2.3213,
+          "2025": 1.5163
+        },
+        "test_sharpes": {
+          "2026_oos": 2.1636
+        },
+        "test_baseline": {
+          "2026_oos": 1.2679
+        },
+        "test_delta": {
+          "2026_oos": 0.8957
+        }
+      }
+    ],
+    "composite_30": [
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023"
+        ],
+        "test_years": [
+          "2024"
+        ],
+        "optimal_ratio": 0.8,
+        "train_obj": 1.6483,
+        "train_sharpes": {
+          "2021": 3.0321,
+          "2022": 1.3883,
+          "2023": 1.3674
+        },
+        "test_sharpes": {
+          "2024": 2.3193
+        },
+        "test_baseline": {
+          "2024": 2.2799
+        },
+        "test_delta": {
+          "2024": 0.0394
+        }
+      },
+      {
+        "train_years": [
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test_years": [
+          "2025"
+        ],
+        "optimal_ratio": 0.8,
+        "train_obj": 1.5295,
+        "train_sharpes": {
+          "2022": 1.3883,
+          "2023": 1.3674,
+          "2024": 2.3193
+        },
+        "test_sharpes": {
+          "2025": 1.8894
+        },
+        "test_baseline": {
+          "2025": 1.9739
+        },
+        "test_delta": {
+          "2025": -0.0845
+        }
+      },
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test_years": [
+          "2025"
+        ],
+        "optimal_ratio": 0.8,
+        "train_obj": 1.6971,
+        "train_sharpes": {
+          "2021": 3.0321,
+          "2022": 1.3883,
+          "2023": 1.3674,
+          "2024": 2.3193
+        },
+        "test_sharpes": {
+          "2025": 1.8894
+        },
+        "test_baseline": {
+          "2025": 1.9739
+        },
+        "test_delta": {
+          "2025": -0.0845
+        }
+      },
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "test_years": [
+          "2026_oos"
+        ],
+        "optimal_ratio": 0.8,
+        "train_obj": 1.6833,
+        "train_sharpes": {
+          "2021": 3.0321,
+          "2022": 1.3883,
+          "2023": 1.3674,
+          "2024": 2.3193,
+          "2025": 1.8894
+        },
+        "test_sharpes": {
+          "2026_oos": 1.6224
+        },
+        "test_baseline": {
+          "2026_oos": 1.2679
+        },
+        "test_delta": {
+          "2026_oos": 0.3545
+        }
+      }
+    ],
+    "tx_mom_14": [
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023"
+        ],
+        "test_years": [
+          "2024"
+        ],
+        "optimal_ratio": 0.4,
+        "train_obj": 1.776,
+        "train_sharpes": {
+          "2021": 3.1269,
+          "2022": 1.6221,
+          "2023": 1.4767
+        },
+        "test_sharpes": {
+          "2024": 2.0044
+        },
+        "test_baseline": {
+          "2024": 2.2799
+        },
+        "test_delta": {
+          "2024": -0.2755
+        }
+      },
+      {
+        "train_years": [
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test_years": [
+          "2025"
+        ],
+        "optimal_ratio": 0.4,
+        "train_obj": 1.5889,
+        "train_sharpes": {
+          "2022": 1.6221,
+          "2023": 1.4767,
+          "2024": 2.0044
+        },
+        "test_sharpes": {
+          "2025": 1.2234
+        },
+        "test_baseline": {
+          "2025": 1.9739
+        },
+        "test_delta": {
+          "2025": -0.7505
+        }
+      },
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test_years": [
+          "2025"
+        ],
+        "optimal_ratio": 0.5,
+        "train_obj": 1.7676,
+        "train_sharpes": {
+          "2021": 3.1557,
+          "2022": 1.6044,
+          "2023": 1.4581,
+          "2024": 2.0896
+        },
+        "test_sharpes": {
+          "2025": 1.4033
+        },
+        "test_baseline": {
+          "2025": 1.9739
+        },
+        "test_delta": {
+          "2025": -0.5706
+        }
+      },
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "test_years": [
+          "2026_oos"
+        ],
+        "optimal_ratio": 0.6,
+        "train_obj": 1.7049,
+        "train_sharpes": {
+          "2021": 3.161,
+          "2022": 1.5786,
+          "2023": 1.4326,
+          "2024": 2.1556,
+          "2025": 1.5584
+        },
+        "test_sharpes": {
+          "2026_oos": 1.8834
+        },
+        "test_baseline": {
+          "2026_oos": 1.2679
+        },
+        "test_delta": {
+          "2026_oos": 0.6155
+        }
+      }
+    ],
+    "tx_mom_21": [
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023"
+        ],
+        "test_years": [
+          "2024"
+        ],
+        "optimal_ratio": 0.2,
+        "train_obj": 1.9471,
+        "train_sharpes": {
+          "2021": 4.2453,
+          "2022": 1.4549,
+          "2023": 1.6174
+        },
+        "test_sharpes": {
+          "2024": 1.5241
+        },
+        "test_baseline": {
+          "2024": 2.2799
+        },
+        "test_delta": {
+          "2024": -0.7558
+        }
+      },
+      {
+        "train_years": [
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test_years": [
+          "2025"
+        ],
+        "optimal_ratio": 0.6,
+        "train_obj": 1.5845,
+        "train_sharpes": {
+          "2022": 1.4978,
+          "2023": 1.4892,
+          "2024": 2.0525
+        },
+        "test_sharpes": {
+          "2025": 1.936
+        },
+        "test_baseline": {
+          "2025": 1.9739
+        },
+        "test_delta": {
+          "2025": -0.0379
+        }
+      },
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2024"
+        ],
+        "test_years": [
+          "2025"
+        ],
+        "optimal_ratio": 0.4,
+        "train_obj": 1.8616,
+        "train_sharpes": {
+          "2021": 4.0148,
+          "2022": 1.4952,
+          "2023": 1.5683,
+          "2024": 1.8342
+        },
+        "test_sharpes": {
+          "2025": 1.8351
+        },
+        "test_baseline": {
+          "2025": 1.9739
+        },
+        "test_delta": {
+          "2025": -0.1388
+        }
+      },
+      {
+        "train_years": [
+          "2021",
+          "2022",
+          "2023",
+          "2024",
+          "2025"
+        ],
+        "test_years": [
+          "2026_oos"
+        ],
+        "optimal_ratio": 0.5,
+        "train_obj": 1.825,
+        "train_sharpes": {
+          "2021": 3.8658,
+          "2022": 1.5005,
+          "2023": 1.5315,
+          "2024": 1.9543,
+          "2025": 1.8958
+        },
+        "test_sharpes": {
+          "2026_oos": 1.6756
+        },
+        "test_baseline": {
+          "2026_oos": 1.2679
+        },
+        "test_delta": {
+          "2026_oos": 0.4077
+        }
+      }
+    ]
+  },
+  "ratio_stability": {
+    "composite_14": {
+      "ratios": [
+        0.2,
+        0.2,
+        0.2,
+        0.4
+      ],
+      "mean": 0.25,
+      "std": 0.09,
+      "min": 0.2,
+      "max": 0.4
+    },
+    "composite_30": {
+      "ratios": [
+        0.8,
+        0.8,
+        0.8,
+        0.8
+      ],
+      "mean": 0.8,
+      "std": 0.0,
+      "min": 0.8,
+      "max": 0.8
+    },
+    "tx_mom_14": {
+      "ratios": [
+        0.4,
+        0.4,
+        0.5,
+        0.6
+      ],
+      "mean": 0.47,
+      "std": 0.08,
+      "min": 0.4,
+      "max": 0.6
+    },
+    "tx_mom_21": {
+      "ratios": [
+        0.2,
+        0.6,
+        0.4,
+        0.5
+      ],
+      "mean": 0.43,
+      "std": 0.15,
+      "min": 0.2,
+      "max": 0.6
+    }
+  },
+  "oos_summary": {
+    "composite_14": {
+      "n_positive_oos": 1,
+      "n_total_oos": 4,
+      "avg_oos_delta": -0.1519,
+      "all_deltas": [
+        -0.0429,
+        -0.7303,
+        -0.7303,
+        0.8957
+      ]
+    },
+    "composite_30": {
+      "n_positive_oos": 2,
+      "n_total_oos": 4,
+      "avg_oos_delta": 0.0562,
+      "all_deltas": [
+        0.0394,
+        -0.0845,
+        -0.0845,
+        0.3545
+      ]
+    },
+    "tx_mom_14": {
+      "n_positive_oos": 1,
+      "n_total_oos": 4,
+      "avg_oos_delta": -0.2453,
+      "all_deltas": [
+        -0.2755,
+        -0.7505,
+        -0.5706,
+        0.6155
+      ]
+    },
+    "tx_mom_21": {
+      "n_positive_oos": 1,
+      "n_total_oos": 4,
+      "avg_oos_delta": -0.1312,
+      "all_deltas": [
+        -0.7558,
+        -0.0379,
+        -0.1388,
+        0.4077
+      ]
+    }
+  },
+  "verdict": "ON-CHAIN TILT VALIDATED: composite_30",
+  "validated_signals": [
+    "composite_30"
+  ],
+  "elapsed_seconds": 55.4
+}
