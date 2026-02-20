@@ -1,8 +1,8 @@
 {
   "_comment": "PRODUCTION CONFIG \u2014 P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
-  "_version": "2.15.0",
+  "_version": "2.16.0",
   "_created": "2026-02-21",
-  "_validated": "Phases 91-129: walk-forward stable, OOS validated; breadth regime switching v2.2.0; dispersion v2.3.0; TS overlay v2.4.0; TS fine-tune v2.5.0; F168 v2.6.0; vol fine-tune v2.7.0; breadth lb=192 LOYO 5/5 v2.8.0 OBJ=2.2095; TS short=12h long=96h LOYO 4/5 WF 2/2 v2.9.0 OBJ=2.2423; TS thresh re-sweep P168 rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 v2.10.0 OBJ=2.3510 (\u0394=+0.1087); boost fine-tune P169 bt=0.25 bs=1.50 LOYO 3/5 v2.11.0 OBJ=2.3599 (\u0394=+0.0089); disp fine-tune P170 scale=1.05 thr=0.60 pct=240 LOYO 4/5 v2.12.0 OBJ=2.4148 (\u0394=+0.0549); Vol overlay re-tune (P171): scale=0.4/boost=0.1/thr=0.5 LOYO 3/5 \u0394=+0.0005 OBJ=2.4153 \u2014 PRODUCTION v2.13.0; I460 bw=120 P172 LOYO 4/5 v2.14.0 OBJ=2.4299 (\u0394=+0.0146); Regime weight re-opt (P172): LOW_f168=0.3/MID_f168=0.3/HIGH_f168=0.15 LOYO 3/5 \u0394=+0.0664 OBJ=2.4817 \u2014 PRODUCTION v2.14.0; I415 bw sweep P175: bw=216\u2192144 LOYO 3/5 \u0394=+0.0436 OBJ=2.5396 \u2014 PRODUCTION v2.15.0",
+  "_validated": "Phases 91-129: walk-forward stable, OOS validated; breadth regime switching v2.2.0; dispersion v2.3.0; TS overlay v2.4.0; TS fine-tune v2.5.0; F168 v2.6.0; vol fine-tune v2.7.0; breadth lb=192 LOYO 5/5 v2.8.0 OBJ=2.2095; TS short=12h long=96h LOYO 4/5 WF 2/2 v2.9.0 OBJ=2.2423; TS thresh re-sweep P168 rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 v2.10.0 OBJ=2.3510 (\u0394=+0.1087); boost fine-tune P169 bt=0.25 bs=1.50 LOYO 3/5 v2.11.0 OBJ=2.3599 (\u0394=+0.0089); disp fine-tune P170 scale=1.05 thr=0.60 pct=240 LOYO 4/5 v2.12.0 OBJ=2.4148 (\u0394=+0.0549); Vol overlay re-tune (P171): scale=0.4/boost=0.1/thr=0.5 LOYO 3/5 \u0394=+0.0005 OBJ=2.4153 \u2014 PRODUCTION v2.13.0; I460 bw=120 P172 LOYO 4/5 v2.14.0 OBJ=2.4299 (\u0394=+0.0146); Regime weight re-opt (P172): LOW_f168=0.3/MID_f168=0.3/HIGH_f168=0.15 LOYO 3/5 \u0394=+0.0664 OBJ=2.4817 \u2014 PRODUCTION v2.14.0; I415 bw sweep P175: bw=216\u2192144 LOYO 3/5 \u0394=+0.0436 OBJ=2.5396 \u2014 PRODUCTION v2.15.0; Disp overlay P179: scale=1.05\u21921.0 thr=0.60 LOYO 4/5 \u0394\u2248+0.009 \u2014 PRODUCTION v2.16.0",
   "run_name": "production_p91b",
   "seed": 42,
   "venue": {
@@ -254,7 +254,7 @@
     "signal": "funding_rate_cross_sectional_std",
     "percentile_window": 240,
     "boost_threshold_pct": 0.6,
-    "boost_scale": 1.05,
+    "boost_scale": 1.0,
     "mechanism": "At each bar: compute std of funding rates across all 10 symbols. Rolling 240h percentile rank. If std_pct > 0.60 \u2192 boost portfolio returns \u00d71.05. P170 fine-tune: scale 1.15\u21921.05 (less aggressive, TS overlay already handles amplification), thr 0.75\u21920.60 (wider but gentler trigger), pct 336\u2192240 (more responsive 10-day window). LOYO 4/5 \u0394=+0.0549."
   },
   "funding_term_structure_overlay": {
