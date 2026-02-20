@@ -1,0 +1,237 @@
+{
+  "phase": 140,
+  "description": "Universe Expansion \u2014 10 \u2192 15 \u2192 20 Symbols",
+  "elapsed_seconds": 343.5,
+  "results": {
+    "10sym": {
+      "universe": "10sym",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT",
+        "BNBUSDT",
+        "XRPUSDT",
+        "ADAUSDT",
+        "DOGEUSDT",
+        "AVAXUSDT",
+        "DOTUSDT",
+        "LINKUSDT"
+      ],
+      "n_symbols": 10,
+      "yearly": {
+        "2021": {
+          "ensemble_sharpe": 1.6744,
+          "sub_sharpes": {
+            "v1": -0.4287,
+            "i460bw168": 2.7896,
+            "i415bw216": 2.3302,
+            "f144": 1.5344
+          },
+          "n_bars": 7991,
+          "n_symbols": 10
+        },
+        "2022": {
+          "ensemble_sharpe": 1.496,
+          "sub_sharpes": {
+            "v1": 0.8783,
+            "i460bw168": 0.6952,
+            "i415bw216": 1.791,
+            "f144": 0.4999
+          },
+          "n_bars": 8735,
+          "n_symbols": 10
+        },
+        "2023": {
+          "ensemble_sharpe": 1.3221,
+          "sub_sharpes": {
+            "v1": 0.9754,
+            "i460bw168": 1.0654,
+            "i415bw216": 1.173,
+            "f144": 0.6757
+          },
+          "n_bars": 8735,
+          "n_symbols": 10
+        },
+        "2024": {
+          "ensemble_sharpe": 2.2707,
+          "sub_sharpes": {
+            "v1": 0.7753,
+            "i460bw168": 2.7016,
+            "i415bw216": 1.977,
+            "f144": 2.1825
+          },
+          "n_bars": 8759,
+          "n_symbols": 10
+        },
+        "2025": {
+          "ensemble_sharpe": 1.8981,
+          "sub_sharpes": {
+            "v1": 1.6917,
+            "i460bw168": 2.0943,
+            "i415bw216": 1.2684,
+            "f144": 0.0495
+          },
+          "n_bars": 8735,
+          "n_symbols": 10
+        }
+      },
+      "avg_sharpe": 1.7323,
+      "min_sharpe": 1.3221,
+      "obj": 1.5672,
+      "data_issues": []
+    },
+    "15sym": {
+      "universe": "15sym",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT",
+        "BNBUSDT",
+        "XRPUSDT",
+        "ADAUSDT",
+        "DOGEUSDT",
+        "AVAXUSDT",
+        "DOTUSDT",
+        "LINKUSDT",
+        "LTCUSDT",
+        "UNIUSDT",
+        "MATICUSDT",
+        "FILUSDT",
+        "AAVEUSDT"
+      ],
+      "n_symbols": 15,
+      "yearly": {
+        "2021": {
+          "ensemble_sharpe": 3.0357,
+          "sub_sharpes": {
+            "v1": 0.9772,
+            "i460bw168": 3.6668,
+            "i415bw216": 3.3752,
+            "f144": 1.8351
+          },
+          "n_bars": 7991,
+          "n_symbols": 15
+        },
+        "2022": {
+          "ensemble_sharpe": 0.0,
+          "sub_sharpes": {
+            "v1": -0.6356,
+            "i460bw168": 0.2693,
+            "i415bw216": 0.1972,
+            "f144": 0.7992
+          },
+          "n_bars": 8735,
+          "n_symbols": 15
+        },
+        "2023": {
+          "ensemble_sharpe": 0.4424,
+          "sub_sharpes": {
+            "v1": 0.9622,
+            "i460bw168": -0.7426,
+            "i415bw216": 0.0839,
+            "f144": 0.3939
+          },
+          "n_bars": 8735,
+          "n_symbols": 15
+        },
+        "2024": {
+          "ensemble_sharpe": -0.4172,
+          "sub_sharpes": {
+            "v1": -2.0557,
+            "i460bw168": 0.7451,
+            "i415bw216": 0.1962,
+            "f144": 1.3939
+          },
+          "n_bars": 6105,
+          "n_symbols": 15
+        }
+      },
+      "avg_sharpe": 0.7652,
+      "min_sharpe": -0.4172,
+      "obj": 0.0924,
+      "data_issues": [
+        {
+          "year": "2025",
+          "error": "binance_rest_v1: no klines returned for MATICUSDT. Check symbol name, date range, and network access."
+        }
+      ]
+    },
+    "20sym": {
+      "universe": "20sym",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT",
+        "BNBUSDT",
+        "XRPUSDT",
+        "ADAUSDT",
+        "DOGEUSDT",
+        "AVAXUSDT",
+        "DOTUSDT",
+        "LINKUSDT",
+        "LTCUSDT",
+        "UNIUSDT",
+        "MATICUSDT",
+        "FILUSDT",
+        "AAVEUSDT",
+        "ATOMUSDT",
+        "NEARUSDT",
+        "ICPUSDT",
+        "ALGOUSDT",
+        "FTMUSDT"
+      ],
+      "n_symbols": 20,
+      "yearly": {
+        "2022": {
+          "ensemble_sharpe": 2.3861,
+          "sub_sharpes": {
+            "v1": 1.2111,
+            "i460bw168": 3.0093,
+            "i415bw216": 3.0852,
+            "f144": -0.5033
+          },
+          "n_bars": 2277,
+          "n_symbols": 20
+        },
+        "2023": {
+          "ensemble_sharpe": 0.7255,
+          "sub_sharpes": {
+            "v1": 0.7223,
+            "i460bw168": 0.2175,
+            "i415bw216": 0.4781,
+            "f144": 0.4655
+          },
+          "n_bars": 8735,
+          "n_symbols": 20
+        },
+        "2024": {
+          "ensemble_sharpe": -1.3757,
+          "sub_sharpes": {
+            "v1": -2.4314,
+            "i460bw168": 0.1011,
+            "i415bw216": -0.2231,
+            "f144": -0.299
+          },
+          "n_bars": 6105,
+          "n_symbols": 20
+        }
+      },
+      "avg_sharpe": 0.5786,
+      "min_sharpe": -1.3757,
+      "obj": -0.191,
+      "data_issues": [
+        {
+          "year": "2021",
+          "error": "binance_rest_v1: no klines returned for ICPUSDT. Check symbol name, date range, and network access."
+        },
+        {
+          "year": "2025",
+          "error": "binance_rest_v1: no klines returned for MATICUSDT. Check symbol name, date range, and network access."
+        }
+      ]
+    }
+  },
+  "verdict": "NEUTRAL \u2014 universe expansion has negligible effect",
+  "partial": false,
+  "timestamp": "2026-02-20T23:07:58"
+}
