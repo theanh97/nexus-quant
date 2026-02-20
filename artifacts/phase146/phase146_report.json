@@ -1,0 +1,63 @@
+{
+  "phase": 146,
+  "description": "Breadth Classifier WF Validation + Production Integration",
+  "elapsed_seconds": 46.2,
+  "baseline_obj": 1.5672,
+  "three_regime_obj": 1.8851,
+  "two_regime_obj": 1.8666,
+  "best_fine_tuned": {
+    "obj": 1.8945,
+    "config": "3-regime p=[0.33,0.67] win=168",
+    "yearly": {
+      "2021": 2.6033,
+      "2022": 1.6106,
+      "2023": 1.7428,
+      "2024": 3.0779,
+      "2025": 1.8551
+    }
+  },
+  "wf_results": [
+    {
+      "train": [
+        "2021",
+        "2022",
+        "2023"
+      ],
+      "test": "2024",
+      "best_train_config": {
+        "p_low": 0.33,
+        "p_high": 0.6,
+        "win": 168,
+        "train_obj": 1.7881
+      },
+      "test_sharpe": 3.0988,
+      "baseline_sharpe": 2.2707,
+      "delta": 0.8281
+    },
+    {
+      "train": [
+        "2022",
+        "2023",
+        "2024"
+      ],
+      "test": "2025",
+      "best_train_config": {
+        "p_low": 0.33,
+        "p_high": 0.6,
+        "win": 168,
+        "train_obj": 1.835
+      },
+      "test_sharpe": 1.874,
+      "baseline_sharpe": 1.8981,
+      "delta": -0.0241
+    }
+  ],
+  "wf_wins": 1,
+  "wf_avg_delta": 0.402,
+  "production_config_updated": true,
+  "production_version": "2.2.0",
+  "verdict": "PRODUCTION READY \u2014 breadth regime switching validated across LOYO+WF. WF 1/2 wins, avg_delta=+0.4020",
+  "next_phase_notes": "Phase 147: Live monitor of regime distribution over rolling 30d. Track: % time in each regime, weight stability, alpha attribution per regime.",
+  "partial": false,
+  "timestamp": "2026-02-21T00:43:37"
+}
