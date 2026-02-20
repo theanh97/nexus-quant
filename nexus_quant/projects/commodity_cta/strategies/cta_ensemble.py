@@ -31,7 +31,7 @@ _EPS = 1e-10
 class CTAEnsembleStrategy(Strategy):
     """
     Static-weight ensemble with volume momentum tilt overlay.
-    Computes all component signals daily and blends them.
+    Weekly rebalancing (default freq=5) to keep transaction costs manageable.
     """
 
     def __init__(
@@ -53,6 +53,10 @@ class CTAEnsembleStrategy(Strategy):
 
         # Warmup (longest sub-strategy warmup + buffer)
         self.warmup: int = int(p.get("warmup", 265))
+
+        # Rebalance cadence: weekly (5 bars) by default — daily rebalancing kills alpha via costs
+        self.rebalance_freq: int = int(p.get("rebalance_freq", 5))
+        self._last_rebalance: int = -1
 
         # Vol tilt overlay (transfer from crypto)
         self.vol_tilt_threshold: float = float(p.get("vol_tilt_threshold", 1.5))
@@ -95,7 +99,13 @@ class CTAEnsembleStrategy(Strategy):
     def should_rebalance(self, dataset: MarketDataset, idx: int) -> bool:
         # Always update trend EMA state (even when not rebalancing)
         self._trend.should_rebalance(dataset, idx)
-        return idx >= self.warmup
+        if idx < self.warmup:
+            return False
+        # Weekly rebalance by default (cost control — daily rebalancing kills alpha)
+        if self._last_rebalance < 0 or (idx - self._last_rebalance) >= self.rebalance_freq:
+            self._last_rebalance = idx
+            return True
+        return False
 
     # ── Weight computation ───────────────────────────────────────────────────
 

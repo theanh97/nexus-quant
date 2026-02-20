@@ -5,19 +5,17 @@ import statistics
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+import numpy as np
+
 
 def max_drawdown(equity_curve: List[float]) -> float:
-    peak = float("-inf")
-    mdd = 0.0
-    for x in equity_curve:
-        ex = float(x)
-        if ex > peak:
-            peak = ex
-        if peak > 0:
-            dd = (ex / peak) - 1.0
-            if dd < -mdd:
-                mdd = -dd
-    return float(mdd)
+    eq = np.asarray(equity_curve, dtype=np.float64)
+    if len(eq) < 2:
+        return 0.0
+    peak = np.maximum.accumulate(eq)
+    mask = peak > 0
+    dd = np.where(mask, (eq / peak) - 1.0, 0.0)
+    return float(-dd.min()) if dd.min() < 0 else 0.0
 
 
 def cagr(equity_start: float, equity_end: float, periods: int, periods_per_year: float) -> float:
@@ -32,58 +30,56 @@ def cagr(equity_start: float, equity_end: float, periods: int, periods_per_year:
 
 
 def sharpe(returns: List[float], periods_per_year: float) -> float:
-    if not returns:
+    r = np.asarray(returns, dtype=np.float64)
+    if len(r) < 2:
         return 0.0
-    mu = statistics.mean(returns)
-    sd = statistics.stdev(returns) if len(returns) > 1 else 0.0
+    sd = float(r.std(ddof=1))
     if sd == 0.0:
         return 0.0
-    return float(mu / sd * math.sqrt(float(periods_per_year)))
+    return float(r.mean() / sd * math.sqrt(float(periods_per_year)))
 
 
 def sortino(returns: List[float], periods_per_year: float) -> float:
-    if not returns:
+    r = np.asarray(returns, dtype=np.float64)
+    if len(r) == 0:
         return 0.0
-    mu = statistics.mean(returns)
-    neg = [r for r in returns if r < 0]
+    mu = float(r.mean())
+    neg = r[r < 0]
     if len(neg) < 2:
         return 0.0
-    sd = statistics.stdev(neg)
+    sd = float(neg.std(ddof=1))
     if sd == 0.0:
         return 0.0
     return float(mu / sd * math.sqrt(float(periods_per_year)))
 
 
 def volatility(returns: List[float], periods_per_year: float) -> float:
-    if len(returns) < 2:
+    r = np.asarray(returns, dtype=np.float64)
+    if len(r) < 2:
         return 0.0
-    sd = statistics.stdev(returns)
-    return float(sd * math.sqrt(float(periods_per_year)))
+    return float(r.std(ddof=1) * math.sqrt(float(periods_per_year)))
 
 
 def beta_and_corr(strategy_returns: List[float], benchmark_returns: List[float]) -> Dict[str, float]:
     n = min(len(strategy_returns), len(benchmark_returns))
     if n < 3:
         return {"beta": 0.0, "corr": 0.0}
-    a = strategy_returns[:n]
-    b = benchmark_returns[:n]
-    ma = statistics.mean(a)
-    mb = statistics.mean(b)
-    cov = sum((a[i] - ma) * (b[i] - mb) for i in range(n)) / float(n)
-    vb = sum((b[i] - mb) ** 2 for i in range(n)) / float(n)
-    va = sum((a[i] - ma) ** 2 for i in range(n)) / float(n)
+    a = np.asarray(strategy_returns[:n], dtype=np.float64)
+    b = np.asarray(benchmark_returns[:n], dtype=np.float64)
+    cov_mat = np.cov(a, b, ddof=0)
+    va, vb, cov = cov_mat[0, 0], cov_mat[1, 1], cov_mat[0, 1]
     beta = cov / vb if vb > 0 else 0.0
     corr = cov / math.sqrt(va * vb) if va > 0 and vb > 0 else 0.0
     return {"beta": float(beta), "corr": float(corr)}
 
 
 def equity_from_returns(returns: List[float], start: float = 1.0) -> List[float]:
-    eq = [float(start)]
-    x = float(start)
-    for r in returns:
-        x *= 1.0 + float(r)
-        eq.append(x)
-    return eq
+    r = np.asarray(returns, dtype=np.float64)
+    eq = np.empty(len(r) + 1, dtype=np.float64)
+    eq[0] = float(start)
+    np.cumprod(1.0 + r, out=eq[1:])
+    eq[1:] *= float(start)
+    return eq.tolist()
 
 
 def summarize(
@@ -104,9 +100,8 @@ def summarize(
     so = sortino(returns, periods_per_year=periods_per_year)
     vol = volatility(returns, periods_per_year=periods_per_year)
 
-    win = 0.0
-    if periods > 0:
-        win = sum(1 for r in returns if r > 0) / float(periods)
+    r_arr = np.asarray(returns, dtype=np.float64)
+    win = float((r_arr > 0).sum() / periods) if periods > 0 else 0.0
 
     t_total = 0.0
     t_avg = 0.0

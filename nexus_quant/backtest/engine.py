@@ -3,10 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+import numpy as np
+
 from ..data.schema import MarketDataset
 from ..strategies.base import Strategy, Weights
 from ..utils.time import iso_utc
 from .costs import ExecutionCostModel
+
+# Minimum equity to prevent NaN returns and negative-equity artifacts.
+_EQUITY_FLOOR = 1e-10
 
 
 @dataclass(frozen=True)
@@ -44,14 +49,38 @@ class BacktestEngine:
 
     def run(self, dataset: MarketDataset, strategy: Strategy, seed: int = 0) -> BacktestResult:
         symbols = list(dataset.symbols)
+        n_sym = len(symbols)
         n = len(dataset.timeline)
         if n < 2:
             raise ValueError("Dataset too short")
 
-        equity = 1.0
-        equity_curve: List[float] = [equity]
-        returns: List[float] = []
+        # ── Pre-compute close-price matrix & single-bar returns ────────
+        # close_mat: shape (n_bars, n_symbols)
+        close_mat = np.empty((n, n_sym), dtype=np.float64)
+        for j, s in enumerate(symbols):
+            close_mat[:, j] = dataset.perp_close[s][:n]
 
+        # ret_mat[i, j] = close_mat[i,j] / close_mat[i-1,j] - 1  (0 when prev=0)
+        ret_mat = np.zeros((n, n_sym), dtype=np.float64)
+        prev_close = close_mat[:-1]
+        safe_mask = prev_close != 0.0
+        ret_mat[1:][safe_mask] = (close_mat[1:][safe_mask] / prev_close[safe_mask]) - 1.0
+
+        # ── Pre-index funding events for O(1) lookup ──────────────────
+        # Build a set per symbol for fast "does a funding event exist at ts?" check
+        has_funding = dataset.has_funding
+        funding_sets: List[Dict[int, float]] = []
+        if has_funding:
+            for s in symbols:
+                funding_sets.append(dataset.funding.get(s, {}))
+
+        # ── Main simulation loop ──────────────────────────────────────
+        equity = 1.0
+        equity_curve = np.empty(n, dtype=np.float64)
+        equity_curve[0] = equity
+        bar_returns = np.empty(n - 1, dtype=np.float64)
+
+        weight_vec = np.zeros(n_sym, dtype=np.float64)
         weights: Weights = {s: 0.0 for s in symbols}
         trades: List[Dict[str, Any]] = []
 
@@ -63,27 +92,23 @@ class BacktestEngine:
             ts = dataset.timeline[idx]
             prev_equity = equity
 
-            # Price PnL over (idx-1 -> idx) using weights held during that interval.
-            port_ret = 0.0
-            for s in symbols:
-                c0 = dataset.close(s, idx - 1)
-                c1 = dataset.close(s, idx)
-                r = (c1 / c0) - 1.0 if c0 != 0 else 0.0
-                port_ret += float(weights.get(s, 0.0)) * r
+            # Price PnL: vectorized dot product (weights · returns)
+            port_ret = float(np.dot(weight_vec, ret_mat[idx]))
             dp = equity * port_ret
             equity += dp
             price_pnl += dp
 
-            # Rebalance at timestamp ts (after the bar closed). Costs are charged on traded notional.
+            # Rebalance at timestamp ts (after the bar closed).
             if strategy.should_rebalance(dataset, idx):
                 target = strategy.target_weights(dataset, idx, weights)
                 for s in symbols:
                     target.setdefault(s, 0.0)
 
                 turnover = 0.0
-                for s in symbols:
-                    d = float(target.get(s, 0.0)) - float(weights.get(s, 0.0))
-                    turnover += abs(d)
+                for j, s in enumerate(symbols):
+                    tw = float(target.get(s, 0.0))
+                    turnover += abs(tw - weight_vec[j])
+                    weight_vec[j] = tw
 
                 bd = self.cfg.costs.cost(equity=equity, turnover=turnover)
                 cost = float(bd.get("cost", 0.0))
@@ -101,27 +126,30 @@ class BacktestEngine:
                     }
                 )
 
-            # Funding PnL (event-based, crypto-specific). Skip for non-crypto markets.
-            fp = 0.0
-            if dataset.has_funding:
-                equity_before_funding = equity
-                for s in symbols:
-                    fr = dataset.funding_rate_at(s, ts)
+            # Funding PnL (event-based, crypto-specific).
+            if has_funding:
+                fp = 0.0
+                eq_bf = equity
+                for j in range(n_sym):
+                    fr = funding_sets[j].get(ts, 0.0)
                     if fr == 0.0:
                         continue
-                    # Long pays when funding>0, short receives (and vice versa).
-                    fp += -(equity_before_funding * float(weights.get(s, 0.0)) * float(fr))
+                    fp -= eq_bf * weight_vec[j] * fr
                 equity += fp
                 funding_pnl += fp
 
-            equity_curve.append(equity)
-            returns.append((equity / prev_equity) - 1.0 if prev_equity != 0 else 0.0)
+            # Equity floor: prevent negative equity / NaN returns.
+            if equity < _EQUITY_FLOOR:
+                equity = _EQUITY_FLOOR
+
+            equity_curve[idx] = equity
+            bar_returns[idx - 1] = (equity / prev_equity) - 1.0 if prev_equity > _EQUITY_FLOOR else 0.0
 
         return BacktestResult(
             strategy=strategy.describe(),
             timeline=list(dataset.timeline),
-            equity_curve=equity_curve,
-            returns=returns,
+            equity_curve=equity_curve.tolist(),
+            returns=bar_returns.tolist(),
             trades=trades,
             breakdown={
                 "price_pnl": price_pnl,

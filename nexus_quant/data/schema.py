@@ -74,12 +74,18 @@ class MarketDataset:
         return val
 
     def close(self, symbol: str, idx: int) -> float:
-        return self.perp_close[symbol][idx]
+        series = self.perp_close.get(symbol)
+        if series is None or idx < 0 or idx >= len(series):
+            return 0.0
+        return series[idx]
 
     def spot(self, symbol: str, idx: int) -> Optional[float]:
         if self.spot_close is None:
             return None
-        return self.spot_close[symbol][idx]
+        series = self.spot_close.get(symbol)
+        if series is None or idx < 0 or idx >= len(series):
+            return None
+        return series[idx]
 
     def basis(self, symbol: str, idx: int) -> float:
         sp = self.spot(symbol, idx)

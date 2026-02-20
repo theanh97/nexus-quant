@@ -6,10 +6,12 @@ Falls back to Stooq.com, then raw Yahoo v8/v7 API.
 Caches locally to avoid repeated downloads.
 
 Supported tickers (continuous front-month):
-  Energy : CL=F (WTI Oil), NG=F (Natural Gas), BZ=F (Brent)
-  Metals : GC=F (Gold), SI=F (Silver), HG=F (Copper), PL=F (Platinum)
-  Grains : ZW=F (Wheat), ZC=F (Corn), ZS=F (Soybeans)
-  Softs  : KC=F (Coffee), SB=F (Sugar), CT=F (Cotton)
+  Energy   : CL=F (WTI Oil), NG=F (Natural Gas), BZ=F (Brent)
+  Metals   : GC=F (Gold), SI=F (Silver), HG=F (Copper), PL=F (Platinum)
+  Grains   : ZW=F (Wheat), ZC=F (Corn), ZS=F (Soybeans)
+  Softs    : KC=F (Coffee), SB=F (Sugar), CT=F (Cotton)
+  FX       : EURUSD=X, GBPUSD=X, AUDUSD=X, JPY=X (USD/JPY)
+  Bonds    : TLT (20yr Treasury ETF), IEF (10yr Treasury ETF)
 """
 from __future__ import annotations
 
@@ -54,6 +56,29 @@ DEFAULT_SYMBOLS = [
     "CT=F",  # Cotton
 ]
 
+# Phase 139: Diversified multi-asset universe (Commodities + FX + Bonds)
+# Key insight: FX and bonds provide crucial diversification during commodity bear markets
+# (e.g. 2015-2019: commodity bear, bond bull, USD trends)
+DIVERSIFIED_SYMBOLS = [
+    # Commodities (top 8 by liquidity — reduced to avoid noise)
+    "CL=F",      # WTI Crude Oil
+    "NG=F",      # Natural Gas
+    "GC=F",      # Gold
+    "SI=F",      # Silver
+    "HG=F",      # Copper
+    "ZW=F",      # Wheat
+    "ZC=F",      # Corn
+    "ZS=F",      # Soybeans
+    # FX majors (trend well due to interest rate differentials & global flows)
+    "EURUSD=X",  # Euro / US Dollar
+    "GBPUSD=X",  # British Pound / US Dollar
+    "AUDUSD=X",  # Australian Dollar / US Dollar (commodity currency)
+    "JPY=X",     # US Dollar / Japanese Yen
+    # Government Bonds (key diversifier — opposite to commodity in many regimes)
+    "TLT",       # iShares 20+ Year Treasury Bond ETF (proxy for 30yr bond futures)
+    "IEF",       # iShares 7-10 Year Treasury Bond ETF (proxy for 10yr note futures)
+]
+
 SECTOR_MAP: Dict[str, str] = {
     "CL=F": "energy",
     "NG=F": "energy",
@@ -70,25 +95,43 @@ SECTOR_MAP: Dict[str, str] = {
     "CT=F": "softs",
     "LE=F": "livestock",
     "HE=F": "livestock",
+    # FX
+    "EURUSD=X": "fx",
+    "GBPUSD=X": "fx",
+    "AUDUSD=X": "fx",
+    "JPY=X": "fx",
+    # Bonds
+    "TLT": "bonds",
+    "IEF": "bonds",
+    "ZB=F": "bonds",
+    "ZN=F": "bonds",
 }
 
 # Stooq.com futures tickers (alternative free data source)
 STOOQ_TICKERS: Dict[str, str] = {
-    "CL=F": "cl.f",   # WTI Crude Oil
-    "NG=F": "ng.f",   # Natural Gas
-    "BZ=F": "co.f",   # Brent Crude (stooq uses co.f)
-    "GC=F": "gc.f",   # Gold
-    "SI=F": "si.f",   # Silver
-    "HG=F": "hg.f",   # Copper
-    "PL=F": "pl.f",   # Platinum
-    "ZW=F": "w.f",    # Wheat
-    "ZC=F": "c.f",    # Corn
-    "ZS=F": "s.f",    # Soybeans
-    "KC=F": "kc.f",   # Coffee
-    "SB=F": "sb.f",   # Sugar #11
-    "CT=F": "ct.f",   # Cotton
-    "LE=F": "le.f",   # Live Cattle
-    "HE=F": "he.f",   # Lean Hogs
+    "CL=F": "cl.f",       # WTI Crude Oil
+    "NG=F": "ng.f",       # Natural Gas
+    "BZ=F": "co.f",       # Brent Crude (stooq uses co.f)
+    "GC=F": "gc.f",       # Gold
+    "SI=F": "si.f",       # Silver
+    "HG=F": "hg.f",       # Copper
+    "PL=F": "pl.f",       # Platinum
+    "ZW=F": "w.f",        # Wheat
+    "ZC=F": "c.f",        # Corn
+    "ZS=F": "s.f",        # Soybeans
+    "KC=F": "kc.f",       # Coffee
+    "SB=F": "sb.f",       # Sugar #11
+    "CT=F": "ct.f",       # Cotton
+    "LE=F": "le.f",       # Live Cattle
+    "HE=F": "he.f",       # Lean Hogs
+    # FX (Stooq uses lowercase pair names)
+    "EURUSD=X": "eurusd", # EUR/USD
+    "GBPUSD=X": "gbpusd", # GBP/USD
+    "AUDUSD=X": "audusd", # AUD/USD
+    "JPY=X": "usdjpy",    # USD/JPY
+    # Bond ETFs (Stooq uses .us suffix for US ETFs)
+    "TLT": "tlt.us",
+    "IEF": "ief.us",
 }
 
 SYMBOL_NAMES: Dict[str, str] = {
@@ -107,6 +150,16 @@ SYMBOL_NAMES: Dict[str, str] = {
     "CT=F": "Cotton",
     "LE=F": "Live Cattle",
     "HE=F": "Lean Hogs",
+    # FX
+    "EURUSD=X": "Euro/USD",
+    "GBPUSD=X": "GBP/USD",
+    "AUDUSD=X": "AUD/USD",
+    "JPY=X": "USD/JPY",
+    # Bonds
+    "TLT": "20yr Treasury Bond ETF",
+    "IEF": "10yr Treasury Note ETF",
+    "ZB=F": "30yr T-Bond Futures",
+    "ZN=F": "10yr T-Note Futures",
 }
 
 # ── Provider ─────────────────────────────────────────────────────────────────

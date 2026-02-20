@@ -4,6 +4,7 @@ from .binance_client import BinanceFuturesClient, Position, OrderResult
 from .position_manager import PositionManager, RebalanceResult, RebalanceOrder
 from .risk_gate import RiskGate, RiskReport, RiskCheck
 from .live_engine import LiveEngine
+from .notifier import TradeNotifier
 
 __all__ = [
     "BinanceFuturesClient",
@@ -16,4 +17,5 @@ __all__ = [
     "RiskReport",
     "RiskCheck",
     "LiveEngine",
+    "TradeNotifier",
 ]
