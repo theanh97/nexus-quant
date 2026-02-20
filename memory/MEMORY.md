@@ -8,6 +8,7 @@
 | **91b** | **V1+I460bw168k4+I415bw216k4+F144** | **2.010** | **1.576** | **27.47/19.67/32.47/20.39 — PROD BASE** |
 | **146** | **Breadth regime switching (3 weight sets)** | **2.156** | **1.577** | **OBJ=1.8945 — PRODUCTION v2.2.0** |
 | **158** | **Breadth lb=192 + p=0.35/0.65 + v2.7.0 stack** | **~2.34** | **1.966** | **OBJ=2.2095 LOYO 5/5 PERFECT — PRODUCTION v2.8.0** |
+| **165** | **TS short=12h/long=96h rolling-window (v2.8.0 stack)** | **~2.36** | **1.541** | **OBJ=2.2423 LOYO 4/5 WF 2/2 — PRODUCTION v2.9.0** |
 
 ## Regime-Adaptive Weight Switching (P144-146) — CURRENT PRODUCTION
 **Production config v2.2.0 — breadth_regime_switching DEPLOYED**
@@ -28,7 +29,7 @@ True signal = funding/momentum richness (breadth), NOT realized volatility.
 - `engine.run(dataset, strategy)` → BacktestResult with `.returns` list
 - `dataset.close(symbol, idx)` — close price at bar idx
 - `dataset.timeline` — timestamp array (len = n_bars)
-- `dataset.funding_rate_at(symbol, ts)` — funding at timestamp ts
+- `dataset.last_funding_rate_before(symbol, ts)` — funding at timestamp ts (NOT funding_rate_at)
 - **NO** `dataset.bars_for()` — does not exist!
 
 ## Critical Strategy Names
@@ -82,4 +83,9 @@ P157: I460 beta window sweep bw=144/168/192/216/240 — CONFIRMED bw=168 optimal
 P158: Breadth classifier param sweep — **EXCEPTIONAL** lb=192 pw=336 p=0.35/0.65 OBJ=2.2095 (Δ=+0.0647), **LOYO 5/5 PERFECT** | prod v2.8.0
 P159: Ensemble weight re-optimization — NO IMPROVEMENT (LOYO 2/5 overfit; current weights generalize better)
 P160: WF validation v2.8.0 vs v2.4.0 — **CONFIRMED** WF 2/2 avg_delta=+0.1680 (OOS24 +0.1644, OOS25 +0.1716)
-**Next: P161** — V1 signal param tuning (w_carry/w_mom/w_rev mix) OR Funding dispersion threshold sweep
+P161: V1 params + disp threshold — NO IMPROVEMENT (overfit/noise); v2.8.0 remains optimal
+P162: F168 rebalance interval sweep [8/12/16/24/36/48h] — NO IMPROVEMENT (rb=24h optimal; shorter=costs, longer=sluggish)
+P163: I415 beta window sweep [144-288] — NO IMPROVEMENT (bw=216 confirmed; bw=144 LOYO 2/5 overfit 2024)
+P164: TS overlay window sweep — **CANDIDATE** short=12h/long=96h OBJ=2.2846 (new rolling-window method) LOYO 4/5
+P165: TS window validation — **VALIDATED** short=12h/long=96h OBJ=2.2423 (Δ=+0.0328 vs v2.8.0), LOYO 4/5, **WF 2/2 avg_delta=+0.1264** | prod v2.9.0
+**Next: P166** — Vol tilt overlay fine-tune (lookback=168, tilt_ratio=0.65 never swept at v2.9.0) OR funding dispersion pct window sweep
