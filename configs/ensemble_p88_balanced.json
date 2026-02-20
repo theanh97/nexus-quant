@@ -1,0 +1,22 @@
+{
+  "phase": 88,
+  "section": "F:I410bw216+I600=5%",
+  "avg_sharpe": 2.0152,
+  "min_sharpe": 1.5287,
+  "yby_sharpes": {"2021": 3.092, "2022": 1.545, "2023": 1.529, "2024": 2.377, "2025": 1.533},
+  "weights": {"v1": 0.2875, "i460bw168": 0.1625, "i410bw216": 0.225, "i600": 0.05, "f144": 0.275},
+  "signal_config": {
+    "notes": {
+      "V1": "nexus_alpha_v1 k=2",
+      "I460_bw168_k4": "idio_momentum_alpha lb=460 bw=168 k=4",
+      "I410_bw216_k4": "idio_momentum_alpha lb=410 bw=216 k=4",
+      "I600_k2": "idio_momentum_alpha lb=600 bw=168 k=2",
+      "F144_k2": "funding_momentum_alpha lb=144 k=2",
+      "P88_insight": "I410 bw=216 boosts 2022 from 1.613 to 1.928; I600=5% beats 7.5% for MIN"
+    }
+  },
+  "pareto_notes": {
+    "E2_alt": {"avg": 2.0020, "min": 1.5257, "config": "V1=28.75%/I460bw168=15%/I415bw216=23.75%/I600=7.5%/F144=25%"},
+    "E3_alt": {"avg": 2.0039, "min": 1.5020, "config": "V1=28.75%/I460bw216=12.5%/I415bw216=26.25%/I600=7.5%/F144=25%"}
+  }
+}

@@ -10,11 +10,14 @@
 | 86 | V1+I460k4+I410k4+I600+F144 | 2.007 | 1.469 | 26.82/11.85/20.56/10/30.77 (BALANCED) |
 | 86 | V1+I437k4+I474k4+I600+F144 | 2.268 | 1.125 | 4.98/16.17/30/10/38.85 (AVG-MAX) |
 | 86 | (high-MIN) | 1.954 | 1.478 | V1=30%/I460=11.23%/I410=21.8%/I600=10%/F144=26.97% |
-| **87** | **V1+I460k4+I410k4+I600_7.5+F144** | **2.002** | **1.493** | **27.43/13.07/23.66/7.5/28.34 (NEW BALANCED CHAMP)** |
+| 87 | V1+I460k4+I410k4+I600_7.5+F144 | 2.002 | 1.493 | 27.43/13.07/23.66/7.5/28.34 (BALANCED) |
+| **88** | **V1+I460bw168k4+I410bw216k4+I600_5+F144** | **2.015** | **1.529** | **28.75/16.25/22.5/5/27.5 (NEW CHAMP)** |
 
 ## Critical Strategy Name Distinction
 - `"funding_momentum_alpha"` = cumulative funding sum (uses `funding_lookback_bars`) ← CORRECT
 - `"funding_contrarian_alpha"` = funding_z × momentum_z composite ← WRONG, never use
+- `"nexus_alpha_v1"` = V1 multi-factor strategy ← CORRECT (NOT "v1_standard" which throws UnknownStrategy!)
+- `"idio_momentum_alpha"` = idio momentum with `lookback_bars`, `beta_window_bars`, `k_per_side`
 
 ## Key Confirmed Findings
 - **Funding lookback**: 144h (n_samples=18) is CONFIRMED global peak.
@@ -31,11 +34,22 @@
 - **High-MIN recipe**: V1≥30% + I460+I410 → MIN≥1.478 but AVG<2.0 tradeoff
 - **I600 weight**: **7.5% optimal** (not 10%!) for balanced MIN; 5% gives Pareto AVG=2.060/MIN=1.487
 - **Balanced architecture**: V1=27-28%, I460=13%, I410=23-24%, I600=7.5%, F144=28%
-- **Beta window (bw) findings (Phase 87)**:
-  - I410 bw=216: 2022=1.928 (vs 1.613 at bw=168) — massive +0.315 in 2022! UNTESTED in ensemble
-  - I460 bw=216: standalone AVG=1.881 (vs 1.828), 2024=3.032 — UNTESTED in ensemble
-  - Current all-bw=168 is suboptimal; bw=216 sweep is Phase 88 priority
-- **lb=415 (intermediate)**: bridge_score=2.759 (2022=1.764, 2023=0.995) > I410's 2.640 — best bridge lb
+- **Beta window (bw) findings (Phase 87-88)**:
+  - I410 bw=216: [2.117, 1.928, 1.046, 1.679, 1.408] AVG=1.636, MIN=1.046 — +0.315 in 2022!
+  - I415 bw=216: [1.967, 1.737, 1.143, 2.015, 1.338] AVG=1.640, MIN=1.143 — ALL years > 1.0! ★
+  - I460 bw=216: [2.782, 0.566, 0.877, 3.032, 2.15] AVG=1.881, MIN=0.566 — huge 2024 but weak 2022
+  - I415 bw=168: [1.884, 1.764, 0.995, 2.013, 1.246] AVG=1.580, MIN=0.995
+  - **bw=216 upgrade rule**: use bw=216 for idio signals with lb≤460; improves 2022/2023 floor
+- **I600 weight**: **5% Pareto point** — I600=5% + I410_bw216 → MIN=1.529 (beats 7.5% MIN=1.507!)
+  - I600 sweep: 5%→MIN=1.529, 7.5%→MIN=1.507, 10%→MIN=1.484 (lower I600 = higher MIN, up to 5%)
+- **lb=415 (intermediate)**: bridge_score=2.759 (2022=1.764, 2023=0.995) > I410's 2.640
+  - I415_bw216 in ensemble → MIN=1.526 (Section E2: 2.002/1.526) — strong 2023 coverage
+- **P88 Pareto frontier** (all beat P87's 1.493):
+  - I460_bw168 + I410_bw216 + I600=5%: AVG=2.015, MIN=1.529 ← P88 CHAMP
+  - I460_bw168 + I410_bw216 + I600=7.5%: AVG=2.010, MIN=1.507
+  - I460_bw168 + I415_bw216 + I600=7.5%: AVG=2.002, MIN=1.526
+  - I460_bw216 + I415_bw216 + I600=7.5%: AVG=2.004, MIN=1.502
+  - **UNTESTED**: I460_bw168 + I415_bw216 + I600=5% ← likely even better!
 
 ## Signals That FAILED
 - TakerBuyAlpha: all lookbacks negative
@@ -47,10 +61,13 @@
 - Dual-k (I437_k3+I437_k4): Suboptimal vs pure k4
 
 ## Best Ensemble Architecture (CURRENT CHAMPIONS)
-**Phase 87 balanced champion** ← CURRENT BEST: `V1(27.43%) + I460_k4(13.07%) + I410_k4(23.66%) + I600_k2(7.5%) + F144_k2(28.34%)`
-- AVG=2.002, MIN=1.493, YbY: [3.146, 1.498, 1.493, 2.367, 1.506] — ALL years > 1.493!
-- Config saved: `configs/ensemble_p87_balanced.json`
-- STRICTLY DOMINATES P86 balanced (MIN 1.493 >> 1.469)! Key: I600=7.5% not 10%!
+**Phase 88 balanced champion** ← CURRENT BEST: `V1(28.75%) + I460_bw168_k4(16.25%) + I410_bw216_k4(22.5%) + I600_k2(5%) + F144_k2(27.5%)`
+- AVG=2.015, MIN=1.529, YbY: [3.092, 1.545, 1.529, 2.377, 1.533] — ALL years > 1.529!
+- Config saved: `configs/ensemble_p88_balanced.json`
+- STRICTLY DOMINATES P87 (MIN 1.529 >> 1.493)! Keys: I410_bw216 + I600=5%!
+
+**Phase 87 balanced champion** (superseded): `V1(27.43%) + I460_k4(13.07%) + I410_k4(23.66%) + I600_k2(7.5%) + F144_k2(28.34%)`
+- AVG=2.002, MIN=1.493, Config: `configs/ensemble_p87_balanced.json`
 
 **Phase 86 balanced champion** (superseded): `V1(26.82%) + I460_k4(11.85%) + I410_k4(20.56%) + I600_k2(10%) + F144_k2(30.77%)`
 - AVG=2.007, MIN=1.469, Config: `configs/ensemble_p86_balanced.json`
@@ -64,13 +81,13 @@
 - AVG=1.954, MIN=1.478, YbY: [3.039, 1.484, 1.478, 2.281, 1.489]
 - Note: AVG<2.0 but MIN is highest at 1.478!
 
-## Pareto Frontier (Phase 87)
+## Pareto Frontier (Phase 88)
 | AVG   | MIN   | Config |
 |-------|-------|--------|
 | 2.268 | 1.125 | V1=4.98%, I437=16.17%, I474=30%, I600=10%, F144=38.85% ← P86 AVG-MAX |
-| 2.061 | 1.487 | V1≈28%, I460≈13%, I410≈24%, I600=5%, F144≈30% ← P87 I600=5% Pareto |
-| 2.002 | 1.493 | V1=27.43%, I460=13.07%, I410=23.66%, I600=7.5%, F144=28.34% ← P87 BALANCED CHAMP |
-| 1.954 | 1.478 | V1=30%, I460=11.23%, I410=21.8%, I600=10%, F144=26.97% ← P86 HIGH-MIN (dominated) |
+| 2.015 | 1.529 | V1=28.75%, I460bw168=16.25%, I410bw216=22.5%, I600=5%, F144=27.5% ← P88 CHAMP |
+| 2.010 | 1.507 | V1=28.75%, I460bw168=15%, I410bw216=20%, I600=7.5%, F144=28.75% ← P88 Section B |
+| 2.014 | 1.484 | V1=27.5%, I460bw168=17.5%, I415bw168=20%, I600=7.5%, F144=27.5% ← P88 E1 |
 
 ## Correlations (confirmed stable)
 - idio↔f144 = **-0.009 (ORTHOGONAL!)** — the magic behind the ensemble
@@ -86,7 +103,8 @@
 - Phase 84: TRIPLE-LB I437+I460+I410 → 2.040/1.431; I437+I474 → 2.224/1.177 AVG-max
 - Phase 85: I437=0% optimal in triple-lb; I460+I410 balanced 2.001/1.468; I437+I474 2.258/1.164 (new record, I474=27.5%)
 - Phase 86: **Numpy vectorization** (60x faster); I460+I410 2.007/1.469 (P85+); I437+I474 2.268/1.125 (I474=30%!); high-MIN 1.954/1.478
-- Phase 87: I600=7.5% BREAKTHROUGH (was 10%); balanced 2.002/1.493 dominates P86; lb=415 bridge=2.759; I410_bw216 2022=1.928 (UNTESTED)
+- Phase 87: I600=7.5% BREAKTHROUGH (was 10%); balanced 2.002/1.493 dominates P86; lb=415 bridge=2.759; I410_bw216 2022=1.928
+- Phase 88: bw=216 sweep; I410_bw216+I600=5% → 2.015/1.529 (P88 champ); I415_bw216 ALL years>1.0; UNTESTED: I415_bw216+I600=5%
 
 ## Workflow Notes
 - All backtests: 5 OOS years (2021-2025), hourly bars, 10 crypto perps, Binance USDm
