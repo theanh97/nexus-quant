@@ -1,0 +1,51 @@
+{
+  "phase": 117,
+  "description": "Temporal & vol regime tilts",
+  "timestamp": "2026-02-20T17:46:55.558283",
+  "elapsed_seconds": 136.9,
+  "baseline_obj": 1.7159,
+  "results": {
+    "rvol_z_72": {
+      "verdict": "NO_VALUE"
+    },
+    "rvol_z_168": {
+      "best_ratio": 0.5,
+      "delta_obj": 0.0982,
+      "oos": 2.9178,
+      "verdict": "PROMISING",
+      "wf_validated": false
+    },
+    "rvol_z_336": {
+      "best_ratio": 0.9,
+      "delta_obj": 0.0009,
+      "oos": 1.3898,
+      "verdict": "MARGINAL"
+    },
+    "dd_z_72": {
+      "best_ratio": 0.0,
+      "delta_obj": 8.9542,
+      "oos": 14.2024,
+      "verdict": "PROMISING",
+      "wf_validated": true
+    },
+    "dd_z_168": {
+      "best_ratio": 0.0,
+      "delta_obj": 6.2482,
+      "oos": 9.0334,
+      "verdict": "PROMISING",
+      "wf_validated": true
+    },
+    "dd_z_336": {
+      "best_ratio": 0.0,
+      "delta_obj": 4.373,
+      "oos": 3.5559,
+      "verdict": "PROMISING",
+      "wf_validated": true
+    }
+  },
+  "validated": [
+    "dd_z_72",
+    "dd_z_168",
+    "dd_z_336"
+  ]
+}
