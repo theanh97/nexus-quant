@@ -25,6 +25,11 @@ except Exception:  # pragma: no cover
     Optional = object  # type: ignore
     Tuple = tuple  # type: ignore
 
+try:
+    from ..data.provider_policy import classify_provider
+except Exception:  # pragma: no cover
+    classify_provider = None  # type: ignore
+
 
 def write_reminder(artifacts_dir: "Path") -> None:
     """Write current system state as reminder for next Claude session."""
@@ -54,6 +59,8 @@ def write_reminder(artifacts_dir: "Path") -> None:
             best_line = str(best_name)
         else:
             best_line = f"{best_name} (Sharpe {best_sharpe:.3f})"
+    else:
+        best_line = "N/A (no real-data strategy yet)"
 
     lessons_tail = _read_jsonl_tail(lessons_path, n=200)
     lessons = lessons_tail[-5:]
@@ -138,14 +145,23 @@ def _read_jsonl_tail(path: "Path", *, n: int = 5) -> List[Dict[str, Any]]:
 
 
 def _pick_best_strategy(strategies: Dict[str, Any]) -> Tuple[Optional[str], Optional[float]]:
-    best_name: Optional[str] = None
-    best_sharpe: Optional[float] = None
-    best_times_run: int = -1
+    best_real_name: Optional[str] = None
+    best_real_sharpe: Optional[float] = None
+    best_real_times_run: int = -1
+    best_unknown_name: Optional[str] = None
+    best_unknown_sharpe: Optional[float] = None
+    best_unknown_times_run: int = -1
+
     for name, rec in (strategies or {}).items():
         if not isinstance(name, str) or not name:
             continue
         if not isinstance(rec, dict):
             continue
+
+        data_cls = _strategy_data_class(name, rec)
+        if data_cls == "synthetic":
+            continue
+
         sharpe = rec.get("best_sharpe")
         times_run = rec.get("times_run")
         try:
@@ -157,14 +173,46 @@ def _pick_best_strategy(strategies: Dict[str, Any]) -> Tuple[Optional[str], Opti
         except Exception:
             tr = 0
 
-        if s is not None:
-            if best_sharpe is None or s > best_sharpe:
-                best_name, best_sharpe, best_times_run = name, s, tr
+        if data_cls == "real":
+            if s is not None:
+                if best_real_sharpe is None or s > best_real_sharpe:
+                    best_real_name, best_real_sharpe, best_real_times_run = name, s, tr
+                continue
+            if best_real_sharpe is None and tr > best_real_times_run:
+                best_real_name, best_real_sharpe, best_real_times_run = name, None, tr
             continue
 
-        if best_sharpe is None and tr > best_times_run:
-            best_name, best_sharpe, best_times_run = name, None, tr
-    return best_name, best_sharpe
+        if s is not None:
+            if best_unknown_sharpe is None or s > best_unknown_sharpe:
+                best_unknown_name, best_unknown_sharpe, best_unknown_times_run = name, s, tr
+            continue
+
+        if best_unknown_sharpe is None and tr > best_unknown_times_run:
+            best_unknown_name, best_unknown_sharpe, best_unknown_times_run = name, None, tr
+
+    if best_real_name:
+        return best_real_name, best_real_sharpe
+    return best_unknown_name, best_unknown_sharpe
+
+
+def _strategy_data_class(name: str, rec: Dict[str, Any]) -> str:
+    cls = rec.get("best_data_provider_class")
+    if isinstance(cls, str) and cls.strip():
+        return cls.strip().lower()
+
+    provider = rec.get("best_data_provider")
+    if isinstance(provider, str) and provider.strip() and classify_provider is not None:
+        try:
+            return str(classify_provider(provider)).lower()
+        except Exception:
+            pass
+
+    low = name.lower()
+    if "synthetic" in low:
+        return "synthetic"
+    if low.startswith("binance_"):
+        return "real"
+    return "unknown"
 
 
 def _read_active_goals(goals_path: "Path") -> List[Dict[str, Any]]:

@@ -1,10 +1,13 @@
 """
-CIPHER: Risk Assessment Agent.
+CIPHER: Risk Assessment Agent (Phase 1 — Risk Scanner).
 
 Role: Review current strategy risk metrics (VaR, drawdown, correlation, regime)
 and flag any risk concerns. Suggest position limit adjustments.
 
-Uses: claude-sonnet-4-6 via Z.AI gateway (higher accuracy for risk).
+v1.0 Decision Network: Phase 1 agent — runs in parallel with ATLAS.
+Safe fallback: "warn" (not "ok") when API fails — system must not ignore risk blindly.
+
+Uses: Claude Sonnet 4.6 via Z.AI gateway.
 """
 from __future__ import annotations
 
@@ -36,10 +39,11 @@ Respond with ONLY a JSON block in this exact format:
 ```
 """
 
+# SAFE fallback: "warn" not "ok" — system must NOT ignore risk when API fails
 _FALLBACK: Dict[str, Any] = {
-    "risk_flags": [],
-    "severity": "ok",
-    "recommended_limits": {},
+    "risk_flags": ["CIPHER agent unavailable — cannot assess risk (API failure)"],
+    "severity": "warn",
+    "recommended_limits": {"max_position_pct": 0.5},
 }
 
 
@@ -117,4 +121,5 @@ Review the above and identify risk concerns. Recommend position limits if any me
             parsed=parsed,
             fallback_used=fallback_used,
             error=error,
+            phase="generate",
         )

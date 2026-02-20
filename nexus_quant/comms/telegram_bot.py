@@ -233,7 +233,8 @@ class TelegramBot:
         self.send("🔬 Research cycle starting...", chat_id=chat_id)
         try:
             from ..orchestration.research_cycle import ResearchCycle
-            rc = ResearchCycle(self.artifacts_dir, self.config_path)
+            cfg = self.config_path or Path(self._default_config_path())
+            rc = ResearchCycle(self.artifacts_dir, cfg)
             report = rc.run()
             n_papers = len(report.get("arxiv_findings", []))
             n_tasks = len(report.get("tasks_created", []))
@@ -253,11 +254,18 @@ class TelegramBot:
         self.send("⚙️ Backtest running...", chat_id=chat_id)
         try:
             from ..run import run_one
-            cfg = str(self.config_path or Path("configs") / "run_synthetic_funding.json")
-            result = run_one(cfg, artifacts_dir=str(self.artifacts_dir))
-            s = (result.get("metrics") or {}).get("summary", {})
-            sharpe = s.get("sharpe", 0)
-            cagr = s.get("cagr", 0)
+            cfg = self._default_config_path()
+            run_id = run_one(Path(cfg), self.artifacts_dir)
+            metrics = {}
+            metrics_path = self.artifacts_dir / "runs" / run_id / "metrics.json"
+            if metrics_path.exists():
+                try:
+                    metrics = json.loads(metrics_path.read_text("utf-8"))
+                except Exception:
+                    metrics = {}
+            s = metrics.get("summary") or {}
+            sharpe = float(s.get("sharpe") or 0.0)
+            cagr = float(s.get("cagr") or 0.0)
             icon = "✅" if sharpe > 1 else "⚠️" if sharpe > 0 else "❌"
             self.send(
                 f"{icon} <b>Backtest Done</b>\n"
@@ -272,13 +280,30 @@ class TelegramBot:
         self.send("🧬 Self-learning started (may take 5-10 min)...", chat_id=chat_id)
         try:
             from ..run import improve_one
-            cfg = str(self.config_path or Path("configs") / "run_synthetic_funding.json")
-            result = improve_one(cfg, artifacts_dir=str(self.artifacts_dir), trials=20)
-            accepted = result.get("accepted", False)
-            icon = "✅" if accepted else "⚠️"
-            self.send(f"{icon} <b>Improve Done</b>\nNew params accepted: {accepted}", chat_id=chat_id)
+            cfg = self._default_config_path()
+            run_id = improve_one(Path(cfg), self.artifacts_dir, trials=20)
+            self.send(
+                f"✅ <b>Improve Done</b>\nRun ID: <code>{run_id}</code>\nCheck ledger/self_learn for acceptance.",
+                chat_id=chat_id,
+            )
         except Exception as e:
             self.send(f"❌ Improve failed: {e}", chat_id=chat_id)
+
+    def _default_config_path(self) -> str:
+        if self.config_path:
+            return str(self.config_path)
+        repo_root = Path(__file__).resolve().parents[2]
+        for rel in [
+            "configs/production_p91b_champion.json",
+            "configs/run_binance_nexus_alpha_v1_2023oos.json",
+            "configs/run_binance_nexus_alpha_v1_2025ytd.json",
+            "configs/run_binance_v1_full_2023_2025.json",
+            "configs/run_synthetic_funding.json",
+        ]:
+            p = repo_root / rel
+            if p.exists():
+                return str(p)
+        return str(repo_root / "configs" / "run_synthetic_funding.json")
 
     def _run_chat(self, chat_id: str, message: str) -> None:
         if not message:

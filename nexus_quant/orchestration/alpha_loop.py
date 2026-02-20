@@ -29,6 +29,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from ..data.provider_policy import classify_provider
+
 log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -234,12 +236,18 @@ class AlphaLoop:
             try:
                 metrics = json.loads(mf.read_text(encoding="utf-8"))
                 config = json.loads(cf.read_text(encoding="utf-8"))
+                provider = str((config.get("data") or {}).get("provider") or "")
+                provider_class = classify_provider(provider)
+                if provider_class != "real":
+                    continue
                 bar_iv = str((config.get("data") or {}).get("bar_interval") or "1h")
                 sm = metrics.get("summary") or {}
                 results.append({
                     "run_id": run_dir.name,
                     "run_name": config.get("run_name"),
                     "strategy": (config.get("strategy") or {}).get("name"),
+                    "data_provider": provider,
+                    "data_provider_class": provider_class,
                     "corrected_sharpe": _corrected_sharpe(metrics, bar_iv),
                     "sharpe": float(sm.get("sharpe") or 0.0),
                     "calmar": float(sm.get("calmar") or 0.0),

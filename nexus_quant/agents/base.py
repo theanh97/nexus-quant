@@ -1,5 +1,10 @@
 """
-Base agent interface for NEXUS multi-agent system.
+Base agent interface for NEXUS multi-agent system (v1.0 Decision Network).
+
+Pipeline phases:
+  Phase 1 — GENERATE: ATLAS + CIPHER run in parallel (independent analysis)
+  Phase 2 — VALIDATE: ECHO runs with Phase 1 outputs (cross-validation)
+  Phase 3 — DECIDE:   FLUX + Synthesis gate (approve/block/escalate)
 
 All agents:
 - Receive structured context (wisdom checkpoint + metrics + regime)
@@ -12,7 +17,15 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional
+
+
+class AgentPhase(str, Enum):
+    """Pipeline phase in the Decision Network."""
+    GENERATE = "generate"   # Phase 1: independent idea generation + risk scan
+    VALIDATE = "validate"   # Phase 2: cross-validation with Phase 1 outputs
+    DECIDE = "decide"       # Phase 3: final gating + task prioritization
 
 
 @dataclass
@@ -24,6 +37,8 @@ class AgentContext:
     best_params: Optional[Dict[str, Any]] = None
     memory_items: List[Dict[str, Any]] = field(default_factory=list)
     extra: Dict[str, Any] = field(default_factory=dict)
+    # Phase 1 results — populated before Phase 2/3 agents run
+    phase1_results: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -35,6 +50,7 @@ class AgentResult:
     parsed: Dict[str, Any]
     fallback_used: bool = False
     error: Optional[str] = None
+    phase: str = "generate"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -44,6 +60,7 @@ class AgentResult:
             "parsed": self.parsed,
             "fallback_used": self.fallback_used,
             "error": self.error,
+            "phase": self.phase,
         }
 
 

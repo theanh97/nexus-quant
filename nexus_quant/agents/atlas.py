@@ -127,4 +127,5 @@ Based on the above, propose 2-4 strategy improvements with concrete config_overr
             parsed=parsed,
             fallback_used=fallback_used,
             error=error,
+            phase="generate",
         )

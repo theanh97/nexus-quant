@@ -9,6 +9,7 @@ from .status import print_status
 from .memory_cli import memory_main
 from .autopilot_cli import autopilot_main
 from .guardian_cli import guardian_main
+from .supervisor_cli import supervisor_main
 from .promote_cli import promote_main
 from .wisdom_cli import wisdom_main
 from .research_cli import research_main
@@ -55,6 +56,26 @@ def _parse_args() -> argparse.Namespace:
     g_p = sub.add_parser("guardian", help="Guardian monitor (detect stale autopilot)")
     g_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
     g_p.add_argument("--stale-seconds", type=int, default=900, help="Stale threshold for heartbeat")
+
+    sup_p = sub.add_parser("supervisor", help="Supervisor (keep autopilot alive with guardrails)")
+    sup_p.add_argument("--config", required=True, help="Path to JSON config")
+    sup_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    sup_p.add_argument("--trials", type=int, default=30, help="Self-learning trials per improve task (default: 30)")
+    sup_p.add_argument("--steps", type=int, default=10, help="Autopilot max tasks per cycle (default: 10)")
+    sup_p.add_argument("--autopilot-interval-seconds", type=int, default=60, help="Autopilot loop interval (default: 60)")
+    sup_p.add_argument("--check-interval-seconds", type=int, default=60, help="Supervisor health check interval (default: 60)")
+    sup_p.add_argument("--stale-seconds", type=int, default=1800, help="Heartbeat stale threshold before restart (default: 1800)")
+    sup_p.add_argument("--running-task-grace-seconds", type=int, default=10800, help="Grace window for long-running tasks (default: 10800)")
+    sup_p.add_argument("--max-restarts", type=int, default=5, help="Max restarts in restart window before pausing (default: 5)")
+    sup_p.add_argument("--restart-window-seconds", type=int, default=1800, help="Restart cap window (default: 1800)")
+    sup_p.add_argument("--backoff-seconds", type=int, default=20, help="Base restart backoff (default: 20)")
+    sup_p.add_argument("--max-backoff-seconds", type=int, default=300, help="Max restart backoff (default: 300)")
+    sup_p.add_argument("--daily-budget-usd", type=float, default=0.0, help="Daily Opus rebuttal budget cap (0 disables)")
+    sup_p.add_argument("--estimated-opus-cost-usd", type=float, default=0.6, help="Fallback cost per rebuttal for budget guard")
+    sup_p.add_argument("--budget-safety-multiplier", type=float, default=1.5, help="Multiplier applied to estimated spend before budget guard (default: 1.5)")
+    sup_p.add_argument("--max-log-mb", type=int, default=256, help="Rotate autopilot log when it exceeds this size (default: 256)")
+    sup_p.add_argument("--log-file", default="", help="Autopilot log file path (default: artifacts/logs/orion_autopilot.log)")
+    sup_p.add_argument("--no-bootstrap", action="store_true", help="Disable autopilot bootstrap when queue is empty")
 
     pr_p = sub.add_parser("promote", help="Promote accepted best params into a config (verified self-learning)")
     pr_p.add_argument("--config", required=True, help="Path to JSON config to update")
@@ -143,6 +164,27 @@ def main() -> int:
         )
     if args.cmd == "guardian":
         return guardian_main(artifacts_dir=Path(args.artifacts), stale_seconds=int(args.stale_seconds))
+    if args.cmd == "supervisor":
+        return supervisor_main(
+            config_path=Path(args.config),
+            artifacts_dir=Path(args.artifacts),
+            trials=int(args.trials),
+            steps=int(args.steps),
+            autopilot_interval_seconds=int(args.autopilot_interval_seconds),
+            check_interval_seconds=int(args.check_interval_seconds),
+            stale_seconds=int(args.stale_seconds),
+            running_task_grace_seconds=int(args.running_task_grace_seconds),
+            max_restarts=int(args.max_restarts),
+            restart_window_seconds=int(args.restart_window_seconds),
+            base_backoff_seconds=int(args.backoff_seconds),
+            max_backoff_seconds=int(args.max_backoff_seconds),
+            bootstrap=not bool(args.no_bootstrap),
+            daily_budget_usd=float(args.daily_budget_usd),
+            estimated_opus_cost_usd=float(args.estimated_opus_cost_usd),
+            budget_safety_multiplier=float(args.budget_safety_multiplier),
+            log_file=str(args.log_file),
+            max_log_mb=int(args.max_log_mb),
+        )
     if args.cmd == "promote":
         return promote_main(config_path=Path(args.config), best_params_path=Path(args.best), artifacts_dir=Path(args.artifacts), apply=bool(args.apply))
     if args.cmd == "wisdom":

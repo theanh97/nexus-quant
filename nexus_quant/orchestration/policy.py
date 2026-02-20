@@ -96,7 +96,10 @@ class ResearchPolicy:
             state["improve_pause_until_runs"] = pause_until_runs
             state["budget_window_start_runs"] = run_count
             window_runs = 0
-        allow_improve = run_count >= pause_until_runs
+        control = self._load_control()
+        force_pause_until_runs = int(control.get("force_pause_until_runs") or 0)
+        effective_pause_until_runs = max(pause_until_runs, force_pause_until_runs)
+        allow_improve = run_count >= effective_pause_until_runs
 
         last_fast_runs = int(state.get("last_fast_run_count") or 0)
         last_fast_ts = int(state.get("last_fast_ts") or 0)
@@ -167,6 +170,7 @@ class ResearchPolicy:
                         "window_runs": window_runs,
                         "window_size": int(self.cfg.runs_per_budget_window),
                         "pause_until_runs": pause_until_runs,
+                        "effective_pause_until_runs": effective_pause_until_runs,
                     },
                 }
             )
@@ -205,8 +209,11 @@ class ResearchPolicy:
             "reset_due": bool(reset_due),
             "allow_improve": bool(allow_improve),
             "improve_pause_until_runs": int(pause_until_runs),
+            "force_pause_until_runs": int(force_pause_until_runs),
+            "effective_pause_until_runs": int(effective_pause_until_runs),
             "actions": self._dedupe_actions(actions),
             "state_path": str(self.state_path),
+            "control": control,
         }
 
     def _run_count(self) -> int:
@@ -240,7 +247,19 @@ class ResearchPolicy:
         }
 
     def _save_state(self, state: Dict[str, Any]) -> None:
-        self.state_path.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
+        tmp_path = self.state_path.with_suffix(self.state_path.suffix + ".tmp")
+        tmp_path.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
+        tmp_path.replace(self.state_path)
+
+    def _load_control(self) -> Dict[str, Any]:
+        p = self.artifacts_dir / "state" / "research_policy_control.json"
+        if not p.exists():
+            return {}
+        try:
+            obj = json.loads(p.read_text(encoding="utf-8"))
+            return obj if isinstance(obj, dict) else {}
+        except Exception:
+            return {}
 
     @staticmethod
     def _dedupe_actions(actions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

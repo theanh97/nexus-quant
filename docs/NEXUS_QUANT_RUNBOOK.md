@@ -11,6 +11,7 @@ Mục tiêu của repo này: chạy R&D định lượng theo kiểu **audit đ�
 - `close > 0` cho mọi bar.
 - Series length phải khớp timeline.
 - Không được dùng thông tin tương lai để tạo signal (no look-ahead).
+- Production run phải dùng provider **real data** (không synthetic) + đúng whitelist.
 
 ### Những bias phải né
 - Look-ahead bias (dùng dữ liệu của tương lai).
@@ -21,6 +22,8 @@ Mục tiêu của repo này: chạy R&D định lượng theo kiểu **audit đ�
 ### Implementation
 - Data quality gate: `nexus_quant/data/quality.py`
 - Mỗi run ghi: `artifacts/runs/<run_id>/data_quality.json`
+- Data provider policy: `nexus_quant/data/provider_policy.py`
+- Mỗi run ghi: `artifacts/runs/<run_id>/data_policy.json`
 - Nếu fail gate: CLI sẽ dừng sớm.
 
 ---
@@ -123,6 +126,7 @@ Orion tạo task + chạy tuần tự:
 Commands:
 - `python3 -m nexus_quant autopilot --config <cfg.json> --bootstrap --steps 10`
 - 24/7 mode: `python3 -m nexus_quant autopilot --config <cfg.json> --bootstrap --loop --interval-seconds 300`
+- self-healing mode (recommended): `python3 -m nexus_quant supervisor --config <cfg.json> --autopilot-interval-seconds 60 --check-interval-seconds 60 --stale-seconds 1800 --max-restarts 5 --restart-window-seconds 1800 --max-log-mb 256 --budget-safety-multiplier 1.5`
 
 Reflection (deterministic, LLM-free):
 - `python3 -m nexus_quant reflect --config <cfg.json> --artifacts artifacts --tail-events 200`
@@ -135,6 +139,22 @@ Critique (deterministic, LLM-free):
 Monitoring:
 - Heartbeat: `artifacts/state/orion_heartbeat.json`
 - Guardian check: `python3 -m nexus_quant guardian --artifacts artifacts --stale-seconds 900`
+- Supervisor status: `artifacts/state/orion_supervisor_status.json`
+- Supervisor control: `artifacts/state/orion_supervisor_control.json` (`mode=PAUSE|PAUSED|STOP`)
+- Supervisor log: `artifacts/logs/orion_autopilot.log` (auto-rotates when exceeding `--max-log-mb`)
+- Budget guard uses estimated Opus spend from rebuttal artifacts (`estimated_spend_method` in status/control); apply safety multiplier to stop early.
+
+macOS launch-at-login (optional):
+- Template: `scripts/com.nexus.supervisor.plist`
+- Install:
+  - `cp scripts/com.nexus.supervisor.plist ~/Library/LaunchAgents/com.nexus.supervisor.plist`
+  - `launchctl unload ~/Library/LaunchAgents/com.nexus.supervisor.plist 2>/dev/null || true`
+  - `launchctl load ~/Library/LaunchAgents/com.nexus.supervisor.plist`
+
+Policy gates + rebuttal:
+- `research_policy_state.json` gates fast/deep/reset checks by run-count/time.
+- `policy_review` auto-calls Claude Opus rebuttal and stores artifacts in `artifacts/state/policy_reviews/`.
+- `REVISE` / `ROLLBACK` rebuttal verdict can enforce improve pause via `research_policy_control.json`.
 
 Promotion:
 - Xem candidate accept: `artifacts/memory/best_params.json` + `artifacts/memory/ablation_latest.json`

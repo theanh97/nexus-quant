@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nexus.supervisor</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>-m</string>
+    <string>nexus_quant</string>
+    <string>supervisor</string>
+    <string>--config</string>
+    <string>/Users/qtmobile/Desktop/Nexus - Quant Trading /configs/run_binance_nexus_alpha_v1_2023oos.json</string>
+    <string>--artifacts</string>
+    <string>/Users/qtmobile/Desktop/Nexus - Quant Trading /artifacts</string>
+    <string>--autopilot-interval-seconds</string>
+    <string>60</string>
+    <string>--check-interval-seconds</string>
+    <string>60</string>
+    <string>--stale-seconds</string>
+    <string>1800</string>
+    <string>--max-restarts</string>
+    <string>5</string>
+    <string>--restart-window-seconds</string>
+    <string>1800</string>
+    <string>--max-log-mb</string>
+    <string>256</string>
+    <string>--budget-safety-multiplier</string>
+    <string>1.5</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/qtmobile/Desktop/Nexus - Quant Trading </string>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/nexus_supervisor_launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/nexus_supervisor_launchd.log</string>
+</dict>
+</plist>

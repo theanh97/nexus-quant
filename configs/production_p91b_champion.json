@@ -25,6 +25,14 @@
     "cache_dir": ".cache/binance_rest"
   },
 
+  "data_policy": {
+    "_comment": "Hard gate: production only accepts real, whitelisted providers",
+    "require_real_data": true,
+    "allowed_providers": ["binance_rest_v1"],
+    "strict_unknown_provider": true,
+    "allow_synthetic": false
+  },
+
   "execution": {
     "style": "taker",
     "slippage_bps": 3.0,

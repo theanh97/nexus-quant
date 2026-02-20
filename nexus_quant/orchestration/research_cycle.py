@@ -52,7 +52,7 @@ class ResearchCycle:
     Orchestrates a full autonomous research iteration.
 
     Usage:
-        cycle = ResearchCycle(artifacts_dir=Path("artifacts"), config_path=Path("configs/run_synthetic_funding.json"))
+        cycle = ResearchCycle(artifacts_dir=Path("artifacts"), config_path=Path("configs/production_p91b_champion.json"))
         report = cycle.run()
     """
 

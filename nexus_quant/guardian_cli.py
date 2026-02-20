@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from .data.provider_policy import classify_provider
 from .orchestration.tasks import TaskStore
 from .utils.time import parse_iso_utc
 
@@ -72,12 +73,23 @@ def guardian_main(*, artifacts_dir: Path, stale_seconds: int) -> int:
         from .monitoring.anomaly import run_all_checks
         runs_dir = artifacts_dir / "runs"
         if runs_dir.exists():
-            run_dirs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime)
-            if run_dirs:
-                import json as _json
-                rp = run_dirs[-1] / "result.json"
+            run_dirs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime, reverse=True)
+            target_run = None
+            for rd in run_dirs:
+                try:
+                    cfg = json.loads((rd / "config.json").read_text(encoding="utf-8"))
+                except Exception:
+                    cfg = {}
+                provider = str((cfg.get("data") or {}).get("provider") or "")
+                if classify_provider(provider) == "real":
+                    target_run = rd
+                    break
+            if target_run is None and run_dirs:
+                target_run = run_dirs[0]
+            if target_run is not None:
+                rp = target_run / "result.json"
                 if rp.exists():
-                    result = _json.loads(rp.read_text())
+                    result = json.loads(rp.read_text(encoding="utf-8"))
                     returns = result.get("returns") or []
                     equity = result.get("equity_curve") or []
                     if returns:
@@ -89,11 +101,13 @@ def guardian_main(*, artifacts_dir: Path, stale_seconds: int) -> int:
                             expected_cost_rate=0.001,
                         )
                         if anomaly_result.get("anomalies"):
+                            print(f"[GUARDIAN] Latest run checked: {target_run.name}")
                             print(f"[GUARDIAN] Anomalies: {anomaly_result['summary']}")
                             for a in anomaly_result["anomalies"]:
                                 sev = a.get("severity","?").upper()
                                 print(f"  [{sev}] {a.get('kind')}: {a.get('message')}")
                         else:
+                            print(f"[GUARDIAN] Latest run checked: {target_run.name}")
                             print("[GUARDIAN] No anomalies detected in latest run.")
     except Exception as e:
         print(f"[GUARDIAN] Anomaly check failed: {e}")

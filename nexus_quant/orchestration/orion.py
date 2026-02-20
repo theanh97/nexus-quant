@@ -14,6 +14,7 @@ from ..learning.reflection import reflect_and_update
 from ..learning.critic import critique_recent
 from .overrides import load_overrides
 from .tasks import TaskStore
+from .opus_rebuttal import OpusRebuttalConfig, persist_opus_rebuttal, run_opus_rebuttal
 from ..agents.atlas import AtlasAgent
 from ..agents.cipher import CipherAgent
 from ..agents.echo import EchoAgent
@@ -458,6 +459,74 @@ class Orion:
             "task_counts": task_counts,
             "recommendations": lines[lines.index("## Auto Recommendations") + 1 :],
         }
+
+        # Auto rebuttal: run Claude Opus on every policy review.
+        rebuttal_context = {
+            "mode": mode,
+            "run_count": run_count,
+            "runs_total": runs_total,
+            "window_runs": window_runs,
+            "window_size": window_size,
+            "task_counts": task_counts,
+            "recommendations": review_obj.get("recommendations") or [],
+            "policy_state": self._read_policy_state(artifacts_dir),
+        }
+        rebuttal = run_opus_rebuttal(
+            topic="Policy review quality gate for autonomous research loop",
+            context=rebuttal_context,
+            cfg=OpusRebuttalConfig(),
+        )
+        rebuttal_json_path = review_dir / f"rebuttal.{mode}.{ts}.json"
+        rebuttal_text_path = review_dir / f"rebuttal.{mode}.{ts}.txt"
+        rebuttal_paths = persist_opus_rebuttal(
+            out_json_path=rebuttal_json_path,
+            out_text_path=rebuttal_text_path,
+            payload=rebuttal,
+        )
+        rebuttal_parsed = rebuttal.get("parsed") or {}
+        rebuttal_verdict = str(rebuttal_parsed.get("verdict") or "").upper()
+        policy_state = self._read_policy_state(artifacts_dir)
+        policy_cfg = (policy_state.get("config") or {}) if isinstance(policy_state, dict) else {}
+        fast_gate_runs = int(policy_cfg.get("fast_gate_runs") or 25)
+        deep_gate_runs = int(policy_cfg.get("deep_gate_runs") or 150)
+        force_pause_until_runs = None
+        if rebuttal_verdict == "ROLLBACK":
+            force_pause_until_runs = run_count + max(1, deep_gate_runs)
+        elif rebuttal_verdict == "REVISE":
+            force_pause_until_runs = run_count + max(1, fast_gate_runs)
+
+        control_path = artifacts_dir / "state" / "research_policy_control.json"
+        control_obj = self._read_policy_control(artifacts_dir)
+        if force_pause_until_runs is not None:
+            current_force = int(control_obj.get("force_pause_until_runs") or 0)
+            force_pause_until_runs = max(force_pause_until_runs, current_force)
+            control_obj = {
+                **control_obj,
+                "updated_at": _utc_iso(),
+                "source": "opus_rebuttal",
+                "mode": mode,
+                "run_count": run_count,
+                "verdict": rebuttal_verdict,
+                "force_pause_until_runs": int(force_pause_until_runs),
+                "reason": "Automatic pause from Opus rebuttal verdict",
+                "rebuttal_json_path": rebuttal_paths["json_path"],
+            }
+            control_path.parent.mkdir(parents=True, exist_ok=True)
+            control_path.write_text(json.dumps(control_obj, indent=2, sort_keys=True), encoding="utf-8")
+
+        review_obj["opus_rebuttal"] = {
+            "ok": bool(rebuttal.get("ok")),
+            "returncode": rebuttal.get("returncode"),
+            "parsed": rebuttal_parsed,
+            "json_path": rebuttal_paths["json_path"],
+            "text_path": rebuttal_paths["text_path"],
+            "enforced_control": {
+                "path": str(control_path),
+                "force_pause_until_runs": int(force_pause_until_runs) if force_pause_until_runs is not None else None,
+                "verdict": rebuttal_verdict,
+            },
+        }
+
         out_md_path.write_text("\n".join(lines), encoding="utf-8")
         out_json_path.write_text(json.dumps(review_obj, indent=2, sort_keys=True), encoding="utf-8")
         self.memory.add(
@@ -465,15 +534,51 @@ class Orion:
             kind="policy_review",
             tags=["orion", "policy", mode],
             content=f"Policy review generated ({mode}) with run_count={run_count}",
-            meta={"review_md_path": str(out_md_path), "review_json_path": str(out_json_path), "mode": mode, "task_counts": task_counts},
+            meta={
+                "review_md_path": str(out_md_path),
+                "review_json_path": str(out_json_path),
+                "mode": mode,
+                "task_counts": task_counts,
+                "opus_rebuttal_json_path": rebuttal_paths["json_path"],
+                "opus_rebuttal_text_path": rebuttal_paths["text_path"],
+                "opus_rebuttal_ok": bool(rebuttal.get("ok")),
+                "opus_rebuttal_verdict": rebuttal_verdict,
+                "policy_control_path": str(control_path),
+                "force_pause_until_runs": int(force_pause_until_runs) if force_pause_until_runs is not None else None,
+            },
             run_id=None,
         )
         return {
             "review_md_path": str(out_md_path),
             "review_json_path": str(out_json_path),
+            "rebuttal_json_path": rebuttal_paths["json_path"],
+            "rebuttal_text_path": rebuttal_paths["text_path"],
+            "rebuttal_ok": bool(rebuttal.get("ok")),
+            "rebuttal_verdict": rebuttal_verdict,
+            "force_pause_until_runs": int(force_pause_until_runs) if force_pause_until_runs is not None else None,
             "mode": mode,
             "run_count": run_count,
         }
+
+    def _read_policy_state(self, artifacts_dir: Path) -> Dict[str, Any]:
+        p = artifacts_dir / "state" / "research_policy_state.json"
+        if not p.exists():
+            return {}
+        try:
+            obj = json.loads(p.read_text(encoding="utf-8"))
+            return obj if isinstance(obj, dict) else {}
+        except Exception:
+            return {}
+
+    def _read_policy_control(self, artifacts_dir: Path) -> Dict[str, Any]:
+        p = artifacts_dir / "state" / "research_policy_control.json"
+        if not p.exists():
+            return {}
+        try:
+            obj = json.loads(p.read_text(encoding="utf-8"))
+            return obj if isinstance(obj, dict) else {}
+        except Exception:
+            return {}
 
     # ── Agent orchestration ──────────────────────────────────────────────────
 
@@ -523,10 +628,30 @@ class Orion:
         except Exception:
             wm_ttl = 120
         wm_ttl = max(20, min(wm_ttl, 400))
+        prior_half_life = 300
+        try:
+            prior_half_life = int(((policy_state.get("config") or {}).get("prior_half_life_runs")) or prior_half_life)
+        except Exception:
+            prior_half_life = 300
+        prior_half_life = max(20, min(prior_half_life, 1200))
+
+        hard_rules = []
+        current_rules_path = self.cfg.artifacts_dir / "state" / "current_rules.json"
+        if current_rules_path.exists():
+            try:
+                rules_obj = json.loads(current_rules_path.read_text("utf-8"))
+                if isinstance(rules_obj, dict):
+                    hr = rules_obj.get("hard_rules") or []
+                    if isinstance(hr, list):
+                        hard_rules = [str(x) for x in hr if str(x).strip()]
+            except Exception:
+                hard_rules = []
+
         memory_items = []
         try:
             mem = self.memory.recent(limit=wm_ttl)
-            for it in mem:
+            for rank, it in enumerate(mem):
+                decay_weight = 0.5 ** (float(rank) / float(max(1, prior_half_life)))
                 memory_items.append(
                     {
                         "id": it.id,
@@ -535,6 +660,7 @@ class Orion:
                         "tags": list(it.tags),
                         "content": (it.content or "")[:500],
                         "run_id": it.run_id,
+                        "decay_weight": round(float(decay_weight), 6),
                     }
                 )
         except Exception:
@@ -551,7 +677,10 @@ class Orion:
                     "allow_improve": bool(policy_state.get("allow_improve", True)) if isinstance(policy_state, dict) else True,
                     "window_runs": int(policy_state.get("window_runs") or 0) if isinstance(policy_state, dict) else 0,
                     "working_memory_ttl_runs": wm_ttl,
+                    "prior_half_life_runs": prior_half_life,
                 }
+                ,
+                "hard_rules": hard_rules,
             },
         )
 

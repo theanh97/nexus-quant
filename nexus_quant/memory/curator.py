@@ -17,6 +17,8 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from ..data.provider_policy import classify_provider
+
 
 _RUN_TS_RE = re.compile(r"(?P<ts>\\d{8}T\\d{6}Z)$")
 _HEX_RE = re.compile(r"^[0-9a-f]{8,}$", flags=re.IGNORECASE)
@@ -450,6 +452,12 @@ class MemoryCurator:
         if not isinstance(strategy_params, dict):
             strategy_params = {}
 
+        data_obj = config.get("data") or {}
+        if not isinstance(data_obj, dict):
+            data_obj = {}
+        data_provider = str(data_obj.get("provider") or "")
+        data_provider_class = classify_provider(data_provider)
+
         cfg_sig = self._config_sig(config)
         run_id = run_dir.name
         cfg_fp, code_fp = self._parse_run_dir_fingerprints(run_dir.name)
@@ -459,6 +467,8 @@ class MemoryCurator:
             "strategy": run_name,
             "strategy_impl": strategy_impl,
             "strategy_params": strategy_params,
+            "data_provider": data_provider,
+            "data_provider_class": data_provider_class,
             "config_sig": cfg_sig,
             "config_fingerprint": cfg_fp,
             "code_fingerprint": code_fp,
@@ -543,12 +553,23 @@ class MemoryCurator:
             times_run = len(items_sorted)
             last = items_sorted[-1] if items_sorted else {}
             best = None
+            best_real = None
             for r in items_sorted:
                 if best is None or self._safe_float(r.get("sharpe")) > self._safe_float(best.get("sharpe")):
                     best = r
+                if str(r.get("data_provider_class") or "") == "real":
+                    if best_real is None or self._safe_float(r.get("sharpe")) > self._safe_float(best_real.get("sharpe")):
+                        best_real = r
+
+            best_any = best
+            best = best_real or best
 
             best_sharpe = self._safe_float((best or {}).get("sharpe"), default=None)
+            best_sharpe_any = self._safe_float((best_any or {}).get("sharpe"), default=None)
             best_params_hint = self._params_hint((best or {}).get("strategy_params") or {})
+            best_data_provider = str((best or {}).get("data_provider") or "")
+            best_data_provider_class = str((best or {}).get("data_provider_class") or "unknown")
+            has_real_data_runs = bool(best_real is not None)
 
             verdict_pass = (best or {}).get("verdict_pass")
             verdict = "UNKNOWN"
@@ -569,7 +590,11 @@ class MemoryCurator:
             registry["strategies"][strat] = {
                 "name": strat,
                 "best_sharpe": best_sharpe,
+                "best_sharpe_any": best_sharpe_any,
                 "best_params_hint": best_params_hint,
+                "best_data_provider": best_data_provider,
+                "best_data_provider_class": best_data_provider_class,
+                "has_real_data_runs": has_real_data_runs,
                 "times_run": times_run,
                 "last_run": last.get("ts"),
                 "verdict": verdict,

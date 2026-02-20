@@ -93,6 +93,62 @@ def safe_call_llm(
         return fallback_json, True, str(e)
 
 
+def call_llm_dual(
+    system_prompt: str,
+    user_prompt: str,
+    primary_model: Optional[str] = None,
+    secondary_model: Optional[str] = None,
+    max_tokens: int = 1024,
+    fallback_result: Optional[Dict[str, Any]] = None,
+) -> Tuple[str, str, bool, Optional[str]]:
+    """
+    Call two LLM models with the same prompt and return both responses.
+
+    Used for critical cross-validation (e.g. ECHO QA agent).
+    Returns (primary_text, secondary_text, any_fallback, error).
+    If a model fails, its text is set to the JSON-encoded fallback_result.
+    """
+    fallback_json = json.dumps(fallback_result or {})
+    primary_text = fallback_json
+    secondary_text = fallback_json
+    any_fallback = False
+    errors: list = []
+
+    # Primary model call
+    api_key = _get_api_key()
+    if api_key:
+        try:
+            primary_text = call_llm(system_prompt, user_prompt, model=primary_model, max_tokens=max_tokens)
+        except Exception as e:
+            any_fallback = True
+            errors.append(f"primary({primary_model}): {e}")
+    else:
+        any_fallback = True
+        errors.append("No API key for primary")
+
+    # Secondary model call (via SmartRouter for Gemini/other providers)
+    if secondary_model:
+        try:
+            from .smart_router import SmartRouter, GOOGLE_GEMINI_PRO
+            router = SmartRouter()
+            secondary_text = router._call_with_spec(
+                GOOGLE_GEMINI_PRO,
+                task_type=None,
+                system=system_prompt,
+                user=user_prompt,
+                max_tokens=max_tokens,
+            )
+        except Exception as e:
+            # Secondary failure is non-critical; use primary result
+            secondary_text = primary_text
+            errors.append(f"secondary({secondary_model}): {e}")
+    else:
+        secondary_text = primary_text
+
+    error_str = "; ".join(errors) if errors else None
+    return primary_text, secondary_text, any_fallback, error_str
+
+
 def extract_json_block(text: str) -> Dict[str, Any]:
     """Extract first JSON block from LLM response text."""
     # Try ```json ... ``` block

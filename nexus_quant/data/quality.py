@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+import math
+from typing import Any, Dict, List, Optional
 
 from .schema import MarketDataset
 
@@ -28,10 +28,16 @@ def validate_dataset(dataset: MarketDataset, expected_step_seconds: Optional[int
 
     if expected_step_seconds is not None and expected_step_seconds > 0 and len(timeline) >= 3:
         steps = [timeline[i] - timeline[i - 1] for i in range(1, len(timeline))]
-        # Allow small irregularities but flag if too many.
         bad = sum(1 for s in steps if s != expected_step_seconds)
         frac_bad = bad / float(len(steps)) if steps else 0.0
-        if frac_bad > 0.01:
+        if frac_bad > 0.05:
+            add(
+                "error",
+                "timeline_step_excessive_gaps",
+                "Timeline step is irregular for more than 5% of bars.",
+                {"expected_step_seconds": expected_step_seconds, "fraction_bad": round(frac_bad, 6)},
+            )
+        elif frac_bad > 0.01:
             add(
                 "warn",
                 "timeline_step_irregular",
@@ -41,13 +47,124 @@ def validate_dataset(dataset: MarketDataset, expected_step_seconds: Optional[int
 
     # Series length checks
     n = len(timeline)
+    semantic_profile: Dict[str, Dict[str, float]] = {}
+
+    def _semantic_stats(xs: List[float]) -> Dict[str, float]:
+        if len(xs) < 2:
+            return {
+                "n": float(len(xs)),
+                "zero_return_fraction": 0.0,
+                "extreme_return_fraction": 0.0,
+                "unique_price_fraction": 0.0,
+                "return_mean": 0.0,
+                "return_std": 0.0,
+            }
+
+        returns: List[float] = []
+        zero = 0
+        extreme = 0
+        try:
+            prev = float(xs[0])
+        except Exception:
+            prev = 0.0
+        for cur_raw in xs[1:]:
+            try:
+                cur = float(cur_raw)
+            except Exception:
+                prev = 0.0
+                continue
+            if not math.isfinite(prev) or not math.isfinite(cur) or prev <= 0.0:
+                prev = cur
+                continue
+            r = (cur / prev) - 1.0
+            if math.isfinite(r):
+                returns.append(r)
+                if abs(r) <= 1e-12:
+                    zero += 1
+                if abs(r) >= 0.50:
+                    extreme += 1
+            prev = cur
+
+        uniq_vals = set()
+        for v in xs:
+            try:
+                uniq_vals.add(round(float(v), 8))
+            except Exception:
+                continue
+        uniq = len(uniq_vals)
+        n_ret = len(returns)
+        if n_ret <= 0:
+            return {
+                "n": float(len(xs)),
+                "zero_return_fraction": 1.0,
+                "extreme_return_fraction": 0.0,
+                "unique_price_fraction": float(uniq) / float(max(1, len(xs))),
+                "return_mean": 0.0,
+                "return_std": 0.0,
+            }
+
+        mean_r = sum(returns) / float(n_ret)
+        var_r = sum((r - mean_r) ** 2 for r in returns) / float(max(1, n_ret - 1))
+        std_r = math.sqrt(max(0.0, var_r))
+        return {
+            "n": float(len(xs)),
+            "zero_return_fraction": float(zero) / float(n_ret),
+            "extreme_return_fraction": float(extreme) / float(n_ret),
+            "unique_price_fraction": float(uniq) / float(max(1, len(xs))),
+            "return_mean": mean_r,
+            "return_std": std_r,
+        }
+
     for sym in dataset.symbols:
         closes = dataset.perp_close.get(sym)
         if closes is None or len(closes) != n:
             add("error", "perp_close_length_mismatch", f"perp_close[{sym}] length must match timeline.", {"len": len(closes or [])})
             continue
-        if any((c is None) or (float(c) <= 0.0) for c in closes):
+        if any((c is None) or (not math.isfinite(float(c))) or (float(c) <= 0.0) for c in closes):
             add("error", "perp_close_non_positive", f"perp_close[{sym}] contains non-positive values.")
+        stats = _semantic_stats(closes)
+        semantic_profile[sym] = stats
+        if stats["zero_return_fraction"] > 0.95:
+            add(
+                "error",
+                "perp_close_stale_series",
+                f"perp_close[{sym}] is stale (>95% zero-return bars).",
+                {
+                    "zero_return_fraction": round(stats["zero_return_fraction"], 6),
+                    "unique_price_fraction": round(stats["unique_price_fraction"], 6),
+                },
+            )
+        elif stats["zero_return_fraction"] > 0.50:
+            add(
+                "warn",
+                "perp_close_many_zero_returns",
+                f"perp_close[{sym}] has many zero-return bars (>50%).",
+                {
+                    "zero_return_fraction": round(stats["zero_return_fraction"], 6),
+                    "unique_price_fraction": round(stats["unique_price_fraction"], 6),
+                },
+            )
+        if stats["extreme_return_fraction"] > 0.01:
+            add(
+                "error",
+                "perp_close_jump_anomaly",
+                f"perp_close[{sym}] has too many extreme jumps (|r|>=50%).",
+                {"extreme_return_fraction": round(stats["extreme_return_fraction"], 6)},
+            )
+        elif stats["extreme_return_fraction"] > 0.002:
+            add(
+                "warn",
+                "perp_close_jump_outliers",
+                f"perp_close[{sym}] has notable extreme jumps (|r|>=50%).",
+                {"extreme_return_fraction": round(stats["extreme_return_fraction"], 6)},
+            )
+        if stats["unique_price_fraction"] < 0.02:
+            add(
+                "error",
+                "perp_close_low_unique_ratio",
+                f"perp_close[{sym}] has too few unique price points.",
+                {"unique_price_fraction": round(stats["unique_price_fraction"], 6)},
+            )
 
         if dataset.spot_close is not None:
             spots = dataset.spot_close.get(sym)
@@ -118,5 +235,6 @@ def validate_dataset(dataset: MarketDataset, expected_step_seconds: Optional[int
         "symbols": list(dataset.symbols),
         "bars": n,
         "expected_step_seconds": expected_step_seconds,
+        "semantic_profile": semantic_profile,
         "issues": issues,
     }

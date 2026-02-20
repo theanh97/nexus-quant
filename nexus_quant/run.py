@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 from .utils.hashing import sha256_bytes, sha256_text, file_sha256
 from .data.providers.registry import make_provider
+from .data.provider_policy import validate_run_data_policy
 from .data.quality import validate_dataset
 from .strategies.registry import make_strategy
 from .backtest.engine import BacktestConfig, BacktestEngine, BacktestResult
@@ -19,6 +20,22 @@ from .utils.merge import deep_merge
 
 # ── Backtest log helper (Console tab visibility) ──────────────────────────────
 _BT_LOG_FILE = Path("/tmp/nexus_backtest.log")
+_BAR_INTERVAL_SECONDS = {
+    "1m": 60,
+    "3m": 180,
+    "5m": 300,
+    "15m": 900,
+    "30m": 1800,
+    "1h": 3600,
+    "2h": 7200,
+    "4h": 14400,
+    "6h": 21600,
+    "8h": 28800,
+    "12h": 43200,
+    "1d": 86400,
+    "3d": 259200,
+    "1w": 604800,
+}
 
 def _bt_log(msg: str) -> None:
     """Append a timestamped line to /tmp/nexus_backtest.log for Console tab."""
@@ -43,6 +60,20 @@ def _ensure_dir(p: Path) -> None:
 
 def _hash_run_identity(config_text: str) -> str:
     return sha256_text(config_text)[:16]
+
+
+def _expected_step_seconds(data_cfg: Dict[str, Any]) -> Optional[int]:
+    if not isinstance(data_cfg, dict):
+        return None
+    if "bar_interval_minutes" in data_cfg:
+        try:
+            return int(data_cfg["bar_interval_minutes"]) * 60
+        except Exception:
+            return None
+    bar_iv = str(data_cfg.get("bar_interval") or "").strip().lower()
+    if not bar_iv:
+        return None
+    return _BAR_INTERVAL_SECONDS.get(bar_iv)
 
 
 def _code_fingerprint() -> str:
@@ -82,13 +113,19 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
     _ensure_dir(run_root)
     _ensure_dir(out_dir / "ledger")
 
+    provider_policy = validate_run_data_policy(cfg)
+    (run_root / "data_policy.json").write_text(
+        json.dumps(provider_policy, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    if not provider_policy["ok"]:
+        raise SystemExit(f"Data provider policy failed: {provider_policy['errors'][:3]}")
+
     _bt_log(f"[BACKTEST] Starting: {run_name} | config={config_path.name}")
     provider = make_provider(cfg["data"], seed=seed)
     dataset = provider.load()
     _bt_log(f"[BACKTEST] Data loaded: {len(dataset.symbols)} symbols, {len(dataset.timeline)} bars")
-    expected_step = None
-    if "bar_interval_minutes" in (cfg.get("data") or {}):
-        expected_step = int(cfg["data"]["bar_interval_minutes"]) * 60
+    expected_step = _expected_step_seconds(cfg.get("data") or {})
     dq = validate_dataset(dataset, expected_step_seconds=expected_step)
     if not dq["ok"]:
         raise SystemExit(f"Data quality gate failed: {dq['issues'][:3]}")
@@ -182,6 +219,7 @@ def run_one(config_path: Path, out_dir: Path, *, cfg_override: Optional[Dict[str
             "metrics": bench.get("summary") or {},
             "bias_check": bench.get("bias_check") or {},
             "data_quality_ok": bool(dq["ok"]),
+            "data_policy": provider_policy,
             "verdict": bench.get("verdict") or {},
             "paths": {
                 "run_root": str(run_root),
@@ -213,11 +251,17 @@ def improve_one(
     _ensure_dir(out_dir / "ledger")
     _ensure_dir(out_dir / "memory")
 
+    provider_policy = validate_run_data_policy(cfg)
+    (out_dir / "memory" / "data_policy.json").write_text(
+        json.dumps(provider_policy, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    if not provider_policy["ok"]:
+        raise SystemExit(f"Data provider policy failed: {provider_policy['errors'][:3]}")
+
     provider = make_provider(cfg["data"], seed=seed)
     dataset = provider.load()
-    expected_step = None
-    if "bar_interval_minutes" in (cfg.get("data") or {}):
-        expected_step = int(cfg["data"]["bar_interval_minutes"]) * 60
+    expected_step = _expected_step_seconds(cfg.get("data") or {})
     dq = validate_dataset(dataset, expected_step_seconds=expected_step)
     if not dq["ok"]:
         raise SystemExit(f"Data quality gate failed: {dq['issues'][:3]}")
@@ -274,6 +318,7 @@ def improve_one(
             "execution": cfg.get("execution") or {},
             "costs": cfg.get("costs") or {},
             "data": cfg.get("data") or {},
+            "data_policy": provider_policy,
         },
     )
     append_ledger_event(out_dir / "ledger" / "ledger.jsonl", event)

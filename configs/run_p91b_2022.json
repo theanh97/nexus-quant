@@ -1,0 +1,97 @@
+{
+  "seed": 42,
+  "venue": {
+    "name": "binance_usdm",
+    "kind": "crypto_perp",
+    "vip_tier": 0
+  },
+  "data": {
+    "provider": "binance_rest_v1",
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT",
+      "ADAUSDT",
+      "DOGEUSDT",
+      "AVAXUSDT",
+      "DOTUSDT",
+      "LINKUSDT"
+    ],
+    "bar_interval": "1h",
+    "cache_dir": ".cache/binance_rest",
+    "start": "2022-01-01T00:00:00Z",
+    "end": "2023-01-01T00:00:00Z"
+  },
+  "execution": {
+    "style": "taker",
+    "slippage_bps": 3.0
+  },
+  "costs": {
+    "fee_rate": 0.0005,
+    "slippage_rate": 0.0003,
+    "cost_multiplier": 1.0
+  },
+  "benchmark": {
+    "version": "v1",
+    "walk_forward": {
+      "enabled": true
+    }
+  },
+  "risk": {
+    "max_drawdown": 0.25,
+    "max_turnover_per_rebalance": 0.8,
+    "max_gross_leverage": 0.7,
+    "max_position_per_symbol": 0.3
+  },
+  "self_learn": {
+    "enabled": false
+  },
+  "strategy": {
+    "name": "p91b_ensemble",
+    "params": {
+      "w_v1": 0.2747,
+      "w_i460": 0.1967,
+      "w_i415": 0.3247,
+      "w_f144": 0.2039,
+      "target_gross_leverage": 0.35,
+      "v1_params": {
+        "k_per_side": 2,
+        "w_carry": 0.35,
+        "w_mom": 0.45,
+        "w_mean_reversion": 0.2,
+        "w_confirm": 0.0,
+        "w_vol_momentum": 0.0,
+        "w_funding_trend": 0.0,
+        "momentum_lookback_bars": 336,
+        "mean_reversion_lookback_bars": 72,
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.35,
+        "rebalance_interval_bars": 60
+      },
+      "i460_params": {
+        "k_per_side": 4,
+        "lookback_bars": 460,
+        "beta_window_bars": 168,
+        "target_gross_leverage": 0.3,
+        "rebalance_interval_bars": 48
+      },
+      "i415_params": {
+        "k_per_side": 4,
+        "lookback_bars": 415,
+        "beta_window_bars": 216,
+        "target_gross_leverage": 0.3,
+        "rebalance_interval_bars": 48
+      },
+      "f144_params": {
+        "k_per_side": 2,
+        "funding_lookback_bars": 144,
+        "direction": "contrarian",
+        "target_gross_leverage": 0.25,
+        "rebalance_interval_bars": 24
+      }
+    }
+  },
+  "run_name": "p91b_2022"
+}
