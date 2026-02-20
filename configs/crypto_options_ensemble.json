@@ -1,0 +1,116 @@
+{
+  "_comment": "Crypto Options — Ensemble of All 3 Vol Strategies",
+  "_version": "1.0.0",
+  "_created": "2026-02-20",
+  "_project": "crypto_options",
+  "_strategy": "ensemble",
+  "_description": "Equal-weight ensemble of VRP + Skew MR + Term Structure. Target: Sharpe > 1.0, corr < 0.3 vs perps.",
+
+  "run_name": "crypto_options_ensemble",
+  "seed": 42,
+
+  "data": {
+    "provider": "deribit_rest_v1",
+    "symbols": ["BTC", "ETH"],
+    "start": "2020-01-01",
+    "end": "2025-12-31",
+    "bar_interval": "1d",
+    "cache_dir": "data/cache/deribit",
+    "use_synthetic_iv": true,
+    "rv_lookback_bars": 21
+  },
+
+  "execution": {
+    "style": "taker",
+    "slippage_bps": 7.5,
+    "spread_bps": 10.0,
+    "impact": {
+      "model": "sqrt",
+      "coef_bps": 3.0
+    }
+  },
+
+  "costs": {
+    "maker_fee_rate": 0.0003,
+    "taker_fee_rate": 0.0005,
+    "cost_multiplier": 1.0
+  },
+
+  "strategies": [
+    {
+      "name": "crypto_vrp",
+      "weight": 0.50,
+      "params": {
+        "vrp_threshold": 0.03,
+        "vrp_lookback": 60,
+        "target_gross_leverage": 1.0,
+        "rebalance_freq": 1,
+        "min_bars": 30,
+        "vol_scale": true
+      }
+    },
+    {
+      "name": "crypto_skew_mr",
+      "weight": 0.30,
+      "params": {
+        "skew_lookback": 30,
+        "z_threshold": 1.5,
+        "target_gross_leverage": 1.0,
+        "rebalance_freq": 1,
+        "min_bars": 60,
+        "use_butterfly": false
+      }
+    },
+    {
+      "name": "crypto_term_structure",
+      "weight": 0.20,
+      "params": {
+        "term_lookback": 60,
+        "z_threshold": 1.2,
+        "target_gross_leverage": 1.0,
+        "rebalance_freq": 7,
+        "_rebalance_note": "rebalance_freq=7 means weekly for 1d bars",
+        "min_bars": 90,
+        "use_vrp_confirm": true
+      }
+    }
+  ],
+
+  "strategy": {
+    "name": "ensemble",
+    "params": {
+      "target_gross_leverage": 1.5,
+      "rebalance_freq": 1,
+      "min_bars": 90
+    }
+  },
+
+  "risk": {
+    "max_drawdown": 0.20,
+    "max_gross_leverage": 2.0,
+    "max_position_per_symbol": 0.80
+  },
+
+  "validation": {
+    "walk_forward": {
+      "train_start": "2020-01-01",
+      "train_end": "2022-12-31",
+      "test_start": "2023-01-01",
+      "test_end": "2024-12-31",
+      "oos_start": "2025-01-01",
+      "oos_end": "2025-12-31"
+    },
+    "pass_criteria": {
+      "min_sharpe_oos": 0.5,
+      "avg_sharpe": 1.0,
+      "max_correlation_with_perps": 0.3
+    }
+  },
+
+  "output": {
+    "metrics_dir": "results/crypto_options",
+    "equity_curve": true,
+    "yearly_breakdown": true,
+    "correlation_analysis": true
+  }
+}

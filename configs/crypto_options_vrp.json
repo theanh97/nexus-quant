@@ -1,0 +1,82 @@
+{
+  "_comment": "Crypto Options — Variance Risk Premium (VRP) Strategy Backtest",
+  "_version": "1.0.0",
+  "_created": "2026-02-20",
+  "_project": "crypto_options",
+  "_strategy": "crypto_vrp",
+  "_description": "Short variance premium: IV_atm - RV_realized. When IV >> RV, sell options (short vol).",
+
+  "run_name": "crypto_options_vrp",
+  "seed": 42,
+
+  "data": {
+    "provider": "deribit_rest_v1",
+    "symbols": ["BTC", "ETH"],
+    "start": "2020-01-01",
+    "end": "2025-12-31",
+    "bar_interval": "1d",
+    "cache_dir": "data/cache/deribit",
+    "use_synthetic_iv": true,
+    "rv_lookback_bars": 21,
+    "_note": "Synthetic IV = RV + calibrated VRP. Use real IV when Deribit API history available."
+  },
+
+  "execution": {
+    "style": "taker",
+    "slippage_bps": 7.5,
+    "spread_bps": 10.0,
+    "impact": {
+      "model": "sqrt",
+      "coef_bps": 3.0
+    }
+  },
+
+  "costs": {
+    "maker_fee_rate": 0.0003,
+    "taker_fee_rate": 0.0005,
+    "cost_multiplier": 1.0,
+    "_note": "Deribit options fees: 3 bps maker, 5 bps taker (on underlying notional)"
+  },
+
+  "strategy": {
+    "name": "crypto_vrp",
+    "params": {
+      "vrp_threshold": 0.03,
+      "vrp_lookback": 60,
+      "target_gross_leverage": 1.5,
+      "rebalance_freq": 1,
+      "_rebalance_note": "rebalance_freq=1 means daily for 1d bars",
+      "min_bars": 30,
+      "vol_scale": true
+    }
+  },
+
+  "risk": {
+    "max_drawdown": 0.20,
+    "max_gross_leverage": 2.0,
+    "max_position_per_symbol": 0.80
+  },
+
+  "validation": {
+    "walk_forward": {
+      "train_start": "2020-01-01",
+      "train_end": "2022-12-31",
+      "test_start": "2023-01-01",
+      "test_end": "2024-12-31",
+      "oos_start": "2025-01-01",
+      "oos_end": "2025-12-31"
+    },
+    "pass_criteria": {
+      "min_sharpe_oos": 0.5,
+      "avg_sharpe": 1.0,
+      "max_correlation_with_perps": 0.3
+    }
+  },
+
+  "output": {
+    "metrics_dir": "results/crypto_options",
+    "equity_curve": true,
+    "yearly_breakdown": true,
+    "feature_importance": true
+  }
+}

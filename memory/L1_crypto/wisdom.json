@@ -39,11 +39,14 @@
   "lessons": [
     "Taker buy ratio, vol HHI, and funding dispersion — all fail walk-forward validation",
     "On-chain composite signals: IS breakthrough but WF overfit (classic trap)",
-    "Fear & Greed momentum: IS promising but WF fails (1/4 positive)"
+    "Fear & Greed momentum: IS promising but WF fails (1/4 positive)",
+    "Variance Risk Premium (VRP) is a universal options edge: IV consistently overstates RV by 5-15 vol points in crypto. Most robust options signal.",
+    "Deribit is the primary crypto options venue: BTC/ETH options only for liquid strikes. No API key for public endpoints.",
+    "Crypto options backtest limitation: historical IV data not available via API. Use realized vol + calibrated VRP model for research. Collect live data for future."
   ],
   "_meta": {
-    "last_updated": 1740000000,
-    "count": 5,
-    "description": "Crypto market wisdom — applies to all crypto projects"
+    "last_updated": 1740067200,
+    "count": 6,
+    "description": "Crypto market wisdom — applies to all crypto projects (perps + options)"
   }
 }

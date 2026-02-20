@@ -1,0 +1,62 @@
+{
+  "_project": "crypto_options",
+  "_version": "1.0.0",
+  "_created": "2026-02-20",
+  "_description": "Accumulated wisdom for the Crypto Options / Volatility project (Deribit)",
+  "_status": "Phase 1 — Data Infrastructure complete",
+
+  "market_insights": {
+    "variance_risk_premium": {
+      "summary": "Crypto IV consistently overstates future realized vol by 5-15 vol points (VRP). This is the most robust and well-documented edge in options markets.",
+      "evidence": "Empirical across all option markets (equities, rates, FX, crypto). Crypto VRP larger than equities due to tail risk demand.",
+      "signal": "VRP = IV_atm - RV_realized_21d. Positive = IV expensive. Short vol when VRP > 3-5 vol points.",
+      "risk": "Rare but violent vol spikes (BTC crash Mar 2020, May 2021, Nov 2022) can wipe 30-50% in single events. Requires strict sizing.",
+      "validated": false,
+      "phase": "Phase 1 — pending WF validation"
+    },
+    "skew": {
+      "summary": "25-delta put skew measures crash risk premium. In crypto, skew can spike 20+ vol points during panic.",
+      "signal": "Skew z-score vs 30d mean. Fade extremes: high skew spike = puts too expensive = sell protection.",
+      "validated": false
+    },
+    "term_structure": {
+      "summary": "Front-month IV vs back-month IV. Normal: slight contango. Stress: steep inversion (front >>> back).",
+      "signal": "Term spread z-score. Sell front when steep (contango extreme). Buy when inverted.",
+      "validated": false
+    }
+  },
+
+  "implementation_notes": {
+    "data_strategy": "Deribit REST API for underlying prices. Synthetic IV generated from realized vol + calibrated VRP (AR(1) process). Use real IV from API when live.",
+    "backtest_approach": "Delta-equivalent weights on underlying (simplified). True options PnL requires Greeks P&L attribution (future work).",
+    "cost_model": "Deribit taker: 5 bps on underlying notional. With hedge cost ~7.5 bps total. Realistic cost: 10-15 bps round-trip.",
+    "universe": "BTC + ETH only. Options liquidity thin beyond top 2. Expand to SOL only if proven."
+  },
+
+  "failed_hypotheses": [],
+
+  "validated_hypotheses": [],
+
+  "open_questions": [
+    "Does VRP in BTC/ETH persist on daily timeframe? (monthly in equities, may be noisier in crypto)",
+    "Can we get real historical IV data from Deribit for 2019-2022?",
+    "Is skew mean-reversion tradeable after costs at daily frequency?",
+    "Correlation with P91b perps strategy — expected low but needs measurement",
+    "Regime dependence: does VRP collapse during crypto bear markets?"
+  ],
+
+  "next_steps": [
+    "Run backtest with synthetic IV data on VRP strategy (Phase 2)",
+    "Validate with walk-forward 2020-2025",
+    "Measure correlation with P91b perps equity curve",
+    "If VRP validates: promote to L1_crypto wisdom (applies to all crypto)",
+    "Consider real Deribit data collection (live monitoring → historical build)"
+  ],
+
+  "key_risks": [
+    "Synthetic IV is not real market data — backtest may be optimistic",
+    "Options PnL simplified as delta-equivalent — ignores gamma/vega/theta dynamics",
+    "Crypto vol spikes can cause unlimited loss on short vol positions",
+    "Liquidity risk: Deribit options thin outside BTC/ETH top strikes"
+  ]
+}

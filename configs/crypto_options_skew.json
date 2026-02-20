@@ -1,0 +1,78 @@
+{
+  "_comment": "Crypto Options — 25-Delta Skew Mean-Reversion Strategy Backtest",
+  "_version": "1.0.0",
+  "_created": "2026-02-20",
+  "_project": "crypto_options",
+  "_strategy": "crypto_skew_mr",
+  "_description": "Fade extreme put/call skew: sell put protection when skew spikes, sell call premium when skew collapses.",
+
+  "run_name": "crypto_options_skew",
+  "seed": 42,
+
+  "data": {
+    "provider": "deribit_rest_v1",
+    "symbols": ["BTC", "ETH"],
+    "start": "2020-01-01",
+    "end": "2025-12-31",
+    "bar_interval": "1d",
+    "cache_dir": "data/cache/deribit",
+    "use_synthetic_iv": true,
+    "rv_lookback_bars": 21
+  },
+
+  "execution": {
+    "style": "taker",
+    "slippage_bps": 7.5,
+    "spread_bps": 10.0,
+    "impact": {
+      "model": "sqrt",
+      "coef_bps": 3.0
+    }
+  },
+
+  "costs": {
+    "maker_fee_rate": 0.0003,
+    "taker_fee_rate": 0.0005,
+    "cost_multiplier": 1.0
+  },
+
+  "strategy": {
+    "name": "crypto_skew_mr",
+    "params": {
+      "skew_lookback": 30,
+      "z_threshold": 1.5,
+      "target_gross_leverage": 1.2,
+      "rebalance_freq": 1,
+      "min_bars": 60,
+      "use_butterfly": false
+    }
+  },
+
+  "risk": {
+    "max_drawdown": 0.20,
+    "max_gross_leverage": 1.5,
+    "max_position_per_symbol": 0.80
+  },
+
+  "validation": {
+    "walk_forward": {
+      "train_start": "2020-01-01",
+      "train_end": "2022-12-31",
+      "test_start": "2023-01-01",
+      "test_end": "2024-12-31",
+      "oos_start": "2025-01-01",
+      "oos_end": "2025-12-31"
+    },
+    "pass_criteria": {
+      "min_sharpe_oos": 0.5,
+      "avg_sharpe": 1.0,
+      "max_correlation_with_perps": 0.3
+    }
+  },
+
+  "output": {
+    "metrics_dir": "results/crypto_options",
+    "equity_curve": true,
+    "yearly_breakdown": true
+  }
+}

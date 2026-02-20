@@ -1,0 +1,43 @@
+# NEXUS Project: Crypto Options / Volatility (Deribit)
+# Market: Deribit BTC/ETH Options
+# Status: Active Research — Phase 1
+
+name: crypto_options
+market: options
+asset_class: options
+description: "Crypto options volatility strategies on Deribit — variance risk premium, skew mean-reversion, calendar spreads"
+
+# Default universe (BTC + ETH options via underlying)
+universe:
+  - BTC
+  - ETH
+
+# Data
+data_provider: deribit_rest_v1
+default_config: configs/crypto_options_vrp.json
+
+# Cost model
+cost_model: deribit_options
+
+# Market-specific features (available in MarketDataset.features dict)
+features:
+  - iv_atm
+  - iv_25d_put
+  - iv_25d_call
+  - skew_25d
+  - rv_realized
+  - term_spread
+  - put_call_ratio
+  - max_pain
+  - butterfly_25d
+
+# Available strategies (registered in this project)
+strategies:
+  - crypto_vrp
+  - crypto_skew_mr
+  - crypto_term_structure
+
+# Brain loop interval (seconds) — options vol changes slower
+brain_interval: 3600
+
+enabled: true
