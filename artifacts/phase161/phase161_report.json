@@ -1,0 +1,35 @@
+{
+  "phase": 161,
+  "description": "V1 Internal Params + Funding Dispersion Threshold",
+  "elapsed_seconds": 70.8,
+  "baseline_obj": 2.2095,
+  "baseline_yearly": {
+    "2021": 3.3302,
+    "2022": 1.9662,
+    "2023": 1.8214,
+    "2024": 3.1811,
+    "2025": 2.3036
+  },
+  "parta_best": {
+    "combo": [
+      0.5,
+      0.3,
+      0.2
+    ],
+    "obj": 2.2795,
+    "delta": 0.07000000000000028
+  },
+  "partb_best": {
+    "thr": 0.85,
+    "obj": 2.2122,
+    "delta": 0.0027000000000003688
+  },
+  "validated_part": "A",
+  "validated_desc": "V1: w_c=0.5/w_m=0.3/w_r=0.2",
+  "loyo_wins": 2,
+  "loyo_avg_delta": -0.016659999999999987,
+  "validated": false,
+  "verdict": "NO IMPROVEMENT \u2014 v2.8.0 OBJ=2.2095 optimal",
+  "partial": false,
+  "timestamp": "2026-02-20T18:44:16.319488"
+}
