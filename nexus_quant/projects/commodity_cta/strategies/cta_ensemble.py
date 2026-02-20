@@ -63,9 +63,12 @@ class CTAEnsembleStrategy(Strategy):
         self._trend = TrendFollowingStrategy(
             name="cta_trend_sub",
             params={
-                "max_gross_leverage": 1.0,  # normalised — ensemble controls total lev
+                "max_gross_leverage": 1.0,
                 "max_position": 0.5,
-                "warmup": 125,
+                "vol_target": 0.12,
+                "signal_threshold": 0.1,
+                "warmup": 60,
+                "rebalance_freq": 1,  # ensemble controls cadence
             },
         )
         self._carry = CarryRollStrategy(
@@ -74,7 +77,7 @@ class CTAEnsembleStrategy(Strategy):
                 "max_gross_leverage": 1.0,
                 "max_position": 0.5,
                 "warmup": 130,
-                "rebalance_freq": 1,  # compute every bar; ensemble controls cadence
+                "rebalance_freq": 1,
             },
         )
         self._mom_val = MomentumValueStrategy(
@@ -83,13 +86,15 @@ class CTAEnsembleStrategy(Strategy):
                 "max_gross_leverage": 1.0,
                 "max_position": 0.5,
                 "warmup": 260,
-                "rebalance_freq": 1,  # compute every bar
+                "rebalance_freq": 1,
             },
         )
 
     # ── Rebalance cadence ────────────────────────────────────────────────────
 
     def should_rebalance(self, dataset: MarketDataset, idx: int) -> bool:
+        # Always update trend EMA state (even when not rebalancing)
+        self._trend.should_rebalance(dataset, idx)
         return idx >= self.warmup
 
     # ── Weight computation ───────────────────────────────────────────────────

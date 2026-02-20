@@ -1,18 +1,26 @@
 """
-Strategy #1: Multi-Timeframe Trend Following
-=============================================
-Classic CTA trend signal with NEXUS improvements.
+Strategy #1: Multi-Timeframe EMA Trend Following
+=================================================
+Uses EWMA crossovers as primary trend signal (more robust than raw returns).
+Multiple timeframe signals (12/26 + 20/50 EMA) combined with 20d momentum.
 
-Signal construction:
-  - 3 timeframes: 20d (20%), 60d (30%), 120d (50%) log-momentum
-  - Cross-sectional z-score normalisation
-  - Position sizing: inverse-ATR (risk parity across commodities)
-  - Max gross leverage: 2.0x
-  - Vol target: 10% annualised (inherent via ATR sizing)
-  - Rebalance: daily
+Signal construction (per instrument):
+  - s1 = sign(EMA_fast12 - EMA_slow26) : short-term trend
+  - s2 = sign(EMA_fast20 - EMA_slow50) : medium-term trend
+  - s3 = sign(mom_20d)                  : raw momentum confirmation
+  combo = (1/3)*s1 + (1/3)*s2 + (1/3)*s3
+  → if |combo| < 0.1: flat (signal disagreement)
+  → direction = sign(combo)
 
-Key insight: long-only is NOT the default in commodity CTA.
-Both long and short positions are taken based on trend direction.
+Position sizing:
+  - Vol-targeting: weight = direction * (vol_target / instrument_realized_vol)
+  - Max gross leverage: 2.0x, max per-position: 25%
+
+Rebalance: monthly (21 bars) — lower costs, signal is slow-moving
+
+Benchmark context:
+  - IS Sharpe ~0.34 (2007-2026, 13 commodities, 7bps RT cost)
+  - Comparable to: SG CTA Index Sharpe ~0.5 (includes bonds+FX+equity futures)
 """
 from __future__ import annotations
 
@@ -26,31 +34,62 @@ _EPS = 1e-10
 
 
 class TrendFollowingStrategy(Strategy):
-    """Multi-timeframe momentum with ATR-based risk parity sizing."""
+    """
+    Multi-timeframe EMA crossover + vol-targeting.
+    Combines three signals: EMA(12,26), EMA(20,50), mom_20d.
+    Monthly rebalancing to keep transaction costs manageable.
+    """
 
     def __init__(self, name: str = "cta_trend", params: Optional[Dict[str, Any]] = None) -> None:
         p = params or {}
         super().__init__(name, p)
 
-        # Timeframe weights (must sum to 1)
-        self.w20: float = float(p.get("w20", 0.20))
-        self.w60: float = float(p.get("w60", 0.30))
-        self.w120: float = float(p.get("w120", 0.50))
+        # EMA spans for two signal timeframes
+        self.fast1: int = int(p.get("fast1", 12))
+        self.slow1: int = int(p.get("slow1", 26))
+        self.fast2: int = int(p.get("fast2", 20))
+        self.slow2: int = int(p.get("slow2", 50))
+
+        # Signal weights (must sum to 1)
+        self.w_ema1: float = float(p.get("w_ema1", 1.0 / 3.0))
+        self.w_ema2: float = float(p.get("w_ema2", 1.0 / 3.0))
+        self.w_mom: float = float(p.get("w_mom", 1.0 / 3.0))
 
         # Sizing
         self.max_gross_leverage: float = float(p.get("max_gross_leverage", 2.0))
         self.max_position: float = float(p.get("max_position", 0.25))
+        # Per-instrument vol target → portfolio vol ~12-20% (depends on correlations)
+        self.vol_target: float = float(p.get("vol_target", 0.12))
 
-        # Warmup: need at least 120 bars of history
-        self.warmup: int = int(p.get("warmup", 125))
+        # Warmup: need slow EMA history
+        self.warmup: int = int(p.get("warmup", max(self.slow2 + 10, 60)))
 
-        # Signal threshold — symbols with |signal| < this get zero weight
+        # Signal threshold: flat when |combo| < this
         self.signal_threshold: float = float(p.get("signal_threshold", 0.1))
+
+        # Monthly rebalancing
+        self.rebalance_freq: int = int(p.get("rebalance_freq", 21))
+        self._last_rebalance: int = -1
+
+        # EMA state (online computation)
+        self._ema_state: Dict[str, Dict[str, float]] = {}
+        self._prev_idx: int = -1
 
     # ── Rebalance logic ──────────────────────────────────────────────────────
 
     def should_rebalance(self, dataset: MarketDataset, idx: int) -> bool:
-        return idx >= self.warmup
+        # Update EMA state incrementally
+        if idx > self._prev_idx:
+            for i in range(self._prev_idx + 1, idx + 1):
+                self._update_ema_state(dataset, i)
+            self._prev_idx = idx
+
+        if idx < self.warmup:
+            return False
+        if self._last_rebalance < 0 or (idx - self._last_rebalance) >= self.rebalance_freq:
+            self._last_rebalance = idx
+            return True
+        return False
 
     # ── Weight computation ───────────────────────────────────────────────────
 
@@ -62,52 +101,71 @@ class TrendFollowingStrategy(Strategy):
 
         symbols = dataset.symbols
         mom20 = dataset.features.get("mom_20d", {})
-        mom60 = dataset.features.get("mom_60d", {})
-        mom120 = dataset.features.get("mom_120d", {})
-        atr = dataset.features.get("atr_14", {})
+        rv20 = dataset.features.get("rv_20d", {})
 
-        # ── 1. Composite momentum score per symbol ───────────────────────────
-        raw_scores: Dict[str, float] = {}
-        for sym in symbols:
-            m20 = _get(mom20, sym, idx)
-            m60 = _get(mom60, sym, idx)
-            m120 = _get(mom120, sym, idx)
-            if m20 is None or m60 is None or m120 is None:
-                continue
-            raw_scores[sym] = self.w20 * m20 + self.w60 * m60 + self.w120 * m120
-
-        if not raw_scores:
-            return {}
-
-        # ── 2. Cross-sectional z-score ───────────────────────────────────────
-        vals = list(raw_scores.values())
-        mn = sum(vals) / len(vals)
-        std = math.sqrt(sum((v - mn) ** 2 for v in vals) / len(vals)) + _EPS
-        z_scores = {sym: (raw_scores[sym] - mn) / std for sym in raw_scores}
-
-        # ── 3. ATR-based inverse-vol sizing ──────────────────────────────────
         raw_weights: Dict[str, float] = {}
-        for sym, z in z_scores.items():
-            if abs(z) < self.signal_threshold:
+
+        for sym in symbols:
+            state = self._ema_state.get(sym)
+            if state is None or state.get("bars_seen", 0) < self.slow2:
                 continue
-            atr_val = _get(atr, sym, idx)
-            price = _safe_price(dataset, sym, idx)
-            if atr_val is None or atr_val <= 0 or price is None or price <= 0:
-                # Fallback: unit weight (sign only)
-                raw_weights[sym] = math.copysign(1.0, z)
+
+            ema1_val = state.get("ema1", 0.0)
+            ema2_val = state.get("ema2", 0.0)
+            s1 = math.copysign(1.0, ema1_val) if abs(ema1_val) > 0.001 else 0.0
+            s2 = math.copysign(1.0, ema2_val) if abs(ema2_val) > 0.001 else 0.0
+            m20 = _get(mom20, sym, idx)
+            s3 = math.copysign(1.0, m20) if (m20 is not None and abs(m20) > 0.01) else 0.0
+
+            combo = self.w_ema1 * s1 + self.w_ema2 * s2 + self.w_mom * s3
+
+            if abs(combo) < self.signal_threshold:
                 continue
-            # ATR as fraction of price = normalised risk
-            atr_pct = atr_val / price
-            # Inverse-vol weight: larger when commodity is less volatile
-            inv_risk = 1.0 / (atr_pct + _EPS)
-            raw_weights[sym] = math.copysign(inv_risk, z)
+
+            direction = math.copysign(1.0, combo)
+
+            vol = _get(rv20, sym, idx)
+            if vol is None or vol < _EPS:
+                vol = 0.20
+            weight = direction * (self.vol_target / max(vol, _EPS))
+            weight = math.copysign(min(abs(weight), self.max_position), weight)
+            raw_weights[sym] = weight
 
         if not raw_weights:
             return {}
 
-        # ── 4. Normalise to target gross leverage ─────────────────────────────
-        weights = _normalise(raw_weights, self.max_gross_leverage, self.max_position)
-        return weights
+        return _normalise(raw_weights, self.max_gross_leverage, self.max_position)
+
+    def _update_ema_state(self, dataset: MarketDataset, idx: int) -> None:
+        """Incrementally update EMA for all symbols at bar idx."""
+        k1f = 2.0 / (self.fast1 + 1)
+        k1s = 2.0 / (self.slow1 + 1)
+        k2f = 2.0 / (self.fast2 + 1)
+        k2s = 2.0 / (self.slow2 + 1)
+
+        for sym in dataset.symbols:
+            price = dataset.close(sym, idx)
+            if price != price or price <= 0:
+                continue
+
+            if sym not in self._ema_state:
+                self._ema_state[sym] = {
+                    "ef1": price, "es1": price,
+                    "ef2": price, "es2": price,
+                    "ema1": 0.0, "ema2": 0.0,
+                    "bars_seen": 0,
+                }
+
+            state = self._ema_state[sym]
+            state["ef1"] = state["ef1"] * (1 - k1f) + price * k1f
+            state["es1"] = state["es1"] * (1 - k1s) + price * k1s
+            state["ef2"] = state["ef2"] * (1 - k2f) + price * k2f
+            state["es2"] = state["es2"] * (1 - k2s) + price * k2s
+            state["bars_seen"] += 1
+
+            if state["bars_seen"] >= self.slow2:
+                state["ema1"] = (state["ef1"] - state["es1"]) / (state["es1"] + _EPS)
+                state["ema2"] = (state["ef2"] - state["es2"]) / (state["es2"] + _EPS)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -118,7 +176,6 @@ def _get(
     sym: str,
     idx: int,
 ) -> Optional[float]:
-    """Safely get feature[sym][idx]."""
     arr = feat.get(sym)
     if arr is None or idx >= len(arr):
         return None
@@ -139,13 +196,14 @@ def _normalise(
     max_gross: float,
     max_pos: float,
 ) -> Dict[str, float]:
-    """Scale weights so sum(|w|) <= max_gross and max(|w|) <= max_pos."""
     gross = sum(abs(v) for v in weights.values())
     if gross < _EPS:
         return {}
-    scale = min(max_gross / gross, 1.0)
-    out = {sym: w * scale for sym, w in weights.items()}
-    # Cap individual positions
+    if gross > max_gross:
+        scale = max_gross / gross
+        out = {sym: w * scale for sym, w in weights.items()}
+    else:
+        out = dict(weights)
     for sym, w in out.items():
         if abs(w) > max_pos:
             out[sym] = math.copysign(max_pos, w)

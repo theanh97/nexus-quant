@@ -1,7 +1,8 @@
 """
 Yahoo Finance Futures Data Provider
 ====================================
-Fetches daily OHLCV for commodity futures using urllib.request (stdlib only).
+Fetches daily OHLCV for commodity futures using yfinance (primary).
+Falls back to Stooq.com, then raw Yahoo v8/v7 API.
 Caches locally to avoid repeated downloads.
 
 Supported tickers (continuous front-month):
@@ -23,6 +24,12 @@ import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+try:
+    import yfinance as _yf
+    _HAS_YFINANCE = True
+except ImportError:
+    _HAS_YFINANCE = False
 
 from nexus_quant.data.providers.base import DataProvider
 from nexus_quant.data.schema import MarketDataset
@@ -162,6 +169,25 @@ class YahooFuturesProvider(DataProvider):
         logger.info(f"[YahooFutures] Aligning {len(valid_symbols)} symbols...")
         timeline, aligned = self._align_timeline(raw_data, valid_symbols)
 
+        # Trim timeline to start where ALL symbols have valid (non-NaN) prices.
+        # This prevents NaN × weight = NaN contaminating the backtest equity curve.
+        trim_start = 0
+        for sym in valid_symbols:
+            close_arr = aligned[sym]["close"]
+            first_valid = next(
+                (i for i, v in enumerate(close_arr) if v == v and v > 0), len(close_arr)
+            )
+            trim_start = max(trim_start, first_valid)
+
+        if trim_start > 0:
+            logger.info(
+                f"[YahooFutures] Trimming {trim_start} bars (waiting for all symbols to start)"
+            )
+            timeline = timeline[trim_start:]
+            for sym in valid_symbols:
+                for k in aligned[sym]:
+                    aligned[sym][k] = aligned[sym][k][trim_start:]
+
         logger.info(f"[YahooFutures] Computing features for {len(timeline)} bars...")
         features = self._build_features(aligned, valid_symbols, timeline)
 
@@ -239,11 +265,19 @@ class YahooFuturesProvider(DataProvider):
     def _download_yahoo(self, symbol: str) -> Optional[Dict[str, List]]:
         """
         Try in order:
-        1. Stooq.com (free, no auth, no rate limit)
-        2. Yahoo Finance v8 JSON API
-        3. Yahoo Finance v7 CSV (last resort)
+        1. yfinance library (robust, handles sessions/cookies automatically)
+        2. Stooq.com (free, no auth, no rate limit)
+        3. Yahoo Finance v8 JSON API
+        4. Yahoo Finance v7 CSV (last resort)
         """
-        # 1. Stooq (primary: free and reliable)
+        # 1. yfinance (primary: best rate-limit handling)
+        if _HAS_YFINANCE:
+            data = self._download_yfinance(symbol)
+            if data and data.get("timestamps"):
+                logger.debug(f"  {symbol}: yfinance OK ({len(data['timestamps'])} bars)")
+                return data
+
+        # 2. Stooq (secondary: free and reliable)
         stooq_ticker = STOOQ_TICKERS.get(symbol)
         if stooq_ticker:
             data = self._download_stooq(symbol, stooq_ticker)
@@ -251,14 +285,79 @@ class YahooFuturesProvider(DataProvider):
                 logger.debug(f"  {symbol}: Stooq OK ({len(data['timestamps'])} bars)")
                 return data
 
-        # 2. Yahoo v8 JSON
+        # 3. Yahoo v8 JSON
         data = self._download_yahoo_v8(symbol)
         if data and data.get("timestamps"):
             return data
 
-        # 3. Yahoo v7 CSV
+        # 4. Yahoo v7 CSV
         logger.debug(f"  {symbol}: trying Yahoo v7 CSV fallback")
         return self._download_yahoo_v7_csv(symbol)
+
+    def _download_yfinance(self, symbol: str) -> Optional[Dict[str, List]]:
+        """Download via yfinance library — handles sessions, cookies, and rate limits."""
+        try:
+            import yfinance as yf
+            ticker = yf.Ticker(symbol)
+            df = ticker.history(start=self.start, end=self.end, auto_adjust=True)
+
+            if df is None or len(df) == 0:
+                logger.debug(f"  {symbol}: yfinance returned empty DataFrame")
+                return None
+
+            # Normalize column names (yfinance may return multi-index or simple)
+            if hasattr(df.columns, "get_level_values"):
+                try:
+                    df.columns = df.columns.get_level_values(0)
+                except Exception:
+                    pass
+
+            col_map = {c.lower(): c for c in df.columns}
+            close_col = col_map.get("close")
+            if not close_col or close_col not in df.columns:
+                logger.debug(f"  {symbol}: yfinance DataFrame missing Close column")
+                return None
+
+            result: Dict[str, List] = {
+                "dates": [], "timestamps": [], "open": [],
+                "high": [], "low": [], "close": [], "volume": [],
+            }
+
+            for idx, row in df.iterrows():
+                try:
+                    c = float(row[close_col])
+                    if c != c or c <= 0:
+                        continue
+                    date_str = str(idx)[:10]  # YYYY-MM-DD
+                    ts = int(datetime.strptime(date_str, "%Y-%m-%d")
+                             .replace(tzinfo=timezone.utc).timestamp())
+
+                    def _g(col_name: str, fb: float = c) -> float:
+                        mapped = col_map.get(col_name)
+                        if not mapped or mapped not in row.index:
+                            return fb
+                        v = row[mapped]
+                        try:
+                            f = float(v)
+                            return f if f == f and f > 0 else fb
+                        except (TypeError, ValueError):
+                            return fb
+
+                    result["dates"].append(date_str)
+                    result["timestamps"].append(ts)
+                    result["open"].append(_g("open"))
+                    result["high"].append(_g("high"))
+                    result["low"].append(_g("low"))
+                    result["close"].append(c)
+                    result["volume"].append(max(0.0, _g("volume", 0.0)))
+                except Exception:
+                    continue
+
+            return result if result["timestamps"] else None
+
+        except Exception as e:
+            logger.debug(f"  {symbol}: yfinance error: {e}")
+            return None
 
     def _download_stooq(self, symbol: str, stooq_ticker: str) -> Optional[Dict[str, List]]:
         """Download from Stooq.com — free commodity futures data, no auth required."""
