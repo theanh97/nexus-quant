@@ -53,8 +53,8 @@ class DebateRound:
 class DebateEngine:
     DEFAULT_MODELS = ["glm-5", "claude-sonnet-4-6", "codex", "gemini-2.5-pro"]
 
-    def __init__(self, artifacts_dir: str = "artifacts"):
-        self.artifacts_dir = Path(artifacts_dir)
+    def __init__(self, artifacts_dir: str = "mock_db"):
+        self.artifacts_dir = Path(artifacts_dir).resolve()
         self.debate_dir = self.artifacts_dir / "debate"
         self.debate_dir.mkdir(parents=True, exist_ok=True)
         self.history_file = self.debate_dir / "history.jsonl"
@@ -486,7 +486,7 @@ class DebateEngine:
 _engine: Optional[DebateEngine] = None
 
 
-def get_engine(artifacts_dir: str = "artifacts") -> DebateEngine:
+def get_engine(artifacts_dir: str = "mock_db") -> DebateEngine:
     global _engine
     if _engine is None:
         _engine = DebateEngine(artifacts_dir=artifacts_dir)
