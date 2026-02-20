@@ -1,8 +1,8 @@
 {
   "_comment": "PRODUCTION CONFIG — P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
-  "_version": "2.11.0",
+  "_version": "2.12.0",
   "_created": "2026-02-20",
-  "_validated": "Phases 91-129: walk-forward stable, OOS validated; breadth regime switching v2.2.0; dispersion v2.3.0; TS overlay v2.4.0; TS fine-tune v2.5.0; F168 v2.6.0; vol fine-tune v2.7.0; breadth lb=192 LOYO 5/5 v2.8.0 OBJ=2.2095; TS short=12h long=96h LOYO 4/5 WF 2/2 v2.9.0 OBJ=2.2423; TS thresh re-sweep P168 rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 v2.10.0 OBJ=2.3510 (Δ=+0.1087); boost fine-tune P169 bt=0.25 bs=1.50 LOYO 3/5 v2.11.0 OBJ=2.3599 (Δ=+0.0089)",
+  "_validated": "Phases 91-129: walk-forward stable, OOS validated; breadth regime switching v2.2.0; dispersion v2.3.0; TS overlay v2.4.0; TS fine-tune v2.5.0; F168 v2.6.0; vol fine-tune v2.7.0; breadth lb=192 LOYO 5/5 v2.8.0 OBJ=2.2095; TS short=12h long=96h LOYO 4/5 WF 2/2 v2.9.0 OBJ=2.2423; TS thresh re-sweep P168 rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 v2.10.0 OBJ=2.3510 (Δ=+0.1087); boost fine-tune P169 bt=0.25 bs=1.50 LOYO 3/5 v2.11.0 OBJ=2.3599 (Δ=+0.0089); disp fine-tune P170 scale=1.05 thr=0.60 pct=240 LOYO 4/5 v2.12.0 OBJ=2.4148 (Δ=+0.0549)",
   "run_name": "production_p91b",
   "seed": 42,
   "venue": {
@@ -152,7 +152,7 @@
       "daily_turnover_above_pct": 50.0
     },
     "expected_performance": {
-      "annual_sharpe_backtest": 2.36,
+      "annual_sharpe_backtest": 2.41,
       "annual_sharpe_realistic": 0.8,
       "annual_sharpe_conservative": 0.7,
       "max_drawdown_backtest_pct": 25.1,
@@ -248,14 +248,14 @@
     "mechanism": "At each bar: compute % symbols with positive 192h return (breadth). Rolling percentile rank vs prior 336h. If <35th pct → LOW weights. If 35-65% → MID weights. If >65% → HIGH weights. P158 fine-tune: lb=192 (8-day cycle better than 7-day), thresholds 0.35/0.65 (larger MID band)."
   },
   "funding_dispersion_overlay": {
-    "_comment": "Phase 148: Funding rate cross-sectional dispersion boost",
-    "_validated": "LOYO 3/5 wins avg_delta=+0.0087 | WF 2/2 wins avg_delta=+0.0284 | IS OBJ=1.8886 (+0.0086)",
+    "_comment": "Phase 148: Funding rate cross-sectional dispersion boost — fine-tuned P170",
+    "_validated": "P148 orig LOYO 3/5 OBJ=1.8886; P170 fine-tune scale=1.05 thr=0.60 pct=240 LOYO 4/5 OBJ=2.4148 (Δ=+0.0549). Key finding: scale was over-boosting (1.15→1.05), shorter lookback (336→240) more responsive",
     "enabled": true,
     "signal": "funding_rate_cross_sectional_std",
-    "percentile_window": 336,
-    "boost_threshold_pct": 0.75,
-    "boost_scale": 1.15,
-    "mechanism": "At each bar: compute std of funding rates across all 10 symbols. Rolling 336h percentile rank. If std_pct > 0.75 (high cross-sectional dispersion = differentiated market) → boost portfolio returns ×1.15. Logic: high dispersion = cross-sectional signals (idio, V1) can differentiate more effectively."
+    "percentile_window": 240,
+    "boost_threshold_pct": 0.60,
+    "boost_scale": 1.05,
+    "mechanism": "At each bar: compute std of funding rates across all 10 symbols. Rolling 240h percentile rank. If std_pct > 0.60 → boost portfolio returns ×1.05. P170 fine-tune: scale 1.15→1.05 (less aggressive, TS overlay already handles amplification), thr 0.75→0.60 (wider but gentler trigger), pct 336→240 (more responsive 10-day window). LOYO 4/5 Δ=+0.0549."
   },
   "funding_term_structure_overlay": {
     "_comment": "Phase 150/152/164-165: Bidirectional funding term structure spread overlay — windows fine-tuned P164-165",
