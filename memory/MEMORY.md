@@ -80,7 +80,14 @@
 - Dual-k (I437_k3+I437_k4): Suboptimal vs pure k4
 
 ## Best Ensemble Architecture (CURRENT CHAMPIONS)
-**Phase 91b balanced champion** ← CURRENT BEST: `V1(27.47%) + I460_bw168_k4(19.67%) + I415_bw216_k4(32.47%) + F144_k2(20.39%) [NO I600!]`
+**Phase 145-146 champion (PRODUCTION)** ← CURRENT BEST with regime switching:
+- BreadthAdaptiveEnsembleStrategy: Real-time breadth classifier → adaptive weights
+- OBJ=1.8851 (+0.3179 vs static baseline), WF 1/2, avg_delta=+0.4020
+- Config: breadth_window=168h, p_low=0.33, p_high=0.67, 3-regime
+- LOW regime → PROD weights; MID → midpoint; HIGH → P143B weights
+- Production config: configs/production_p91b_champion.json v2.2.0
+
+**Phase 91b balanced champion** ← BASE ENSEMBLE (underlying P145-146): `V1(27.47%) + I460_bw168_k4(19.67%) + I415_bw216_k4(32.47%) + F144_k2(20.39%) [NO I600!]`
 - AVG=2.0101, MIN=1.5761, YbY: [2.876, 1.577, 1.576, 2.445, 1.576] — ALL years ≥ 1.576!
 - Config saved: `configs/ensemble_p91_balanced.json`
 - STRICTLY DOMINATES P90 (MIN 1.5761 > 1.5614)! KEY: No I600, F144=20.39%!
@@ -154,6 +161,15 @@
 - Phase 90: I600=2.5% BREAKTHROUGH → 2.021/1.561 (dominates P89); AVG-max 2.304 (I474bw216=40%!); F144=22.5% confirmed floor; I437_bw216 fails (2023=0.175)
 - Phase 91: I600=0% BREAKTHROUGH → remove I600! 4-signal: V1+I460bw168+I415bw216+F144 → 2.040/1.571; lb=415 CONFIRMED OPTIMAL (sharp cliff at lb=420: 2023 drops 1.143→0.758)
 - Phase 91b: Ultra-fine balanced → 2.010/1.576 (F144=20.39%!); AVG-max 2.319 (I474bw216=47.25%!); I420/I430 with I415 get only 2.5% weight, not useful
+- Phases 92-110: Various signal additions (PositioningAlpha, OrderflowAlpha etc) — mostly non-additive; P91b remains core champion
+- Phase 111-113: Volume tilt overlay VALIDATED (3/4 WF positive, avg Δ=+0.066, tilt_ratio=0.65, lookback=168)
+- Phase 118b: Global L/S ratio overlay (Binance Vision) VALIDATED — IS avg Δ=+0.380, OOS25 Δ=+0.1764
+- Phase 127-129: BTC price vol overlay VALIDATED — LOYO 3/5 wins, avg Δ=+0.232, threshold=0.50, scale=0.50, f144_boost=0.20
+- Phase 140: Commodity CTA KILLED (see Failed Research Directions)
+- Phase 141-143: Rebalance freq (no improvement), idio rebal, weight optimization (2025 OOS fails at +0.098)
+- **Phase 144**: Regime-adaptive weight switching IS VALIDATED — OBJ=+0.1820 improvement. PROD vs P143B weights.
+- **Phase 145**: Breadth regime classifier VALIDATED — OBJ=1.8851 (+0.3179 vs baseline=1.5672), LOYO 4/5, capture 87.5%. Best: breadth_window=84/168/336h (all identical!), p_low=0.33, p_high=0.67. All 5 years > 1.57.
+- **Phase 146**: Production integration — WF 1/2 wins, avg_delta=+0.4020. Best fine-tuned: 3-regime win=168 → OBJ=1.8945. Prod config updated to v2.2.0 with breadth_regime_switching block. BreadthAdaptiveEnsembleStrategy registered.
 
 ## Failed Research Directions
 - **Commodity CTA with EMA signals (Phases 139-140, 2026-02-21): KILLED**
