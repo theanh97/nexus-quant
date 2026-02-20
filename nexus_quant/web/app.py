@@ -65,7 +65,7 @@ def _read_jsonl_tail(path: Path, n: int = 50) -> List[Dict[str, Any]]:
 
 
 def _latest_run_result(artifacts_dir: Path) -> Optional[Dict[str, Any]]:
-    runs_dir = artifacts_dir / "runs"
+    runs_dir = artifacts_dir / "runs_mock"
     if not runs_dir.exists():
         return None
     dirs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime, reverse=True)
@@ -80,7 +80,7 @@ def _latest_run_result(artifacts_dir: Path) -> Optional[Dict[str, Any]]:
 
 
 def _latest_metrics(artifacts_dir: Path) -> Optional[Dict[str, Any]]:
-    runs_dir = artifacts_dir / "runs"
+    runs_dir = artifacts_dir / "runs_mock"
     if not runs_dir.exists():
         return None
     dirs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime, reverse=True)
@@ -111,7 +111,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
     static_dir = Path(__file__).parent / "static"
     
     # FORCE RESOLVE TO PREVENT CWD OR CLI OVERRIDES FROM HITTING LOCKED SYSTEM ARTIFACTS
-    artifacts_dir = Path(__file__).parent.parent / "artifacts"
+    artifacts_dir = Path(__file__).parent.parent / "mock_db"
     artifacts_dir = artifacts_dir.resolve()
 
     def _repo_root() -> Path:
@@ -437,7 +437,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
     @app.get("/api/progress")
     def api_progress() -> JSONResponse:
         """Daily learning progress: champion Sharpe improvement over time."""
-        runs_dir = artifacts_dir / "runs"
+        runs_dir = artifacts_dir / "runs_mock"
         if not runs_dir.exists():
             return JSONResponse({"daily": [], "best_ever_sharpe": None, "total_runs": 0})
         # Collect all run metrics grouped by day
@@ -518,7 +518,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 })
             # Active run detection: check if a process is writing to runs dir recently
             active_run = None
-            runs_dir = artifacts_dir / "runs"
+            runs_dir = artifacts_dir / "runs_mock"
             if runs_dir.exists():
                 recent = sorted(
                     [d for d in runs_dir.iterdir() if d.is_dir()],
@@ -580,7 +580,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
     @app.get("/api/runs")
     def api_runs() -> JSONResponse:
         """List the 20 most recent run results, sorted by modification time."""
-        runs_dir = artifacts_dir / "runs"
+        runs_dir = artifacts_dir / "runs_mock"
         if not runs_dir.exists():
             return JSONResponse([])
         dirs = sorted(
@@ -659,7 +659,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             return items
 
         # Runs section
-        runs_dir = artifacts_dir / "runs"
+        runs_dir = artifacts_dir / "runs_mock"
         run_items = []
         if runs_dir.exists():
             for d in sorted(runs_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True)[:10]:
@@ -1139,7 +1139,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             # Build minimal context
             from ..agents.base import AgentContext
             metrics = {}
-            runs_dir = artifacts_dir / "runs"
+            runs_dir = artifacts_dir / "runs_mock"
             if runs_dir.exists():
                 dirs = sorted(runs_dir.iterdir(), key=lambda d: d.stat().st_mtime, reverse=True)
                 for d in dirs[:3]:
@@ -2168,7 +2168,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
     @app.get("/api/runs_history")
     async def api_runs_history(limit: int = 50) -> JSONResponse:
         """Return summarized history of all backtest runs for Performance tab."""
-        runs_dir = artifacts_dir / "runs" if artifacts_dir else Path("artifacts/runs")
+        runs_dir = artifacts_dir / "runs_mock" if artifacts_dir else Path("artifacts/runs")
         if not runs_dir.exists():
             return JSONResponse([])
         rows = []
@@ -2587,5 +2587,35 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             return JSONResponse({"ok": True, "entry": entry})
         except Exception as e:
             return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+    # ── Track Record API ─────────────────────────────────────────────────────
+
+    @app.get("/api/track_record")
+    async def api_track_record() -> JSONResponse:
+        """
+        NEXUS platform-wide track record.
+        Returns per-year Sharpe ratios for all projects + benchmark comparison.
+        """
+        try:
+            from ..reporting.track_record import NexusTrackRecord
+            tr = NexusTrackRecord.build_from_memory()
+            # Try to merge with latest saved record
+            saved_path = (artifacts_dir / "track_record.json") if artifacts_dir else Path("artifacts/track_record.json")
+            if saved_path.exists():
+                try:
+                    saved = NexusTrackRecord.load(str(saved_path))
+                    # Merge: use saved project data if richer
+                    for pname, saved_proj in saved.projects.items():
+                        if pname in tr.projects and saved_proj.years:
+                            for yr, ym in saved_proj.years.items():
+                                if yr not in tr.projects[pname].years:
+                                    tr.projects[pname].years[yr] = ym
+                            tr.projects[pname].compute_aggregates()
+                except Exception:
+                    pass
+            return JSONResponse(tr.api_dict())
+        except Exception as e:
+            import traceback
+            return JSONResponse({"error": str(e), "traceback": traceback.format_exc()}, status_code=500)
 
     uvicorn.run(app, host=host, port=port, log_level="warning")

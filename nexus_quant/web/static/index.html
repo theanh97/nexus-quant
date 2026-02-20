@@ -2628,6 +2628,7 @@
     <div class="tab" data-mode="ops" onclick="go('logs')">📝 <span data-i18n="tab.logs">Nhật ký</span></div>
     <div class="tab" data-mode="ops" onclick="go('signals')">📡 <span data-i18n="tab.signals">Tín hiệu</span></div>
     <div class="tab live" data-mode="ops" onclick="go('live-engine')">🔴 <span data-i18n="tab.live_engine">Live Trading</span></div>
+    <div class="tab" data-mode="ops" onclick="go('track-record')">🏆 Track Record</div>
     <div class="tab" data-mode="ops" onclick="go('console')">⚙️ <span data-i18n="tab.console">Console</span></div>
 
     <!-- Hidden Internal Tabs (Kept for compatibility, but hidden from UI) -->
@@ -4263,6 +4264,38 @@
       </div>
     </div>
   </div>
+
+  <!-- ── TRACK RECORD PAGE ──────────────────────────────────────────── -->
+  <div class="page" id="page-track-record">
+    <div class="section-wrap">
+      <div class="section-header">
+        <span class="section-title">🏆 NEXUS Platform Track Record</span>
+        <span class="section-sub">Cross-project performance vs benchmarks · All Sharpe ratios annualised</span>
+        <button onclick="loadTrackRecord()" style="float:right;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:12px">↻ Refresh</button>
+      </div>
+      <div id="tr-badges" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="ctitle" style="margin-bottom:10px">NEXUS Projects (OOS Backtest Sharpe)</div>
+        <div id="tr-projects-table"><div class="text-muted text-sm">Loading…</div></div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="ctitle" style="margin-bottom:10px">Benchmarks (Estimated Annual Sharpe)</div>
+        <div id="tr-benchmarks-table"><div class="text-muted text-sm">Loading…</div></div>
+      </div>
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:8px">Key Insights</div>
+        <div id="tr-insights" style="font-size:13px;line-height:1.7;color:var(--fg-muted)">
+          <ul style="margin:0;padding-left:18px">
+            <li><strong style="color:var(--fg)">crypto_perps</strong>: OOS validated 2021-2026. AVG=2.005, MIN=1.427. 2022 bear: Sharpe 1.427 (BTC was -64%).</li>
+            <li><strong style="color:var(--fg)">commodity_cta</strong>: Infrastructure Phase 135 complete. Pending real data validation. Target Sharpe > 0.8.</li>
+            <li><strong style="color:var(--fg)">Diversification goal</strong>: Cross-asset correlation &lt; 0.2 between projects.</li>
+            <li><strong style="color:var(--fg)">SG CTA 2022</strong>: +25.2% (best CTA year in decades). NEXUS crypto also strong (1.427). Macro stress resistant.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ── END TRACK RECORD ──────────────────────────────────────────── -->
 
   <div id="cmdk-backdrop" class="cmdk-backdrop" onclick="closeCommandPalette()"></div>
   <div id="cmdk" class="cmdk" role="dialog" aria-modal="true" aria-label="Quick command">
@@ -7035,6 +7068,7 @@
       risk: loadRisk, research: loadResearch, tasks: loadTasks, files: loadFiles, market: loadMarket, pitch: loadPitch,
       signals: loadSignals,
       'live-engine': refreshLiveStatus,
+      'track-record': loadTrackRecord,
       logs: () => { loadLogs({ replace: true, skipStats: false }); startAnalysisLogRealtime(false); },
       console: () => refreshConsole({ includeLogs: true, forceLogRefresh: true, forceStream: true })
     };
@@ -7052,6 +7086,7 @@
       pitch: 30000,
       signals: 60000,
       'live-engine': 15000,
+      'track-record': 300000,
       logs: 8000,
       console: 2500,
     };
@@ -7755,6 +7790,81 @@
           toast(msg, 3);
           setTimeout(refreshConsole, 800);
         }).catch(e => { set('ctrl-result', `❌ ${t('console.request_failed')}`); });
+    }
+
+    // ─── Track Record ─────────────────────────────────────────────────────────
+    function loadTrackRecord() {
+      const YEARS = [2021, 2022, 2023, 2024, 2025, 2026];
+
+      function sharpeColor(v) {
+        if (v === null || v === undefined) return 'var(--fg-muted)';
+        if (v >= 1.5) return '#22c55e';
+        if (v >= 0.8) return '#86efac';
+        if (v >= 0.3) return 'var(--yellow)';
+        if (v >= 0.0) return '#f97316';
+        return '#ef4444';
+      }
+      function sharpeCell(v) {
+        if (v === null || v === undefined) return `<td style="text-align:center;color:var(--fg-muted);opacity:.4">—</td>`;
+        const col = sharpeColor(v);
+        return `<td style="text-align:center;font-weight:600;color:${col}">${v.toFixed(2)}</td>`;
+      }
+      function statusBadge(s) {
+        const map = {production:'#22c55e', validated:'#86efac', development:'#f59e0b', planned:'#6b7280'};
+        return `<span style="display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;background:${map[s]||'#6b7280'};color:#fff">${s}</span>`;
+      }
+
+      jx('/api/track_record').then(data => {
+        if (!data || data.error) {
+          html('tr-badges', `<span style="color:#ef4444">Error: ${escHtml(data&&data.error||'unknown')}</span>`);
+          return;
+        }
+
+        // ── Badges ──
+        const badges = (data.projects || []).filter(p => p.avg_sharpe).map(p => {
+          const col = p.meets_target ? '#22c55e' : '#f59e0b';
+          return `<div style="padding:6px 12px;border-radius:8px;background:var(--bg);border:1px solid ${col};font-size:12px">
+            <span style="font-weight:700;color:${col}">${escHtml(p.name)}</span>
+            <span style="margin:0 4px;color:var(--fg-muted)">AVG</span>
+            <span style="font-weight:700;color:var(--green)">${p.avg_sharpe.toFixed(3)}</span>
+            <span style="margin:0 4px;color:var(--fg-muted)">MIN</span>
+            <span style="font-weight:700;color:${p.min_sharpe>=p.target_sharpe?'var(--green)':'var(--yellow)'}">${p.min_sharpe ? p.min_sharpe.toFixed(3) : '—'}</span>
+            <span style="margin-left:6px">${statusBadge(p.status)}</span>
+          </div>`;
+        }).join('');
+        html('tr-badges', badges || '<span class="text-muted">No projects with data yet</span>');
+
+        // ── Projects table ──
+        const hdr = `<tr style="font-size:11px;color:var(--fg-muted);text-transform:uppercase"><th style="text-align:left;padding:4px 8px">Project</th>${YEARS.map(y=>`<th style="text-align:center;width:60px">${y}</th>`).join('')}<th style="text-align:center">AVG</th><th style="text-align:center">MIN</th><th style="text-align:center">Status</th></tr>`;
+        const rows = (data.projects || []).map(p => {
+          const yrs = YEARS.map(y => sharpeCell(p.year_sharpe && p.year_sharpe[y])).join('');
+          const avg = p.avg_sharpe ? `<td style="text-align:center;font-weight:700;color:var(--green)">${p.avg_sharpe.toFixed(3)}</td>` : '<td style="text-align:center;color:var(--fg-muted)">—</td>';
+          const min = p.min_sharpe ? `<td style="text-align:center;font-weight:700;color:${p.min_sharpe>=p.target_sharpe?'var(--green)':'var(--yellow)'}">${p.min_sharpe.toFixed(3)}</td>` : '<td style="text-align:center;color:var(--fg-muted)">—</td>';
+          return `<tr style="border-top:1px solid var(--border)">
+            <td style="padding:6px 8px">
+              <div style="font-weight:600">${escHtml(p.name)}</div>
+              <div style="font-size:10px;color:var(--fg-muted)">${escHtml(p.market)} · target ≥${p.target_sharpe}</div>
+            </td>
+            ${yrs}${avg}${min}
+            <td style="text-align:center">${statusBadge(p.status)}</td>
+          </tr>`;
+        }).join('');
+        html('tr-projects-table', `<table style="width:100%;border-collapse:collapse;font-size:13px"><thead>${hdr}</thead><tbody>${rows}</tbody></table>`);
+
+        // ── Benchmarks table ──
+        const bhdr = `<tr style="font-size:11px;color:var(--fg-muted);text-transform:uppercase"><th style="text-align:left;padding:4px 8px">Benchmark</th>${YEARS.map(y=>`<th style="text-align:center;width:60px">${y}</th>`).join('')}</tr>`;
+        const brows = (data.benchmarks || []).map(b => {
+          const yrs = YEARS.map(y => sharpeCell(b.year_sharpe && b.year_sharpe[y])).join('');
+          return `<tr style="border-top:1px solid var(--border)"><td style="padding:6px 8px;font-weight:600">${escHtml(b.name)}</td>${yrs}</tr>`;
+        }).join('');
+        html('tr-benchmarks-table', `<table style="width:100%;border-collapse:collapse;font-size:13px"><thead>${bhdr}</thead><tbody>${brows}</tbody></table>
+          <div style="font-size:11px;color:var(--fg-muted);margin-top:6px;padding:0 8px">
+            Sharpe = (Annual Return − Risk-Free Rate) / Annual Volatility. NEXUS = OOS backtest. Benchmarks = estimated.
+          </div>`);
+
+      }).catch(e => {
+        html('tr-badges', `<span style="color:#ef4444">Load failed: ${escHtml(String(e))}</span>`);
+      });
     }
 
     // ─── Clock ───

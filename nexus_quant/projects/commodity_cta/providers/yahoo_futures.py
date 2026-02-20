@@ -65,6 +65,25 @@ SECTOR_MAP: Dict[str, str] = {
     "HE=F": "livestock",
 }
 
+# Stooq.com futures tickers (alternative free data source)
+STOOQ_TICKERS: Dict[str, str] = {
+    "CL=F": "cl.f",   # WTI Crude Oil
+    "NG=F": "ng.f",   # Natural Gas
+    "BZ=F": "co.f",   # Brent Crude (stooq uses co.f)
+    "GC=F": "gc.f",   # Gold
+    "SI=F": "si.f",   # Silver
+    "HG=F": "hg.f",   # Copper
+    "PL=F": "pl.f",   # Platinum
+    "ZW=F": "w.f",    # Wheat
+    "ZC=F": "c.f",    # Corn
+    "ZS=F": "s.f",    # Soybeans
+    "KC=F": "kc.f",   # Coffee
+    "SB=F": "sb.f",   # Sugar #11
+    "CT=F": "ct.f",   # Cotton
+    "LE=F": "le.f",   # Live Cattle
+    "HE=F": "he.f",   # Lean Hogs
+}
+
 SYMBOL_NAMES: Dict[str, str] = {
     "CL=F": "WTI Crude Oil",
     "NG=F": "Natural Gas",
@@ -218,6 +237,236 @@ class YahooFuturesProvider(DataProvider):
         return None
 
     def _download_yahoo(self, symbol: str) -> Optional[Dict[str, List]]:
+        """
+        Try in order:
+        1. Stooq.com (free, no auth, no rate limit)
+        2. Yahoo Finance v8 JSON API
+        3. Yahoo Finance v7 CSV (last resort)
+        """
+        # 1. Stooq (primary: free and reliable)
+        stooq_ticker = STOOQ_TICKERS.get(symbol)
+        if stooq_ticker:
+            data = self._download_stooq(symbol, stooq_ticker)
+            if data and data.get("timestamps"):
+                logger.debug(f"  {symbol}: Stooq OK ({len(data['timestamps'])} bars)")
+                return data
+
+        # 2. Yahoo v8 JSON
+        data = self._download_yahoo_v8(symbol)
+        if data and data.get("timestamps"):
+            return data
+
+        # 3. Yahoo v7 CSV
+        logger.debug(f"  {symbol}: trying Yahoo v7 CSV fallback")
+        return self._download_yahoo_v7_csv(symbol)
+
+    def _download_stooq(self, symbol: str, stooq_ticker: str) -> Optional[Dict[str, List]]:
+        """Download from Stooq.com — free commodity futures data, no auth required."""
+        d1 = self.start.replace("-", "")
+        d2 = self.end.replace("-", "")
+        url = f"https://stooq.com/q/d/l/?s={stooq_ticker}&d1={d1}&d2={d2}&i=d"
+
+        req = urllib.request.Request(url)
+        req.add_header(
+            "User-Agent",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36",
+        )
+        req.add_header("Accept", "text/csv,*/*")
+        req.add_header("Referer", "https://stooq.com/")
+
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw = resp.read().decode("utf-8", errors="replace")
+
+        # Stooq CSV: Date,Open,High,Low,Close,Volume
+        return self._parse_stooq_csv(raw)
+
+    def _parse_stooq_csv(self, raw: str) -> Optional[Dict[str, List]]:
+        """Parse Stooq CSV. Format: Date,Open,High,Low,Close,Volume (newest first)."""
+        result: Dict[str, List] = {
+            "dates": [],
+            "timestamps": [],
+            "open": [],
+            "high": [],
+            "low": [],
+            "close": [],
+            "volume": [],
+        }
+
+        lines = raw.strip().splitlines()
+        if len(lines) < 2:
+            return None
+
+        # Stooq returns newest-first; we'll sort afterwards
+        rows = []
+        reader = csv.DictReader(lines)
+        for row in reader:
+            try:
+                date_str = (row.get("Date") or "").strip()
+                if not date_str:
+                    continue
+                c_raw = row.get("Close", "")
+                if not c_raw:
+                    continue
+                c = float(c_raw)
+                if c <= 0 or c != c:
+                    continue
+                ts = int(
+                    datetime.strptime(date_str, "%Y-%m-%d")
+                    .replace(tzinfo=timezone.utc)
+                    .timestamp()
+                )
+
+                def _sf(k: str, fb: float = c) -> float:
+                    try:
+                        v = float(row.get(k, fb) or fb)
+                        return v if v > 0 and v == v else fb
+                    except (ValueError, TypeError):
+                        return fb
+
+                rows.append({
+                    "date": date_str,
+                    "ts": ts,
+                    "o": _sf("Open"),
+                    "h": _sf("High"),
+                    "l": _sf("Low"),
+                    "c": c,
+                    "v": max(0.0, _sf("Volume", 0.0)),
+                })
+            except (ValueError, TypeError, KeyError):
+                continue
+
+        if not rows:
+            return None
+
+        # Sort chronologically (Stooq sends newest-first)
+        rows.sort(key=lambda x: x["ts"])
+
+        for r in rows:
+            result["dates"].append(r["date"])
+            result["timestamps"].append(r["ts"])
+            result["open"].append(r["o"])
+            result["high"].append(r["h"])
+            result["low"].append(r["l"])
+            result["close"].append(r["c"])
+            result["volume"].append(r["v"])
+
+        return result if result["timestamps"] else None
+
+    def _download_yahoo_v8(self, symbol: str) -> Optional[Dict[str, List]]:
+        """Yahoo Finance v8 chart API — returns JSON, often works without crumb."""
+        start_ts = int(
+            datetime.strptime(self.start, "%Y-%m-%d")
+            .replace(tzinfo=timezone.utc)
+            .timestamp()
+        )
+        end_ts = (
+            int(
+                datetime.strptime(self.end, "%Y-%m-%d")
+                .replace(tzinfo=timezone.utc)
+                .timestamp()
+            )
+            + 86400
+        )
+
+        for host in ("query2.finance.yahoo.com", "query1.finance.yahoo.com"):
+            url = (
+                f"https://{host}/v8/finance/chart/{symbol}"
+                f"?period1={start_ts}&period2={end_ts}"
+                f"&interval=1d&includePrePost=false"
+            )
+            try:
+                req = urllib.request.Request(url)
+                req.add_header(
+                    "User-Agent",
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/122.0.0.0 Safari/537.36",
+                )
+                req.add_header("Accept", "application/json,*/*")
+                req.add_header("Accept-Language", "en-US,en;q=0.9")
+                req.add_header("Referer", "https://finance.yahoo.com/")
+
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    raw = resp.read().decode("utf-8", errors="replace")
+
+                data = self._parse_v8_json(raw, symbol)
+                if data and data.get("timestamps"):
+                    return data
+
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    raise  # propagate rate-limit to retry logic
+                logger.debug(f"  {symbol}: v8/{host} HTTP {e.code}")
+            except Exception as e:
+                logger.debug(f"  {symbol}: v8/{host} error: {e}")
+
+        return None
+
+    def _parse_v8_json(self, raw: str, symbol: str) -> Optional[Dict[str, List]]:
+        """Parse Yahoo Finance v8 chart JSON response."""
+        import json as _json
+
+        try:
+            obj = _json.loads(raw)
+            result_list = obj["chart"]["result"]
+            if not result_list:
+                return None
+            chart = result_list[0]
+
+            timestamps = chart.get("timestamp") or []
+            if not timestamps:
+                return None
+
+            quotes = chart["indicators"]["quote"][0]
+            adj_list = chart.get("indicators", {}).get("adjclose", [{}])
+            adjclose_arr = adj_list[0].get("adjclose", []) if adj_list else []
+
+            result: Dict[str, List] = {
+                "dates": [],
+                "timestamps": [],
+                "open": [],
+                "high": [],
+                "low": [],
+                "close": [],
+                "volume": [],
+            }
+
+            raw_o = quotes.get("open", [])
+            raw_h = quotes.get("high", [])
+            raw_l = quotes.get("low", [])
+            raw_c = quotes.get("close", [])
+            raw_v = quotes.get("volume", [])
+
+            for i, ts in enumerate(timestamps):
+                if ts is None:
+                    continue
+                c = (adjclose_arr[i] if i < len(adjclose_arr) and adjclose_arr[i] else None
+                     or (raw_c[i] if i < len(raw_c) else None))
+                if c is None or c != c or c <= 0:
+                    continue
+
+                def _sf(arr: list, idx: int, fb: float = c) -> float:
+                    v = arr[idx] if idx < len(arr) else None
+                    return v if (v is not None and v == v and v > 0) else fb
+
+                result["dates"].append(datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d"))
+                result["timestamps"].append(int(ts))
+                result["open"].append(_sf(raw_o, i))
+                result["high"].append(_sf(raw_h, i))
+                result["low"].append(_sf(raw_l, i))
+                result["close"].append(c)
+                result["volume"].append(max(0.0, raw_v[i] if i < len(raw_v) and raw_v[i] else 0.0))
+
+            return result if result["timestamps"] else None
+
+        except (KeyError, IndexError, TypeError, _json.JSONDecodeError) as e:
+            logger.debug(f"  {symbol}: v8 JSON parse error: {e}")
+            return None
+
+    def _download_yahoo_v7_csv(self, symbol: str) -> Optional[Dict[str, List]]:
+        """Fallback: Yahoo Finance v7 download CSV endpoint."""
         start_ts = int(
             datetime.strptime(self.start, "%Y-%m-%d")
             .replace(tzinfo=timezone.utc)
@@ -243,7 +492,7 @@ class YahooFuturesProvider(DataProvider):
             "User-Agent",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36",
+            "Chrome/122.0.0.0 Safari/537.36",
         )
         req.add_header("Accept", "text/csv,application/csv,*/*")
         req.add_header("Accept-Language", "en-US,en;q=0.9")
