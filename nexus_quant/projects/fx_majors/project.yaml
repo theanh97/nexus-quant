@@ -1,0 +1,41 @@
+# NEXUS Project: FX Majors
+# Market: Forex Major Pairs (spot + forward)
+# Status: Template — ready for strategy development
+
+name: fx_majors
+market: fx
+asset_class: spot_fx
+description: "FX major pairs — carry, momentum, and mean-reversion strategies"
+
+# Default universe (G10 majors)
+universe:
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  - USDCHF
+  - AUDUSD
+  - NZDUSD
+  - USDCAD
+
+# Data
+data_provider: local_csv
+default_config: ""
+
+# Cost model
+cost_model: fx_spread
+
+# Market-specific features
+features:
+  - interest_rate_diff
+  - swap_points
+  - carry_yield
+  - session_volume
+  - central_bank_rate
+
+# Available strategies (to be developed)
+strategies: []
+
+# Brain loop interval (seconds) — slower for FX (daily bars typical)
+brain_interval: 3600
+
+enabled: false

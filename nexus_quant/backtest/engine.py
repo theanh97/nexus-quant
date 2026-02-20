@@ -101,17 +101,18 @@ class BacktestEngine:
                     }
                 )
 
-            # Funding PnL (event-based). Apply on positions held at ts (after any rebalance).
+            # Funding PnL (event-based, crypto-specific). Skip for non-crypto markets.
             fp = 0.0
-            equity_before_funding = equity
-            for s in symbols:
-                fr = dataset.funding_rate_at(s, ts)
-                if fr == 0.0:
-                    continue
-                # Long pays when funding>0, short receives (and vice versa).
-                fp += -(equity_before_funding * float(weights.get(s, 0.0)) * float(fr))
-            equity += fp
-            funding_pnl += fp
+            if dataset.has_funding:
+                equity_before_funding = equity
+                for s in symbols:
+                    fr = dataset.funding_rate_at(s, ts)
+                    if fr == 0.0:
+                        continue
+                    # Long pays when funding>0, short receives (and vice versa).
+                    fp += -(equity_before_funding * float(weights.get(s, 0.0)) * float(fr))
+                equity += fp
+                funding_pnl += fp
 
             equity_curve.append(equity)
             returns.append((equity / prev_equity) - 1.0 if prev_equity != 0 else 0.0)

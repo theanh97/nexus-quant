@@ -1,0 +1,34 @@
+{
+  "insights": [
+    {
+      "text": "P91b ensemble: V1(27.47%) + I460_bw168_k4(19.67%) + I415_bw216_k4(32.47%) + F144_k2(20.39%) is the champion config.",
+      "tags": ["champion", "ensemble", "weights"],
+      "source_project": "crypto_perps",
+      "confidence": 0.95,
+      "ts": 1740000000
+    },
+    {
+      "text": "Vol tilt overlay: vol_mom_z_168 @ reduction_factor=0.65 reduces leverage to 65% during crowded vol regimes.",
+      "tags": ["overlay", "vol_tilt", "production"],
+      "source_project": "crypto_perps",
+      "confidence": 0.95,
+      "ts": 1740000000
+    },
+    {
+      "text": "2026 True OOS Sharpe = 1.512 (honest, costs included). Expected live ~0.8-1.0 after execution slippage.",
+      "tags": ["performance", "oos", "reality_check"],
+      "source_project": "crypto_perps",
+      "confidence": 0.90,
+      "ts": 1740000000
+    }
+  ],
+  "lessons": [
+    "All 117 phases of price-based signal research exhausted — no more incremental gains possible",
+    "Next frontier: fundamentally new data sources (options flow, whale wallets) or new markets"
+  ],
+  "_meta": {
+    "last_updated": 1740000000,
+    "count": 3,
+    "description": "Crypto perpetual futures project-specific wisdom"
+  }
+}

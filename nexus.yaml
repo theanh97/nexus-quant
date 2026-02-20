@@ -1,0 +1,47 @@
+# ═══════════════════════════════════════════════════════════════════
+# NEXUS Platform — Master Configuration v1.0.0
+# ═══════════════════════════════════════════════════════════════════
+# This file controls all projects, model routing, and scheduling.
+# Edit this file to add new projects or change model assignments.
+
+version: "1.0.0"
+
+# ── Active Projects ───────────────────────────────────────────────
+# Each project has its own strategies, data providers, and memory.
+# Projects are defined in nexus_quant/projects/<name>/project.yaml
+projects:
+  - crypto_perps
+  - fx_majors
+
+# ── Model Configuration ──────────────────────────────────────────
+# Default models for the agent pipeline (overridable per-project)
+models:
+  strategy_research: gemini-3-pro-preview
+  risk_analysis: claude-sonnet-4-6
+  data_analysis: gemini-3-pro-preview
+  experiment_design: gemini-3-pro-preview
+
+# ── Scheduler ────────────────────────────────────────────────────
+# Controls how often each project's brain loop runs.
+# Set enabled=false to pause a project without removing it.
+scheduler:
+  crypto_perps:
+    enabled: true
+    brain_interval: 600
+    max_concurrent_runs: 2
+  fx_majors:
+    enabled: false
+    brain_interval: 3600
+    max_concurrent_runs: 1
+
+# ── Memory ───────────────────────────────────────────────────────
+# Hierarchical memory root directory
+memory_root: memory
+
+# Cross-pollination: how often to scan for insights to promote
+cross_pollination_interval: 21600
+
+# ── Dashboard ────────────────────────────────────────────────────
+dashboard:
+  port: 8080
+  show_all_projects: true

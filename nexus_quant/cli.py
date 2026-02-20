@@ -159,6 +159,16 @@ def _parse_args() -> argparse.Namespace:
     live_p.add_argument("--testnet", action="store_true", help="Use Binance testnet instead of mainnet")
     live_p.add_argument("--once", action="store_true", help="Run one cycle and exit (no loop)")
 
+    # ── Multi-project commands ───────────────────────────────────────
+    proj_p = sub.add_parser("projects", help="List all discovered projects and their status")
+
+    mp_p = sub.add_parser("multi", help="Run multi-project scheduler (all enabled projects concurrently)")
+    mp_p.add_argument("--config", default="nexus.yaml", help="Master config path (default: nexus.yaml)")
+
+    mem_ns_p = sub.add_parser("memory-status", help="Show hierarchical memory status for a project")
+    mem_ns_p.add_argument("--project", default="crypto_perps", help="Project name (default: crypto_perps)")
+    mem_ns_p.add_argument("--memory-root", default="memory", help="Memory root dir (default: memory)")
+
     return p.parse_args()
 
 
@@ -167,6 +177,48 @@ def main() -> int:
     if args.cmd == "status":
         print_status(artifacts_dir=Path(args.artifacts), tail=int(args.tail))
         return 0
+
+    # ── Multi-project commands (no config required) ──────────────────
+    if args.cmd == "projects":
+        from .projects import discover_projects
+        projects = discover_projects()
+        if not projects:
+            print("No projects found in nexus_quant/projects/")
+            return 0
+        print(f"{'Name':<20} {'Market':<10} {'Enabled':<8} {'Strategies':<5} {'Interval'}")
+        print("-" * 65)
+        for name, m in projects.items():
+            print(f"{name:<20} {m.market:<10} {'yes' if m.enabled else 'no':<8} {len(m.strategies):<5} {m.brain_interval}s")
+        return 0
+
+    if args.cmd == "multi":
+        from .orchestration.project_scheduler import NexusScheduler
+        import logging
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
+        scheduler = NexusScheduler.from_config(args.config)
+        if not scheduler.runners:
+            print("No enabled projects with configs found. Check nexus.yaml and project manifests.")
+            return 1
+        scheduler.start()
+        print(json.dumps(scheduler.status(), indent=2, default=str))
+        scheduler.wait()
+        return 0
+
+    if args.cmd == "memory-status":
+        from .memory.namespace import MemoryNamespace
+        from .projects import get_project
+        project = get_project(args.project)
+        market = project.market if project else ""
+        mem = MemoryNamespace(Path(args.memory_root), args.project, market)
+        info = mem.summary()
+        print(json.dumps(info, indent=2, default=str))
+        # Also print wisdom
+        wisdom = mem.get_wisdom()
+        n_insights = len(wisdom.get("insights", []))
+        n_lessons = len(wisdom.get("lessons", []))
+        print(f"\nMerged wisdom: {n_insights} insights, {n_lessons} lessons from layers: {wisdom.get('_layers', [])}")
+        return 0
+
     if args.cmd == "memory":
         return memory_main(args.memory_args)
     if args.cmd == "research":

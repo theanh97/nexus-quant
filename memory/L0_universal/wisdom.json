@@ -1,0 +1,56 @@
+{
+  "insights": [
+    {
+      "text": "Walk-forward validation is the only reliable predictor of live performance. In-sample Sharpe alone is meaningless.",
+      "tags": ["methodology", "validation"],
+      "source_project": "crypto_perps",
+      "confidence": 0.95,
+      "ts": 1740000000
+    },
+    {
+      "text": "MIN year Sharpe is the binding constraint for strategy quality — average Sharpe can be misleading if one year collapses.",
+      "tags": ["metrics", "risk"],
+      "source_project": "crypto_perps",
+      "confidence": 0.95,
+      "ts": 1740000000
+    },
+    {
+      "text": "Static ensemble weights outperform adaptive/dynamic weights. Regime-switching adds complexity without improving robustness.",
+      "tags": ["ensemble", "weights"],
+      "source_project": "crypto_perps",
+      "confidence": 0.90,
+      "ts": 1740000000
+    },
+    {
+      "text": "Signal exhaustion is real — after 100+ parameter combinations, marginal improvements become noise. Know when to stop.",
+      "tags": ["rd_methodology", "overfitting"],
+      "source_project": "crypto_perps",
+      "confidence": 0.90,
+      "ts": 1740000000
+    },
+    {
+      "text": "Expected live Sharpe = 50-60% of backtest Sharpe after execution costs, slippage, and market impact.",
+      "tags": ["execution", "reality_check"],
+      "source_project": "crypto_perps",
+      "confidence": 0.85,
+      "ts": 1740000000
+    },
+    {
+      "text": "Orthogonality paradox: truly independent signals are hard to find within the same market microstructure.",
+      "tags": ["signal_research", "correlation"],
+      "source_project": "crypto_perps",
+      "confidence": 0.85,
+      "ts": 1740000000
+    }
+  ],
+  "lessons": [
+    "In-sample breakthrough + walk-forward failure = classic overfitting trap",
+    "Cost models must be realistic from day 1 — optimistic costs invalidate all conclusions",
+    "Survivorship bias (using current symbols on historical data) inflates early-period metrics"
+  ],
+  "_meta": {
+    "last_updated": 1740000000,
+    "count": 6,
+    "description": "Universal trading wisdom — applies to ALL markets and projects"
+  }
+}

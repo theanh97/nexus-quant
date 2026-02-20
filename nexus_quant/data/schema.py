@@ -8,10 +8,19 @@ import bisect
 @dataclass(frozen=True)
 class MarketDataset:
     """
-    Minimal aligned multi-symbol dataset for perp research.
+    Multi-symbol aligned dataset for quantitative research.
 
-    All series are aligned to `timeline` indices.
-    Funding is event-based: per symbol mapping epoch->rate.
+    Core fields (market-agnostic):
+    - timeline, symbols, perp_close (or use 'close' alias)
+    - meta: arbitrary metadata dict
+    - features: extensible dict for market-specific data
+
+    Crypto-specific fields (backward-compatible, optional):
+    - funding, spot_close, perp_volume, taker_buy_volume, etc.
+
+    For non-crypto markets (FX, equities, options):
+    - Use perp_close for the primary price series
+    - Use features dict for market-specific data (interest rates, greeks, etc.)
     """
 
     provider: str
@@ -22,7 +31,14 @@ class MarketDataset:
     funding: Dict[str, Dict[int, float]]
     fingerprint: str
 
-    # Optional extended fields (for real venues / higher-fidelity sims)
+    # Market type identifier (crypto, fx, equity, options)
+    market_type: str = "crypto"
+
+    # Extensible features dict — market-specific data goes here
+    # Example: {"interest_rate_diff": {"EURUSD": [0.01, ...]}, "swap_points": {...}}
+    features: Dict[str, Any] = field(default_factory=dict)
+
+    # Optional extended fields (crypto-specific, backward-compatible)
     perp_volume: Optional[Dict[str, List[float]]] = None
     taker_buy_volume: Optional[Dict[str, List[float]]] = None
     spot_volume: Optional[Dict[str, List[float]]] = None
@@ -35,11 +51,27 @@ class MarketDataset:
     open_interest: Optional[Dict[str, List[float]]] = None          # symbol -> [OI values per bar]
     long_short_ratio_global: Optional[Dict[str, List[float]]] = None  # symbol -> [global L/S ratio per bar]
     long_short_ratio_top: Optional[Dict[str, List[float]]] = None     # symbol -> [top trader L/S ratio per bar]
+    taker_long_short_ratio: Optional[Dict[str, List[float]]] = None  # symbol -> [taker buy/sell vol ratio per bar]
+    top_trader_ls_account: Optional[Dict[str, List[float]]] = None   # symbol -> [top trader account L/S ratio per bar]
 
     meta: Dict[str, Any] = field(default_factory=dict)
 
     # Precomputed for fast "last funding before t" queries (optional).
     _funding_times: Dict[str, List[int]] = field(default_factory=dict)
+
+    @property
+    def has_funding(self) -> bool:
+        """Whether this dataset has funding rate data (crypto-specific)."""
+        return bool(self.funding)
+
+    def feature(self, name: str, symbol: str = "") -> Any:
+        """Get a market-specific feature by name. Returns None if not available."""
+        val = self.features.get(name)
+        if val is None:
+            return None
+        if symbol and isinstance(val, dict):
+            return val.get(symbol)
+        return val
 
     def close(self, symbol: str, idx: int) -> float:
         return self.perp_close[symbol][idx]

@@ -1,0 +1,55 @@
+# NEXUS Project: Crypto Perpetual Futures
+# Market: Binance USDM Perpetual Futures (BTC, ETH, + top alts)
+# Status: Production — P91b + Vol Tilt champion (Sharpe AVG=2.005)
+
+name: crypto_perps
+market: crypto
+asset_class: perpetual_futures
+description: "Crypto perpetual futures — cross-sectional momentum, carry, and ensemble strategies on Binance USDM"
+
+# Default universe (top liquid perps)
+universe:
+  - BTCUSDT
+  - ETHUSDT
+  - BNBUSDT
+  - SOLUSDT
+  - XRPUSDT
+  - DOGEUSDT
+  - ADAUSDT
+  - AVAXUSDT
+  - LINKUSDT
+  - DOTUSDT
+
+# Data
+data_provider: binance_rest_v1
+default_config: configs/production_p91b_champion.json
+
+# Cost model
+cost_model: binance_usdm
+
+# Market-specific features (available in MarketDataset.features dict)
+features:
+  - funding_rate
+  - taker_buy_volume
+  - open_interest
+  - long_short_ratio
+  - basis
+  - perp_volume
+
+# Available strategies (registered in this project)
+strategies:
+  - nexus_alpha_v1
+  - nexus_alpha_v2
+  - p91b_ensemble
+  - funding_carry_perp_v1
+  - momentum_xs_v1
+  - mean_reversion_xs_v1
+  - multi_factor_xs_v1
+  - funding_carry_alpha
+  - idio_momentum_alpha
+  - pure_momentum_alpha
+
+# Brain loop interval (seconds)
+brain_interval: 600
+
+enabled: true

@@ -1,0 +1,49 @@
+{
+  "insights": [
+    {
+      "text": "Funding rate mean-reverts within 8-24 hours — carry strategies exploit this but must manage timing risk.",
+      "tags": ["funding", "carry", "crypto"],
+      "source_project": "crypto_perps",
+      "confidence": 0.90,
+      "ts": 1740000000
+    },
+    {
+      "text": "Volume momentum tilt (vol_mom_z_168 @ r=0.65) is the ONLY validated overlay signal after 117 phases of research.",
+      "tags": ["volume", "overlay", "validated"],
+      "source_project": "crypto_perps",
+      "confidence": 0.90,
+      "ts": 1740000000
+    },
+    {
+      "text": "Binance OI/LS API only provides ~21 days of hourly history — cannot be backtested properly.",
+      "tags": ["data_limitation", "binance"],
+      "source_project": "crypto_perps",
+      "confidence": 0.95,
+      "ts": 1740000000
+    },
+    {
+      "text": "Crypto markets trade 24/7 — no session effects, but funding settlement times (every 8h) create micro-patterns.",
+      "tags": ["market_structure", "crypto"],
+      "source_project": "crypto_perps",
+      "confidence": 0.90,
+      "ts": 1740000000
+    },
+    {
+      "text": "Cross-asset regime indicators (S&P500, Gold, DXY) add NO value for crypto perpetual futures strategies.",
+      "tags": ["cross_asset", "negative_result"],
+      "source_project": "crypto_perps",
+      "confidence": 0.85,
+      "ts": 1740000000
+    }
+  ],
+  "lessons": [
+    "Taker buy ratio, vol HHI, and funding dispersion — all fail walk-forward validation",
+    "On-chain composite signals: IS breakthrough but WF overfit (classic trap)",
+    "Fear & Greed momentum: IS promising but WF fails (1/4 positive)"
+  ],
+  "_meta": {
+    "last_updated": 1740000000,
+    "count": 5,
+    "description": "Crypto market wisdom — applies to all crypto projects"
+  }
+}
