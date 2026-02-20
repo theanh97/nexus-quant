@@ -46,11 +46,14 @@ True signal = funding/momentum richness (breadth), NOT realized volatility.
 
 ## Failed Signals / Approaches
 - FX EMA, Bonds CTA (P138): FAIL — crypto only
-- Universe expansion 10→20 (P140): FAIL
+- Universe expansion 10→20 (P140): FAIL; Universe 10→15 (P151): FAIL (OBJ 1.89→1.29, -0.60 catastrophic)
 - Vol term structure (P134), Funding level (P135): NO IMPROVEMENT
 - 5th signal candidates (P139): ALL FAIL
 - I437_bw216 (2023=0.175), Idio_800_bw168: FAIL
 - Vol-rank as regime proxy: WRONG — 2022 needs i415-heavy despite high vol
+- Cross-symbol correlation regime (P149): NO IMPROVEMENT — breadth already captures co-movement
+- Cross-sectional skewness tail filter (P150): NO IMPROVEMENT — redundant with existing overlays
+- Universe >10 symbols: STRUCTURAL FAIL — lower-quality alts dilute idio signal quality
 
 ## Multi-Model Panel Rules (live in repo)
 - Pass 1: GPT-5 mini + Gemini 2.5 Flash + DeepSeek reasoner (cheap/wide)
@@ -65,4 +68,9 @@ P144: Regime-adaptive switching VALIDATED | P145: Breadth classifier LOYO 4/5
 P146: WF validated, prod v2.2.0 deployed
 P147: Conditional vol overlay test — CONFIRMED production optimal (no change)
 P148: Funding dispersion boost (std>75th pct → ×1.15) VALIDATED — LOYO 3/5, WF 2/2, OBJ=1.8886 | prod v2.3.0
-**Next: P149** — intraday seasonality or short-term reversal overlay
+P149: Cross-symbol correlation regime — NO IMPROVEMENT (all variants worse)
+P150: Cross-sectional skewness filter — NO IMPROVEMENT (all variants worse)
+P150b (parallel): Funding term structure spread (short 24h vs long 144h) VALIDATED — LOYO 4/5, OBJ=2.0079 (FIRST >2.0!) | prod v2.4.0
+P151: Universe expansion 10→15 symbols — NO IMPROVEMENT (15sym OBJ=1.29 vs 10sym=1.89; more coins hurt idio signal)
+P152: Full-stack WF validation + TS fine-tune — VERIFIED v2.4.0 OBJ=1.9917, fine-tuned OBJ=2.0851 (rs=0.60,bs=1.15,rt=0.70,bt=0.30), WF 2/2 | prod v2.5.0
+**Next: P153** — New alpha direction (intraday momentum reversion OR rebalance interval optimization OR signal weight adaptive via online learning)
