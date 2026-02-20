@@ -1,0 +1,352 @@
+{
+  "phase": 99,
+  "universes": {
+    "full_10": {
+      "yearly": {
+        "2021": 3.0488,
+        "2022": 1.4356,
+        "2023": 1.2966,
+        "2024": 2.2799,
+        "2025": 1.9739
+      },
+      "avg": 2.007,
+      "min": 1.2966,
+      "oos_2026": 1.2679,
+      "symbols_per_year": {
+        "2021": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ],
+        "2022": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ],
+        "2023": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ],
+        "2024": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ],
+        "2025": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ]
+      },
+      "n_symbols_per_year": {
+        "2021": 10,
+        "2022": 10,
+        "2023": 10,
+        "2024": 10,
+        "2025": 10
+      }
+    },
+    "dynamic": {
+      "yearly": {
+        "2021": 2.5511,
+        "2022": 1.4113,
+        "2023": 1.264,
+        "2024": 2.2884,
+        "2025": 1.9201
+      },
+      "avg": 1.887,
+      "min": 1.264,
+      "oos_2026": 1.2679,
+      "symbols_per_year": {
+        "2021": [
+          "ADAUSDT",
+          "BNBUSDT",
+          "BTCUSDT",
+          "DOTUSDT",
+          "ETHUSDT",
+          "LINKUSDT",
+          "XRPUSDT"
+        ],
+        "2022": [
+          "ADAUSDT",
+          "AVAXUSDT",
+          "BNBUSDT",
+          "BTCUSDT",
+          "DOGEUSDT",
+          "DOTUSDT",
+          "ETHUSDT",
+          "LINKUSDT",
+          "SOLUSDT",
+          "XRPUSDT"
+        ],
+        "2023": [
+          "ADAUSDT",
+          "AVAXUSDT",
+          "BNBUSDT",
+          "BTCUSDT",
+          "DOGEUSDT",
+          "DOTUSDT",
+          "ETHUSDT",
+          "LINKUSDT",
+          "SOLUSDT",
+          "XRPUSDT"
+        ],
+        "2024": [
+          "ADAUSDT",
+          "AVAXUSDT",
+          "BNBUSDT",
+          "BTCUSDT",
+          "DOGEUSDT",
+          "DOTUSDT",
+          "ETHUSDT",
+          "LINKUSDT",
+          "SOLUSDT",
+          "XRPUSDT"
+        ],
+        "2025": [
+          "ADAUSDT",
+          "AVAXUSDT",
+          "BNBUSDT",
+          "BTCUSDT",
+          "DOGEUSDT",
+          "DOTUSDT",
+          "ETHUSDT",
+          "LINKUSDT",
+          "SOLUSDT",
+          "XRPUSDT"
+        ]
+      },
+      "n_symbols_per_year": {
+        "2021": 7,
+        "2022": 10,
+        "2023": 10,
+        "2024": 10,
+        "2025": 10
+      }
+    },
+    "conservative": {
+      "yearly": {
+        "2021": 2.5757,
+        "2022": 1.4356,
+        "2023": 1.2966,
+        "2024": 2.2799,
+        "2025": 1.9739
+      },
+      "avg": 1.9123,
+      "min": 1.2966,
+      "oos_2026": 1.2679,
+      "symbols_per_year": {
+        "2021": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "LINKUSDT",
+          "DOTUSDT"
+        ],
+        "2022": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ],
+        "2023": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ],
+        "2024": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ],
+        "2025": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ]
+      },
+      "n_symbols_per_year": {
+        "2021": 7,
+        "2022": 10,
+        "2023": 10,
+        "2024": 10,
+        "2025": 10
+      }
+    },
+    "ultra_conservative": {
+      "yearly": {
+        "2021": 2.8775,
+        "2022": 2.5916,
+        "2023": 1.2966,
+        "2024": 2.2799,
+        "2025": 1.9739
+      },
+      "avg": 2.2039,
+      "min": 1.2966,
+      "oos_2026": 1.2679,
+      "symbols_per_year": {
+        "2021": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT"
+        ],
+        "2022": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "LINKUSDT",
+          "DOGEUSDT",
+          "SOLUSDT"
+        ],
+        "2023": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ],
+        "2024": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ],
+        "2025": [
+          "BTCUSDT",
+          "ETHUSDT",
+          "SOLUSDT",
+          "BNBUSDT",
+          "XRPUSDT",
+          "ADAUSDT",
+          "DOGEUSDT",
+          "AVAXUSDT",
+          "DOTUSDT",
+          "LINKUSDT"
+        ]
+      },
+      "n_symbols_per_year": {
+        "2021": 5,
+        "2022": 8,
+        "2023": 10,
+        "2024": 10,
+        "2025": 10
+      }
+    }
+  },
+  "comparison": {
+    "dynamic_vs_full_10": {
+      "delta_avg": -0.12,
+      "delta_min": -0.0326,
+      "yearly_delta": {
+        "2021": -0.4977,
+        "2022": -0.0243,
+        "2023": -0.0326,
+        "2024": 0.0085,
+        "2025": -0.0538
+      }
+    },
+    "conservative_vs_full_10": {
+      "delta_avg": -0.0947,
+      "delta_min": 0.0,
+      "yearly_delta": {
+        "2021": -0.4731,
+        "2022": 0.0,
+        "2023": 0.0,
+        "2024": 0.0,
+        "2025": 0.0
+      }
+    },
+    "ultra_conservative_vs_full_10": {
+      "delta_avg": 0.1969,
+      "delta_min": 0.0,
+      "yearly_delta": {
+        "2021": -0.1713,
+        "2022": 1.156,
+        "2023": 0.0,
+        "2024": 0.0,
+        "2025": 0.0
+      }
+    }
+  },
+  "elapsed_seconds": 67.3
+}

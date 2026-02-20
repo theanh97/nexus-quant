@@ -5,7 +5,7 @@ import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from ..memory.store import MemoryStore
 from ..run import run_one, improve_one
@@ -51,16 +51,67 @@ class Orion:
         self.task_store.close()
         self.memory.close()
 
-    def bootstrap(self) -> None:
+    def bootstrap(self, *, include_improve: bool = True) -> None:
         self.task_store.create(kind="run", payload={"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir)})
         self.task_store.create(kind="research_ingest", payload={"artifacts": str(self.cfg.artifacts_dir)})
-        self.task_store.create(
-            kind="improve",
-            payload={"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir), "trials": int(self.cfg.trials)},
-        )
+        if include_improve:
+            self.task_store.create(
+                kind="improve",
+                payload={"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir), "trials": int(self.cfg.trials)},
+            )
         self.task_store.create(kind="wisdom", payload={"artifacts": str(self.cfg.artifacts_dir)})
         self.task_store.create(kind="reflect", payload={"config": str(self.cfg.config_path), "artifacts": str(self.cfg.artifacts_dir)})
         self.task_store.create(kind="critique", payload={"config": str(self.cfg.config_path), "artifacts": str(self.cfg.artifacts_dir)})
+
+    def enqueue_policy_actions(self, actions: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Enqueue policy-triggered tasks with dedup against recent pending/running tasks.
+        """
+        recent = self.task_store.recent(limit=400)
+        existing = {
+            json.dumps({"kind": t.kind, "payload": t.payload}, sort_keys=True)
+            for t in recent
+            if t.status in {"pending", "running"}
+        }
+        created = 0
+        skipped = 0
+        for action in (actions or []):
+            kind = str(action.get("kind") or "")
+            payload = dict(action.get("payload") or {})
+            if not kind:
+                skipped += 1
+                continue
+
+            if kind == "reflect":
+                payload = {"config": str(self.cfg.config_path), "artifacts": str(self.cfg.artifacts_dir), **payload}
+            elif kind == "critique":
+                payload = {"config": str(self.cfg.config_path), "artifacts": str(self.cfg.artifacts_dir), **payload}
+            elif kind == "run":
+                payload = {"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir), **payload}
+            elif kind == "improve":
+                payload = {"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir), "trials": int(self.cfg.trials), **payload}
+            elif kind == "wisdom":
+                payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
+            elif kind == "research_ingest":
+                payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
+            elif kind == "policy_review":
+                payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
+            elif kind == "rules_reminder":
+                payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
+            elif kind == "agent_run":
+                payload = {"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir), **payload}
+            else:
+                skipped += 1
+                continue
+
+            sig = json.dumps({"kind": kind, "payload": payload}, sort_keys=True)
+            if sig in existing:
+                skipped += 1
+                continue
+            self.task_store.create(kind=kind, payload=payload)
+            existing.add(sig)
+            created += 1
+        return {"created": created, "skipped": skipped}
 
     def run_once(self) -> Dict[str, Any]:
         task = self.task_store.claim_next()
@@ -123,6 +174,14 @@ class Orion:
                 out = self.run_agents()
                 self.task_store.mark_done(task.id, {"ok": True, "agents": list(out.keys())})
                 return {"ok": True, "task": task.kind, "agents": out}
+            if task.kind == "rules_reminder":
+                out = self._write_rules_reminder(Path(task.payload["artifacts"]), task.payload)
+                self.task_store.mark_done(task.id, out)
+                return {"ok": True, "task": task.kind, "rules": out}
+            if task.kind == "policy_review":
+                out = self._write_policy_review(Path(task.payload["artifacts"]), task.payload)
+                self.task_store.mark_done(task.id, out)
+                return {"ok": True, "task": task.kind, "review": out}
             raise ValueError(f"Unknown task kind: {task.kind}")
         except Exception as e:
             self.task_store.mark_failed(task.id, str(e))
@@ -265,6 +324,157 @@ class Orion:
 
         return {"handoff_path": str(out_path)}
 
+    def _write_rules_reminder(self, artifacts_dir: Path, payload: Dict[str, Any]) -> Dict[str, Any]:
+        run_count = int(payload.get("run_count") or 0)
+        gate = str(payload.get("gate") or "periodic")
+        allow_improve = bool(payload.get("allow_improve", True))
+        window_runs = int(payload.get("window_runs") or 0)
+        window_size = int(payload.get("window_size") or 100)
+        wm_ttl = int(payload.get("working_memory_ttl_runs") or 150)
+        prior_half_life = int(payload.get("prior_half_life_runs") or 300)
+
+        state_dir = artifacts_dir / "state"
+        state_dir.mkdir(parents=True, exist_ok=True)
+        out_md_path = state_dir / "current_rules.md"
+        out_json_path = state_dir / "current_rules.json"
+        reminder_obj = {
+            "generated_at": _utc_iso(),
+            "gate": gate,
+            "run_count": run_count,
+            "allow_improve": allow_improve,
+            "window_runs": window_runs,
+            "window_size": window_size,
+            "working_memory_ttl_runs": wm_ttl,
+            "prior_half_life_runs": prior_half_life,
+            "hard_rules": [
+                "No look-ahead and no universe leakage. Data quality fail means stop.",
+                "Promote only with credible evidence; in-sample gains alone are invalid.",
+                "Keep provenance immutable: config/data/code fingerprints must exist for every run.",
+                "Enforce event-driven gates (fast/deep/reset). No uncontrolled optimization loops.",
+                "Working memory uses TTL; priors decay over time to avoid stale lock-in.",
+            ],
+        }
+        lines = [
+            "# NEXUS Hard Rules Reminder",
+            f"- generated_at: `{reminder_obj['generated_at']}`",
+            f"- gate: `{gate}`",
+            f"- run_count: `{run_count}`",
+            f"- improve_allowed: `{allow_improve}`",
+            f"- budget_window: `{window_runs}/{window_size}` runs",
+            "",
+            "## Hard Rules",
+            "1. No look-ahead and no universe leakage. Data quality fail means stop.",
+            "2. Promote only with credible evidence; in-sample gains alone are invalid.",
+            "3. Keep provenance immutable: config/data/code fingerprints must exist for every run.",
+            "4. Enforce event-driven gates (fast/deep/reset). No uncontrolled optimization loops.",
+            "5. Working memory uses TTL; priors decay over time to avoid stale lock-in.",
+            "",
+            "## Memory Policy",
+            f"- working_memory_ttl_runs: `{wm_ttl}`",
+            f"- prior_half_life_runs: `{prior_half_life}`",
+        ]
+        out_md_path.write_text("\n".join(lines), encoding="utf-8")
+        out_json_path.write_text(json.dumps(reminder_obj, indent=2, sort_keys=True), encoding="utf-8")
+        self.memory.add(
+            created_at=_utc_iso(),
+            kind="rules_reminder",
+            tags=["orion", "policy", gate],
+            content=f"Rules reminder generated at run_count={run_count}, improve_allowed={allow_improve}",
+            meta={"rules_md_path": str(out_md_path), "rules_json_path": str(out_json_path), "gate": gate, "run_count": run_count},
+            run_id=None,
+        )
+        return {
+            "rules_md_path": str(out_md_path),
+            "rules_json_path": str(out_json_path),
+            "gate": gate,
+            "run_count": run_count,
+            "allow_improve": allow_improve,
+        }
+
+    def _write_policy_review(self, artifacts_dir: Path, payload: Dict[str, Any]) -> Dict[str, Any]:
+        mode = str(payload.get("mode") or "periodic")
+        run_count = int(payload.get("run_count") or 0)
+        window_runs = int(payload.get("window_runs") or 0)
+        window_size = int(payload.get("window_size") or 100)
+        review_dir = artifacts_dir / "state" / "policy_reviews"
+        review_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        out_md_path = review_dir / f"policy.{mode}.{ts}.md"
+        out_json_path = review_dir / f"policy.{mode}.{ts}.json"
+
+        task_counts = self.task_store.counts()
+        runs_dir = artifacts_dir / "runs"
+        runs_total = 0
+        if runs_dir.exists():
+            try:
+                runs_total = len([d for d in runs_dir.iterdir() if d.is_dir()])
+            except Exception:
+                runs_total = 0
+
+        lines = [
+            "# NEXUS Policy Review",
+            f"- generated_at: `{_utc_iso()}`",
+            f"- mode: `{mode}`",
+            f"- run_count: `{run_count}`",
+            f"- runs_total: `{runs_total}`",
+            f"- budget_window: `{window_runs}/{window_size}`",
+            "",
+            "## Task Counts",
+            f"- {json.dumps(task_counts, sort_keys=True)}",
+            "",
+            "## Auto Recommendations",
+        ]
+        if mode == "budget_pause":
+            lines.extend(
+                [
+                    "- Pause new `improve` bootstraps until next budget window.",
+                    "- Continue `reflect` + `critique` + `wisdom` to consolidate learnings.",
+                ]
+            )
+        elif mode == "reset_gate":
+            lines.extend(
+                [
+                    "- Force `research_ingest` and reset exploration priors assumptions.",
+                    "- Require fresh challenger hypotheses before next promotion attempts.",
+                ]
+            )
+        elif mode == "deep_gate":
+            lines.extend(
+                [
+                    "- Run full strategic critique and agent debate before new champion changes.",
+                    "- Check whether current best strategy still beats recent challengers.",
+                ]
+            )
+        else:
+            lines.append("- Keep loop disciplined and continue monitoring drift and uncertainty.")
+
+        review_obj = {
+            "generated_at": _utc_iso(),
+            "mode": mode,
+            "run_count": run_count,
+            "runs_total": runs_total,
+            "window_runs": window_runs,
+            "window_size": window_size,
+            "task_counts": task_counts,
+            "recommendations": lines[lines.index("## Auto Recommendations") + 1 :],
+        }
+        out_md_path.write_text("\n".join(lines), encoding="utf-8")
+        out_json_path.write_text(json.dumps(review_obj, indent=2, sort_keys=True), encoding="utf-8")
+        self.memory.add(
+            created_at=_utc_iso(),
+            kind="policy_review",
+            tags=["orion", "policy", mode],
+            content=f"Policy review generated ({mode}) with run_count={run_count}",
+            meta={"review_md_path": str(out_md_path), "review_json_path": str(out_json_path), "mode": mode, "task_counts": task_counts},
+            run_id=None,
+        )
+        return {
+            "review_md_path": str(out_md_path),
+            "review_json_path": str(out_json_path),
+            "mode": mode,
+            "run_count": run_count,
+        }
+
     # ── Agent orchestration ──────────────────────────────────────────────────
 
     def _build_agent_context(self) -> AgentContext:
@@ -299,11 +509,50 @@ class Orion:
             except Exception:
                 pass
 
+        # Policy-aware working memory window (soft forgetting by recentness).
+        policy_state = {}
+        policy_path = self.cfg.artifacts_dir / "state" / "research_policy_state.json"
+        if policy_path.exists():
+            try:
+                policy_state = json.loads(policy_path.read_text("utf-8"))
+            except Exception:
+                policy_state = {}
+        wm_ttl = 120
+        try:
+            wm_ttl = int(((policy_state.get("config") or {}).get("working_memory_ttl_runs")) or wm_ttl)
+        except Exception:
+            wm_ttl = 120
+        wm_ttl = max(20, min(wm_ttl, 400))
+        memory_items = []
+        try:
+            mem = self.memory.recent(limit=wm_ttl)
+            for it in mem:
+                memory_items.append(
+                    {
+                        "id": it.id,
+                        "created_at": it.created_at,
+                        "kind": it.kind,
+                        "tags": list(it.tags),
+                        "content": (it.content or "")[:500],
+                        "run_id": it.run_id,
+                    }
+                )
+        except Exception:
+            memory_items = []
+
         return AgentContext(
             wisdom=wisdom,
             recent_metrics=recent_metrics,
             regime=regime,
             best_params=best_params,
+            memory_items=memory_items,
+            extra={
+                "policy": {
+                    "allow_improve": bool(policy_state.get("allow_improve", True)) if isinstance(policy_state, dict) else True,
+                    "window_runs": int(policy_state.get("window_runs") or 0) if isinstance(policy_state, dict) else 0,
+                    "working_memory_ttl_runs": wm_ttl,
+                }
+            },
         )
 
     def run_agents(self) -> Dict[str, Any]:
@@ -330,4 +579,3 @@ class Orion:
             except Exception as e:
                 results[AgentClass.name] = {"error": str(e), "fallback_used": True}
         return results
-

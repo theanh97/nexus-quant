@@ -430,7 +430,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
 
     @app.get("/api/stream")
     def api_stream():
-        """Server-Sent Events endpoint: pushes a live snapshot every 5 seconds."""
+        """Server-Sent Events endpoint: pushes a live snapshot every 2 seconds."""
         from fastapi.responses import StreamingResponse
 
         def _snapshot() -> dict:
@@ -502,7 +502,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 except Exception as exc:
                     err_msg = json.dumps({"error": str(exc)})
                     yield f"data: {err_msg}\n\n"
-                time.sleep(5)
+                time.sleep(2)
 
         return StreamingResponse(
             _generator(),

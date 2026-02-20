@@ -45,6 +45,9 @@ from .pure_momentum_alpha import PureMomentumAlphaStrategy
 from .funding_momentum_alpha import FundingMomentumAlphaStrategy
 from .vol_adjusted_momentum_alpha import VolAdjustedMomentumAlphaStrategy
 from .funding_vol_alpha import FundingVolAlphaStrategy
+from .pair_spread_alpha import PairSpreadAlphaStrategy
+from .vol_regime_mom_alpha import VolRegimeMomAlphaStrategy
+from .momentum_breakout_alpha import MomentumBreakoutAlphaStrategy
 
 
 def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
@@ -166,6 +169,15 @@ def make_strategy(strategy_cfg: Dict[str, Any]) -> Strategy:
 
     if name == "funding_vol_alpha":
         return FundingVolAlphaStrategy(params=params)
+
+    if name == "pair_spread_alpha":
+        return PairSpreadAlphaStrategy(params=params)
+
+    if name == "vol_regime_mom_alpha":
+        return VolRegimeMomAlphaStrategy(params=params)
+
+    if name == "momentum_breakout_alpha":
+        return MomentumBreakoutAlphaStrategy(params=params)
 
     if name == "ensemble_v1":
         sub_cfgs = params.pop("sub_strategies", [])
