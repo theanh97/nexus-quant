@@ -2384,6 +2384,69 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             pass
         return JSONResponse(result)
 
+    # ── Live Engine Status ────────────────────────────────────────────
+    @app.get("/api/live/status")
+    async def api_live_status() -> JSONResponse:
+        """Return live trading engine status + recent cycles."""
+        engine_log = project_root / "artifacts" / "execution" / "engine_log.jsonl"
+        rebal_log = project_root / "artifacts" / "execution" / "rebalance_log.jsonl"
+        risk_state_f = project_root / "artifacts" / "execution" / "risk_state.json"
+
+        result: dict = {
+            "engine_available": True,
+            "api_key_set": bool(os.environ.get("BINANCE_API_KEY")),
+            "risk_halted": False,
+            "total_cycles": 0,
+            "last_cycle": None,
+            "recent_cycles": [],
+            "risk_state": None,
+            "rebalance_count": 0,
+        }
+
+        # Engine log
+        if engine_log.exists():
+            lines = engine_log.read_text().strip().splitlines()
+            result["total_cycles"] = len(lines)
+            recent = []
+            for ln in lines[-20:]:
+                try:
+                    recent.append(json.loads(ln))
+                except Exception:
+                    pass
+            result["recent_cycles"] = recent
+            if recent:
+                result["last_cycle"] = recent[-1]
+
+        # Risk state
+        if risk_state_f.exists():
+            try:
+                rs = json.loads(risk_state_f.read_text())
+                result["risk_state"] = rs
+                result["risk_halted"] = rs.get("halted", False)
+            except Exception:
+                pass
+
+        # Rebalance log
+        if rebal_log.exists():
+            result["rebalance_count"] = len(
+                rebal_log.read_text().strip().splitlines()
+            )
+
+        return JSONResponse(result)
+
+    @app.post("/api/live/risk_reset")
+    async def api_live_risk_reset() -> JSONResponse:
+        """Reset risk gate halt state (operator override)."""
+        try:
+            from ..execution.risk_gate import RiskGate
+            rg = RiskGate(
+                state_dir=project_root / "artifacts" / "execution"
+            )
+            rg.reset_halt()
+            return JSONResponse({"status": "ok", "message": "Risk halt reset"})
+        except Exception as e:
+            return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
+
     # ── Analysis Log (Research Journal) ──────────────────────────────
     @app.get("/api/analysis_log")
     async def api_analysis_log(

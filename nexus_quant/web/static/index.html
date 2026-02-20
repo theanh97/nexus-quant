@@ -2627,6 +2627,7 @@
     <div class="tab" data-mode="ops" onclick="go('files')">📁 <span data-i18n="tab.files">Tệp</span></div>
     <div class="tab" data-mode="ops" onclick="go('logs')">📝 <span data-i18n="tab.logs">Nhật ký</span></div>
     <div class="tab" data-mode="ops" onclick="go('signals')">📡 <span data-i18n="tab.signals">Tín hiệu</span></div>
+    <div class="tab live" data-mode="ops" onclick="go('live-engine')">🔴 <span data-i18n="tab.live_engine">Live Trading</span></div>
     <div class="tab" data-mode="ops" onclick="go('console')">⚙️ <span data-i18n="tab.console">Console</span></div>
 
     <!-- Hidden Internal Tabs (Kept for compatibility, but hidden from UI) -->
@@ -3948,6 +3949,72 @@
     </div>
   </div>
 
+  <!-- ═══ LIVE TRADING ENGINE ═══ -->
+  <div class="page" id="page-live-engine">
+    <div class="card" style="background:var(--info-bg,#EFF6FF);border:1px solid #BFDBFE;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600">🔴 Live Trading Engine — P91b Champion</div>
+          <div class="text-sm text-muted">Real-time execution on Binance USDM Futures. Risk circuit breakers active.</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" onclick="resetRiskHalt()" style="background:#dc2626;color:#fff">Reset Halt</button>
+          <button class="btn btn-p btn-sm" onclick="refreshLiveStatus()">Refresh</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="card" style="text-align:center">
+        <div class="text-sm text-muted">Engine Status</div>
+        <div style="font-size:1.4em;font-weight:700" id="le-status">—</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="text-sm text-muted">Balance</div>
+        <div style="font-size:1.4em;font-weight:700" id="le-balance">—</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="text-sm text-muted">Risk Gate</div>
+        <div style="font-size:1.4em;font-weight:700" id="le-risk">—</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <div class="text-sm text-muted">Total Cycles</div>
+        <div style="font-size:1.4em;font-weight:700" id="le-cycles">—</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <!-- Left: Risk State -->
+      <div class="card">
+        <h3 style="margin:0 0 12px">Risk State</h3>
+        <div id="le-risk-detail" class="text-sm" style="font-family:monospace">Loading...</div>
+      </div>
+      <!-- Right: Last Cycle -->
+      <div class="card">
+        <h3 style="margin:0 0 12px">Last Cycle</h3>
+        <div id="le-last-cycle" class="text-sm" style="font-family:monospace">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Recent Cycles -->
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin:0 0 12px">Recent Cycles (<span id="le-cycle-count">0</span>)</h3>
+      <div id="le-cycle-history" class="text-sm" style="max-height:400px;overflow-y:auto;font-family:monospace">No cycles yet.</div>
+    </div>
+
+    <!-- Quick Start -->
+    <div class="card" style="margin-top:16px;background:var(--info-bg,#EFF6FF);border:1px solid #BFDBFE">
+      <h3 style="margin:0 0 8px">Quick Start</h3>
+      <div class="text-sm" style="font-family:monospace">
+        <div><strong>Dry run:</strong> <code>python3 -m nexus_quant live --dry-run</code></div>
+        <div><strong>Testnet:</strong> <code>python3 -m nexus_quant live --testnet</code></div>
+        <div><strong>Single cycle:</strong> <code>python3 -m nexus_quant live --dry-run --once</code></div>
+        <div><strong>Live (real $):</strong> <code>BINANCE_API_KEY=... BINANCE_API_SECRET=... python3 -m nexus_quant live</code></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ LOGS (Analysis Journal) ═══ -->
   <div class="page" id="page-logs">
     <div style="display:grid;grid-template-columns:1fr 380px;gap:16px">
@@ -4697,7 +4764,7 @@
     }
 
     // ─── Tab system ───
-    const TABS = ['home', 'performance-sc', 'how-it-works', 'live-demo', 'about', 'chat', 'research', 'tasks', 'files', 'signals', 'logs', 'console', 'overview', 'benchmark', 'performance', 'risk', 'market', 'pitch'];
+    const TABS = ['home', 'performance-sc', 'how-it-works', 'live-demo', 'about', 'chat', 'research', 'tasks', 'files', 'signals', 'live-engine', 'logs', 'console', 'overview', 'benchmark', 'performance', 'risk', 'market', 'pitch'];
 
     function buildShowcasePages() {
       if (window.showcaseBuilt) return;
@@ -6646,11 +6713,134 @@
       }).catch(e => toast('Error: ' + e.message));
     }
 
+    // ── Live Trading Engine ─────────────────────────────────────
+    async function refreshLiveStatus() {
+      try {
+        const r = await fetch('/api/live/status');
+        const d = await r.json();
+
+        // Status cards
+        const statusEl = document.getElementById('le-status');
+        if (d.risk_halted) {
+          statusEl.innerHTML = '<span style="color:#DC2626;font-weight:700">HALTED</span>';
+        } else if (d.total_cycles > 0) {
+          statusEl.innerHTML = '<span style="color:#16A34A">ACTIVE</span>';
+        } else {
+          statusEl.textContent = 'IDLE';
+        }
+
+        const balEl = document.getElementById('le-balance');
+        balEl.textContent = d.last_cycle && d.last_cycle.balance_usd
+          ? '$' + d.last_cycle.balance_usd.toLocaleString(undefined, {minimumFractionDigits:2})
+          : (d.api_key_set ? '(fetching)' : 'No API key');
+
+        const riskEl = document.getElementById('le-risk');
+        if (d.risk_halted) {
+          riskEl.innerHTML = '<span style="color:#DC2626">HALTED</span>';
+        } else {
+          riskEl.innerHTML = '<span style="color:#16A34A">OK</span>';
+        }
+
+        document.getElementById('le-cycles').textContent = d.total_cycles || 0;
+
+        // Risk state detail
+        const riskDetail = document.getElementById('le-risk-detail');
+        if (d.risk_state) {
+          const rs = d.risk_state;
+          let html = '<table style="width:100%;border-collapse:collapse">';
+          html += `<tr><td>Peak Equity</td><td style="text-align:right">$${(rs.peak_equity||0).toLocaleString(undefined,{minimumFractionDigits:2})}</td></tr>`;
+          html += `<tr><td>Last Balance</td><td style="text-align:right">$${(rs.last_balance||0).toLocaleString(undefined,{minimumFractionDigits:2})}</td></tr>`;
+          html += `<tr><td>Losing Streak</td><td style="text-align:right">${rs.consecutive_losing_days||0} days</td></tr>`;
+          html += `<tr><td>Halted</td><td style="text-align:right">${rs.halted ? '<span style="color:#DC2626">YES</span>' : '<span style="color:#16A34A">NO</span>'}</td></tr>`;
+          if (rs.halt_reason) html += `<tr><td>Reason</td><td style="text-align:right;color:#DC2626">${rs.halt_reason}</td></tr>`;
+          const dailyRets = rs.daily_returns || [];
+          if (dailyRets.length > 0) {
+            html += `<tr><td colspan="2" style="border-top:1px solid var(--border);padding-top:8px;font-weight:600">Daily Returns (last ${dailyRets.length}d)</td></tr>`;
+            for (const dr of dailyRets.slice(-7)) {
+              const c = dr.return >= 0 ? '#16A34A' : '#DC2626';
+              html += `<tr><td>${dr.date}</td><td style="text-align:right;color:${c}">${(dr.return*100).toFixed(3)}%</td></tr>`;
+            }
+          }
+          html += '</table>';
+          riskDetail.innerHTML = html;
+        } else {
+          riskDetail.textContent = 'No risk state — engine has not run yet.';
+        }
+
+        // Last cycle detail
+        const lastEl = document.getElementById('le-last-cycle');
+        if (d.last_cycle) {
+          const lc = d.last_cycle;
+          let html = '<table style="width:100%;border-collapse:collapse">';
+          html += `<tr><td>Time</td><td style="text-align:right">${lc.timestamp || '?'}</td></tr>`;
+          html += `<tr><td>Status</td><td style="text-align:right;font-weight:600">${lc.status || '?'}</td></tr>`;
+          if (lc.balance_usd) html += `<tr><td>Balance</td><td style="text-align:right">$${lc.balance_usd.toLocaleString()}</td></tr>`;
+          if (lc.signal) {
+            html += `<tr><td>Vol Tilt</td><td style="text-align:right">${lc.signal.vol_tilt_active ? '<span style="color:#DC2626">ACTIVE</span>' : '<span style="color:#16A34A">OFF</span>'} (z=${lc.signal.vol_tilt_z})</td></tr>`;
+            html += `<tr><td>Gross Lev.</td><td style="text-align:right">${lc.signal.gross_leverage}</td></tr>`;
+          }
+          if (lc.rebalance) {
+            html += `<tr><td>Orders</td><td style="text-align:right">${lc.rebalance.orders_executed}/${lc.rebalance.orders_planned}</td></tr>`;
+            html += `<tr><td>Turnover</td><td style="text-align:right">$${(lc.rebalance.turnover_usd||0).toLocaleString()}</td></tr>`;
+            if (lc.rebalance.errors && lc.rebalance.errors.length > 0) {
+              html += `<tr><td colspan="2" style="color:#DC2626">${lc.rebalance.errors.join('; ')}</td></tr>`;
+            }
+          }
+          if (lc.elapsed_seconds) html += `<tr><td>Elapsed</td><td style="text-align:right">${lc.elapsed_seconds}s</td></tr>`;
+          html += '</table>';
+          lastEl.innerHTML = html;
+        } else {
+          lastEl.textContent = 'No cycles recorded yet.';
+        }
+
+        // Recent cycle history
+        document.getElementById('le-cycle-count').textContent = d.total_cycles || 0;
+        const histEl = document.getElementById('le-cycle-history');
+        if (d.recent_cycles && d.recent_cycles.length > 0) {
+          let html = '<table style="width:100%;border-collapse:collapse">';
+          html += '<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left">Time</th><th>Status</th><th style="text-align:right">Balance</th><th style="text-align:right">Orders</th><th style="text-align:right">Turnover</th></tr>';
+          for (const c of d.recent_cycles.reverse()) {
+            const sc = c.status === 'ok' ? '#16A34A' : c.status === 'halted' ? '#DC2626' : '#F59E0B';
+            const bal = c.balance_usd ? '$' + c.balance_usd.toLocaleString() : '—';
+            const orders = c.rebalance ? `${c.rebalance.orders_executed}/${c.rebalance.orders_planned}` : '—';
+            const turn = c.rebalance ? '$' + (c.rebalance.turnover_usd||0).toLocaleString() : '—';
+            const ts = c.timestamp ? c.timestamp.substring(0, 19) : '?';
+            html += `<tr><td class="text-sm">${ts}</td><td style="color:${sc};font-weight:600;text-align:center">${c.status}</td>`;
+            html += `<td style="text-align:right">${bal}</td><td style="text-align:right">${orders}</td><td style="text-align:right">${turn}</td></tr>`;
+          }
+          html += '</table>';
+          histEl.innerHTML = html;
+        } else {
+          histEl.textContent = 'No cycles yet. Start the engine with: python3 -m nexus_quant live --dry-run';
+        }
+      } catch (e) {
+        console.error('Live engine status error:', e);
+      }
+    }
+
+    async function resetRiskHalt() {
+      if (!confirm('Reset risk halt? This will allow trading to resume.')) return;
+      try {
+        const r = await fetch('/api/live/risk_reset', { method: 'POST' });
+        const d = await r.json();
+        alert(d.message || d.error || 'Done');
+        refreshLiveStatus();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
     // ── Live Signals (Paper Trading) ─────────────────────────────
     async function loadSignals() {
       try {
-        const r = await fetch('/api/signals/latest');
-        const d = await r.json();
+        const [latestRes, execRes, histRes] = await Promise.all([
+          fetch('/api/signals/latest'),
+          fetch('/api/executor/status'),
+          fetch('/api/signals/history?n=20')
+        ]);
+        const d = await latestRes.json();
+        const exec = await execRes.json();
+        const hist = await histRes.json();
         const sig = d.signal;
         const paper = d.paper;
 
@@ -6666,6 +6856,8 @@
         if (!sig) {
           document.getElementById('sig-weights').textContent = 'No signal generated yet. Click "Generate Signal" to start.';
           document.getElementById('sig-trades').textContent = '—';
+          document.getElementById('sig-exec-status').textContent = '—';
+          document.getElementById('sig-history').textContent = 'No signals yet.';
           return;
         }
 
@@ -6727,12 +6919,42 @@
           document.getElementById('sig-subs').innerHTML = sHtml;
         }
 
-        // History count
-        document.getElementById('sig-count').textContent = d.history_count;
+        // Execution status
+        const execEl = document.getElementById('sig-exec-status');
+        const keyIcon = exec.api_key_set ? '🟢' : '🔴';
+        const modIcon = exec.executor_available ? '🟢' : '🔴';
+        let exHtml = '<table style="width:100%;border-collapse:collapse">';
+        exHtml += `<tr><td>Executor module</td><td style="text-align:right">${modIcon} ${exec.executor_available ? 'Available' : 'Not loaded'}</td></tr>`;
+        exHtml += `<tr><td>Binance API key</td><td style="text-align:right">${keyIcon} ${exec.api_key_set ? 'Set' : 'Not set'}</td></tr>`;
+        exHtml += `<tr><td>Execution log</td><td style="text-align:right">${exec.execution_log_entries} entries</td></tr>`;
+        exHtml += `<tr><td>Runner log</td><td style="text-align:right">${exec.runner_log_entries} entries</td></tr>`;
+        if (exec.last_cycle) {
+          const cyTs = new Date(exec.last_cycle.timestamp).toLocaleString();
+          const cyMode = exec.last_cycle.mode || '—';
+          exHtml += `<tr><td>Last cycle</td><td style="text-align:right">${cyMode} @ ${cyTs}</td></tr>`;
+        }
+        exHtml += '</table>';
+        execEl.innerHTML = exHtml;
 
-        // Signal timestamp
-        const ts = new Date(sig.timestamp).toLocaleString();
-        document.getElementById('sig-history').innerHTML = `<div class="text-muted">Latest signal: ${ts} (bar: ${sig.meta?.last_bar_utc || '—'})</div>`;
+        // Signal history
+        document.getElementById('sig-count').textContent = hist.total || 0;
+        const histEl = document.getElementById('sig-history');
+        if (hist.signals && hist.signals.length > 0) {
+          let hHtml = '<table style="width:100%;border-collapse:collapse">';
+          hHtml += '<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left">Time</th><th style="text-align:right">Bar</th><th style="text-align:right">Gross Lev</th><th style="text-align:center">Vol Tilt</th><th style="text-align:right">Net Exp</th><th style="text-align:right">Trades</th></tr>';
+          for (const s of hist.signals) {
+            const hts = new Date(s.timestamp).toLocaleString(undefined, {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+            const bar = s.meta?.last_bar_utc ? new Date(s.meta.last_bar_utc).toLocaleString(undefined, {month:'short',day:'numeric',hour:'2-digit'}) : '—';
+            const vt = s.vol_tilt_active ? '<span style="color:#DC2626">ON</span>' : '<span style="color:#16A34A">OFF</span>';
+            const net = (s.net_exposure || 0).toFixed(4);
+            const nTrades = (s.trades_needed || []).length;
+            hHtml += `<tr><td>${hts}</td><td style="text-align:right">${bar}</td><td style="text-align:right">${(s.gross_leverage||0).toFixed(4)}</td><td style="text-align:center">${vt}</td><td style="text-align:right">${net}</td><td style="text-align:right">${nTrades}</td></tr>`;
+          }
+          hHtml += '</table>';
+          histEl.innerHTML = hHtml;
+        } else {
+          histEl.innerHTML = '<div class="text-muted">No signal history yet. Generate your first signal above.</div>';
+        }
 
       } catch (e) {
         console.error('loadSignals error:', e);
@@ -6764,6 +6986,7 @@
       overview: loadOv, chat: loadChat, benchmark: loadBM, performance: loadPerf,
       risk: loadRisk, research: loadResearch, tasks: loadTasks, files: loadFiles, market: loadMarket, pitch: loadPitch,
       signals: loadSignals,
+      'live-engine': refreshLiveStatus,
       logs: () => { loadLogs({ replace: true, skipStats: false }); startAnalysisLogRealtime(false); },
       console: () => refreshConsole({ includeLogs: true, forceLogRefresh: true, forceStream: true })
     };
@@ -6780,6 +7003,7 @@
       market: 8000,
       pitch: 30000,
       signals: 60000,
+      'live-engine': 15000,
       logs: 8000,
       console: 2500,
     };
@@ -6796,6 +7020,7 @@
       market: loadMarket,
       pitch: loadPitch,
       signals: loadSignals,
+      'live-engine': refreshLiveStatus,
       logs: () => {
         if (!_analysisAutoRefreshEnabled()) {
           stopAnalysisLogRealtime();
