@@ -1,0 +1,38 @@
+{
+  "phase": 90,
+  "section": "C_ultrafine",
+  "avg_sharpe": 2.0211,
+  "min_sharpe": 1.5614,
+  "yby_sharpes": {
+    "2021": 2.954,
+    "2022": 1.567,
+    "2023": 1.561,
+    "2024": 2.459,
+    "2025": 1.563
+  },
+  "weights": {
+    "v1": 0.2736,
+    "i460bw168": 0.1798,
+    "i415bw216": 0.2966,
+    "i600": 0.025,
+    "f144": 0.225
+  },
+  "signal_config": {
+    "strat_names": [
+      "v1",
+      "i460bw168",
+      "i415bw216",
+      "i600",
+      "f144"
+    ],
+    "notes": {
+      "V1": "nexus_alpha_v1 k=2",
+      "I460_bw168_k4": "idio_momentum_alpha lb=460 bw=168 k=4",
+      "I415_bw216_k4": "idio_momentum_alpha lb=415 bw=216 k=4",
+      "I474_bw216_k4": "idio_momentum_alpha lb=474 bw=216 k=4",
+      "I437_bw216_k4": "idio_momentum_alpha lb=437 bw=216 k=4",
+      "I600_k2": "idio_momentum_alpha lb=600 bw=168 k=2",
+      "F144_k2": "funding_momentum_alpha lb=144 k=2"
+    }
+  }
+}
