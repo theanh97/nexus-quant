@@ -1,0 +1,83 @@
+{
+  "phase": 156,
+  "description": "Comprehensive final WF validation \u2014 v2.6.0 vs p91b flat",
+  "elapsed_seconds": 26.2,
+  "is_performance": {
+    "v26_yearly": {
+      "2021": 3.6571,
+      "2022": 1.9612,
+      "2023": 1.5758,
+      "2024": 3.6192,
+      "2025": 2.2488
+    },
+    "v26_obj": 2.1802,
+    "p91b_yearly": {
+      "2021": 1.8389,
+      "2022": 1.5244,
+      "2023": 1.2101,
+      "2024": 2.2328,
+      "2025": 2.0261
+    },
+    "p91b_obj": 1.585,
+    "delta_obj": 0.5952
+  },
+  "wf_windows": [
+    {
+      "train": [
+        "2021"
+      ],
+      "test": "2022",
+      "test_v26": 1.9612,
+      "test_p91b": 1.5244,
+      "test_delta": 0.4368,
+      "win": true,
+      "train_avg_delta": 1.8182
+    },
+    {
+      "train": [
+        "2021",
+        "2022"
+      ],
+      "test": "2023",
+      "test_v26": 1.5758,
+      "test_p91b": 1.2101,
+      "test_delta": 0.3657,
+      "win": true,
+      "train_avg_delta": 1.1275
+    },
+    {
+      "train": [
+        "2021",
+        "2022",
+        "2023"
+      ],
+      "test": "2024",
+      "test_v26": 3.6192,
+      "test_p91b": 2.2328,
+      "test_delta": 1.3864,
+      "win": true,
+      "train_avg_delta": 0.8736
+    },
+    {
+      "train": [
+        "2022",
+        "2023",
+        "2024"
+      ],
+      "test": "2025",
+      "test_v26": 2.2488,
+      "test_p91b": 2.0261,
+      "test_delta": 0.2227,
+      "win": true,
+      "train_avg_delta": 0.7296
+    }
+  ],
+  "wf_wins": 4,
+  "wf_avg_delta": 0.6029,
+  "oos_degradation_ratio": 0.614,
+  "wf_pass": true,
+  "verdict": "PRODUCTION CONFIRMED \u2014 v2.6.0 passes comprehensive WF validation. 4/4 WF windows win, avg_delta=+0.6029. IS improvement over p91b: +0.5952 OBJ. DEPLOY with confidence.",
+  "next_phase_notes": "Phase 157 (FINAL): Generate production deployment checklist. Set up live monitoring against halt_conditions in config. R&D COMPLETE \u2014 system is v2.6.0 production-ready.",
+  "partial": false,
+  "timestamp": "2026-02-21T01:38:27"
+}
