@@ -1,11 +1,14 @@
 """
 NEXUS Smart Router - Assigns the optimal LLM to each task type.
 
-Model assignments based on empirical benchmarks:
-- Claude Sonnet 4.6: Architecture, code review, complex debugging (PM role)
-- GPT-5.2 (Codex): Code generation, strategy math, refactoring
-- GLM-5 (ZAI): Q&A, diary synthesis, quick summaries (low cost)
-- MiniMax: High-throughput monitoring, real-time alerts (when configured)
+Model assignments based on empirical benchmarks & cost tiers:
+- Claude Sonnet 4.6: Architecture, code review, complex debugging (PM role) [PAID via ZAI]
+- GPT-5.2 (Codex): Code generation, strategy math, refactoring [PAID]
+- Gemini 2.5 Pro: Complex reasoning, cross-verification, data analysis [FREE]
+- Gemini 2.5 Flash: QA, monitoring, diary synthesis, fast tasks [FREE]
+- GLM-5 (ZAI): Experiment design, low-cost throughput [PAID via ZAI]
+
+Cost optimization: Gemini (free) replaces MiniMax and handles many tasks previously routed to paid models.
 """
 
 from __future__ import annotations
@@ -85,17 +88,40 @@ OPENAI_GPT52_CODEX = ModelSpec(
     strengths=["code generation", "refactoring", "strategy math"],
 )
 
+# ─── Google Gemini (OpenAI-compatible endpoint) — FREE tier ───
+_GOOGLE_OPENAI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
+
+GOOGLE_GEMINI_PRO = ModelSpec(
+    name="gemini-2.5-pro",
+    provider="google",
+    base_url=_GOOGLE_OPENAI_BASE,
+    api_key_env="GEMINI_API_KEY",
+    max_tokens=4096,
+    cost_tier="free",
+    strengths=["complex reasoning", "long context", "cross-verification", "multimodal"],
+)
+
+GOOGLE_GEMINI_FLASH = ModelSpec(
+    name="gemini-2.5-flash",
+    provider="google",
+    base_url=_GOOGLE_OPENAI_BASE,
+    api_key_env="GEMINI_API_KEY",
+    max_tokens=4096,
+    cost_tier="free",
+    strengths=["fast", "high throughput", "monitoring", "cost-effective"],
+)
+
 
 ROUTING_TABLE: Dict[TaskType, ModelSpec] = {
-    TaskType.CODE_GENERATION: OPENAI_GPT52_CODEX,
-    TaskType.STRATEGY_RESEARCH: ZAI_CLAUDE_SONNET_46,
-    TaskType.CODE_REVIEW: ZAI_CLAUDE_SONNET_46,
-    TaskType.RISK_ANALYSIS: ZAI_CLAUDE_SONNET_46,
-    TaskType.DATA_ANALYSIS: ZAI_CLAUDE_SONNET_46,
-    TaskType.QA_CHAT: ZAI_GLM5,
-    TaskType.DIARY_SYNTHESIS: ZAI_GLM5,
-    TaskType.MONITORING_ALERT: ZAI_GLM5,
-    TaskType.EXPERIMENT_DESIGN: ZAI_GLM5,
+    TaskType.CODE_GENERATION: OPENAI_GPT52_CODEX,       # GPT-5.2 [PAID] — best for code
+    TaskType.STRATEGY_RESEARCH: ZAI_CLAUDE_SONNET_46,    # Claude [PAID] — architecture thinking
+    TaskType.CODE_REVIEW: GOOGLE_GEMINI_PRO,             # Gemini Pro [FREE] — excellent quality
+    TaskType.RISK_ANALYSIS: ZAI_CLAUDE_SONNET_46,        # Claude [PAID] — precision matters
+    TaskType.DATA_ANALYSIS: GOOGLE_GEMINI_PRO,           # Gemini Pro [FREE] — multimodal capable
+    TaskType.QA_CHAT: GOOGLE_GEMINI_FLASH,               # Gemini Flash [FREE] — fast Q&A
+    TaskType.DIARY_SYNTHESIS: GOOGLE_GEMINI_FLASH,        # Gemini Flash [FREE] — good for synthesis
+    TaskType.MONITORING_ALERT: GOOGLE_GEMINI_FLASH,       # Gemini Flash [FREE] — high throughput
+    TaskType.EXPERIMENT_DESIGN: ZAI_GLM5,                 # GLM-5 [low cost] — experiment plans
 }
 
 
@@ -107,7 +133,13 @@ class SmartRouter:
         log_path: Optional[Path] = None,
     ) -> None:
         self._routing_table = dict(routing_table or ROUTING_TABLE)
-        self._fallback_model = fallback_model or ZAI_GLM5
+        # Prefer Gemini Flash (free) as fallback if API key available, else GLM-5
+        if fallback_model:
+            self._fallback_model = fallback_model
+        elif os.environ.get("GEMINI_API_KEY"):
+            self._fallback_model = GOOGLE_GEMINI_FLASH
+        else:
+            self._fallback_model = ZAI_GLM5
         project_root = Path(__file__).resolve().parents[2]
         self._log_path = log_path or (project_root / "artifacts" / "brain" / "routing_log.jsonl")
 
@@ -188,6 +220,12 @@ class SmartRouter:
             if task_type == TaskType.CODE_GENERATION:
                 # If GPT-5.2 isn't available, try gpt-4o before falling back to GLM-5.
                 models_to_try.append("gpt-4o")
+            return self._call_openai(spec, system=system, user=user, max_tokens=max_tokens, models=models_to_try)
+        if spec.provider == "google":
+            # Gemini uses OpenAI-compatible endpoint — same format, different base_url
+            models_to_try = [spec.name]
+            if "pro" in spec.name:
+                models_to_try.append("gemini-2.5-flash")  # fallback to Flash
             return self._call_openai(spec, system=system, user=user, max_tokens=max_tokens, models=models_to_try)
         if spec.provider == "zai":
             return self._call_anthropic(spec, system=system, user=user, max_tokens=max_tokens)

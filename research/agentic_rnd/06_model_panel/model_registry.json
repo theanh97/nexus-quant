@@ -1,0 +1,92 @@
+{
+  "version": 2,
+  "updated_at": "2026-02-20T20:20:00Z",
+  "description": "5-model stack: 2 paid (Claude, Codex) + 2 free (Gemini Pro/Flash) + 1 low-cost (GLM-5)",
+  "panel": [
+    {
+      "role": "architect",
+      "codename": "SENTINEL",
+      "provider": "zai",
+      "model": "claude-sonnet-4-6",
+      "cost_tier": "paid",
+      "priority": 1,
+      "use_for": [
+        "strategy_research",
+        "risk_analysis",
+        "architecture_review",
+        "complex_debugging"
+      ]
+    },
+    {
+      "role": "code_engineer",
+      "codename": "FORGE",
+      "provider": "openai",
+      "model": "gpt-5.2",
+      "cost_tier": "paid",
+      "priority": 1,
+      "use_for": [
+        "code_generation",
+        "refactoring",
+        "strategy_math",
+        "test_writing"
+      ]
+    },
+    {
+      "role": "cross_verifier",
+      "codename": "ORACLE",
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "cost_tier": "free",
+      "priority": 1,
+      "use_for": [
+        "cross_verification",
+        "data_analysis",
+        "code_review",
+        "complex_reasoning",
+        "counter_argument"
+      ]
+    },
+    {
+      "role": "fast_worker",
+      "codename": "ORACLE-FAST",
+      "provider": "google",
+      "model": "gemini-2.5-flash",
+      "cost_tier": "free",
+      "priority": 1,
+      "use_for": [
+        "qa_chat",
+        "monitoring",
+        "diary_synthesis",
+        "quick_analysis",
+        "consistency_check"
+      ]
+    },
+    {
+      "role": "experiment_planner",
+      "codename": "SAGE",
+      "provider": "zai",
+      "model": "glm-5",
+      "cost_tier": "low",
+      "priority": 2,
+      "use_for": [
+        "experiment_design",
+        "brainstorm",
+        "cheap_first_pass"
+      ]
+    }
+  ],
+  "debate_lineup": ["glm-5", "claude-sonnet-4-6", "codex", "gemini-2.5-pro"],
+  "routing_policy": {
+    "default_passes": 3,
+    "require_dissent_for_go": true,
+    "max_high_cost_calls_per_decision": 1,
+    "prefer_free_models": true,
+    "fallback_chain": ["gemini-2.5-flash", "glm-5"]
+  },
+  "cost_optimization": {
+    "principle": "Use Gemini (free) for most tasks, reserve Claude/GPT for critical decisions",
+    "free_models": ["gemini-2.5-pro", "gemini-2.5-flash"],
+    "paid_models": ["claude-sonnet-4-6", "gpt-5.2"],
+    "low_cost_models": ["glm-5"]
+  }
+}

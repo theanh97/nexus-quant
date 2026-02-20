@@ -1,7 +1,13 @@
 """
 NEXUS Multi-Model Debate Engine
-Calls Claude, GPT-5.2 (Codex), GLM-5, MiniMax on the same question,
+Calls Claude, GPT-5.2 (Codex), Gemini Pro, GLM-5 on the same question,
 then has each model critique the others, then synthesizes a final verdict.
+
+Model tiers (cost-optimized):
+- Claude Sonnet 4.6: Deep architecture reasoning [PAID via ZAI]
+- GPT-5.2 (Codex): Code-centric analysis [PAID]
+- Gemini 2.5 Pro: Complex reasoning + cross-verification [FREE]
+- GLM-5: Quick synthesis, low-cost [PAID via ZAI]
 """
 
 import json
@@ -44,7 +50,7 @@ class DebateRound:
 # ---------------------------------------------------------------------------
 
 class DebateEngine:
-    DEFAULT_MODELS = ["glm-5", "claude-sonnet-4-6", "codex", "minimax-2.5"]
+    DEFAULT_MODELS = ["glm-5", "claude-sonnet-4-6", "codex", "gemini-2.5-pro"]
 
     def __init__(self, artifacts_dir: str = "artifacts"):
         self.artifacts_dir = Path(artifacts_dir)
@@ -106,7 +112,41 @@ class DebateEngine:
                 text = result.stdout.decode(errors="replace").strip() or "(no response)"
                 return text, len(text.split())
 
-            # ---- MiniMax family ----------------------------------------
+            # ---- Google Gemini (OpenAI-compatible endpoint) — FREE ------
+            elif model in ("gemini-2.5-pro", "gemini-2.5-flash", "gemini-pro", "gemini"):
+                import urllib.request
+                api_key = os.environ.get("GEMINI_API_KEY", "")
+                if not api_key:
+                    return "(Gemini: GEMINI_API_KEY not set)", 0
+                model_id = {
+                    "gemini-pro": "gemini-2.5-pro",
+                    "gemini": "gemini-2.5-flash",
+                }.get(model, model)
+                url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+                payload = json.dumps({
+                    "model": model_id,
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": prompt},
+                    ],
+                    "max_tokens": 800,
+                    "temperature": 0.3,
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    url=url, data=payload,
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {api_key}",
+                    },
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
+                tokens = (data.get("usage") or {}).get("completion_tokens", len(text.split()))
+                return text, tokens
+
+            # ---- MiniMax family (legacy, prefer Gemini) ----------------
             elif model in ("minimax-2.5", "minimax"):
                 try:
                     from minimax import Minimax

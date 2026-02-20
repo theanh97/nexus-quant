@@ -14,7 +14,7 @@ def _call_llm(
     max_tokens: int = 800,
     model: str | None = None,
 ) -> str:
-    """Multi-model LLM router. Supports GLM-5, Claude Sonnet/Opus, GPT-5.2 (Codex), MiniMax."""
+    """Multi-model LLM router. Supports Gemini, GLM-5, Claude, GPT-5.2 (Codex), MiniMax."""
     selected = model or os.environ.get("ZAI_DEFAULT_MODEL", "glm-5")
 
     # ─── ZAI / Anthropic-compatible gateway (GLM-5, Claude models) ───
@@ -60,7 +60,72 @@ def _call_llm(
         except Exception as e:
             return f"[Codex error: {e}]"
 
-    # ─── MiniMax 2.5 ───
+    # ─── Gemini CLI (subprocess, like Codex) ───
+    if selected == "gemini-cli":
+        gemini_bin = __import__("shutil").which("gemini")
+        if not gemini_bin:
+            return "[Gemini CLI not found. Install: npm install -g @google/gemini-cli]"
+        try:
+            import subprocess
+            combined = f"System: {system_prompt}\n\nUser: {user_message}"
+            result = subprocess.run(
+                [gemini_bin, "-p", combined, "--output-format", "text"],
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            out = result.stdout.strip()
+            return out if out else f"[Gemini CLI: no output, stderr={result.stderr[:200]}]"
+        except subprocess.TimeoutExpired:
+            return "[Gemini CLI: timeout after 60s]"
+        except Exception as e:
+            return f"[Gemini CLI error: {e}]"
+
+    # ─── Google Gemini (OpenAI-compatible endpoint) — FREE ───
+    if selected in ("gemini-2.5-pro", "gemini-2.5-flash", "gemini-3.1-pro",
+                     "gemini-pro", "gemini-flash", "gemini"):
+        api_key = os.environ.get("GEMINI_API_KEY", "")
+        if not api_key:
+            # Fallback: try Gemini CLI if available
+            gemini_bin = __import__("shutil").which("gemini")
+            if gemini_bin:
+                return _call_llm(system_prompt, user_message, max_tokens, model="gemini-cli")
+            return "[Gemini] GEMINI_API_KEY not configured. Get free key at https://aistudio.google.com/"
+        # Map short aliases to full model IDs
+        model_id = {
+            "gemini-pro": "gemini-2.5-pro",
+            "gemini-flash": "gemini-2.5-flash",
+            "gemini": "gemini-2.5-flash",
+            "gemini-3.1-pro": "gemini-2.5-pro",  # use GA model for reliability
+        }.get(selected, selected)
+        try:
+            import urllib.request
+            url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+            payload = json.dumps({
+                "model": model_id,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message},
+                ],
+                "max_tokens": max_tokens,
+                "temperature": 0.3,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                url=url,
+                data=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}",
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            return (data.get("choices") or [{}])[0].get("message", {}).get("content", "")
+        except Exception as e:
+            return f"[Gemini error: {e}]"
+
+    # ─── MiniMax 2.5 (legacy, prefer Gemini) ───
     if selected in ("minimax-2.5", "minimax"):
         minimax_key = os.environ.get("MINIMAX_API_KEY", "")
         minimax_group = os.environ.get("MINIMAX_GROUP_ID", "")

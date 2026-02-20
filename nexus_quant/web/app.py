@@ -16,6 +16,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from ..data.provider_policy import classify_provider
+
 try:
     from starlette.requests import Request as StarletteRequest
 except Exception:
@@ -66,20 +68,30 @@ def _latest_run_result(artifacts_dir: Path) -> Optional[Dict[str, Any]]:
     runs_dir = artifacts_dir / "runs"
     if not runs_dir.exists():
         return None
-    dirs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime)
+    dirs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime, reverse=True)
     if not dirs:
         return None
-    return _read_json(dirs[-1] / "result.json")
+    for d in dirs:
+        cfg = _read_json(d / "config.json") or {}
+        provider = str((cfg.get("data") or {}).get("provider") or "")
+        if classify_provider(provider) == "real":
+            return _read_json(d / "result.json")
+    return _read_json(dirs[0] / "result.json")
 
 
 def _latest_metrics(artifacts_dir: Path) -> Optional[Dict[str, Any]]:
     runs_dir = artifacts_dir / "runs"
     if not runs_dir.exists():
         return None
-    dirs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime)
+    dirs = sorted([d for d in runs_dir.iterdir() if d.is_dir()], key=lambda d: d.stat().st_mtime, reverse=True)
     if not dirs:
         return None
-    return _read_json(dirs[-1] / "metrics.json")
+    for d in dirs:
+        cfg = _read_json(d / "config.json") or {}
+        provider = str((cfg.get("data") or {}).get("provider") or "")
+        if classify_provider(provider) == "real":
+            return _read_json(d / "metrics.json")
+    return _read_json(dirs[0] / "metrics.json")
 
 
 def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> None:
@@ -160,6 +172,37 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 safe = _safe_resolve_path(root, root / p)
                 if safe and safe.exists() and safe.is_file():
                     return safe
+        return None
+
+    def _pick_default_backtest_config() -> Optional[Path]:
+        cfg_dir = _repo_root() / "configs"
+        candidates = [
+            "production_p91b_champion.json",
+            "run_binance_nexus_alpha_v1_2023oos.json",
+            "run_binance_nexus_alpha_v1_2025ytd.json",
+            "run_binance_v1_full_2023_2025.json",
+            "run_synthetic_funding.json",
+        ]
+        for name in candidates:
+            p = cfg_dir / name
+            if p.exists():
+                return p
+        return None
+
+    def _pick_default_research_config() -> Optional[Path]:
+        cfg_dir = _repo_root() / "configs"
+        candidates = [
+            "production_p91b_champion.json",
+            "run_binance_nexus_alpha_v1_2023oos.json",
+            "run_binance_nexus_alpha_v1_2025ytd.json",
+            "run_binance_v1_full_2023_2025.json",
+            "run_synthetic_funding.json",
+            "run_synthetic_ml_factor.json",
+        ]
+        for name in candidates:
+            p = cfg_dir / name
+            if p.exists():
+                return p
         return None
 
     def _looks_like_file_token(token: str) -> bool:
@@ -400,10 +443,15 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         for d in runs_dir.iterdir():
             if not d.is_dir():
                 continue
+            cfg = _read_json(d / "config.json") or {}
+            provider = str((cfg.get("data") or {}).get("provider") or "")
+            if classify_provider(provider) != "real":
+                continue
             m = _read_json(d / "metrics.json")
             if not m:
                 continue
-            sharpe = m.get("sharpe")
+            summary = m.get("summary") or m
+            sharpe = summary.get("sharpe")
             if sharpe is None:
                 continue
             total += 1
@@ -496,7 +544,11 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 "active_run": active_run,
                 "learning_velocity": learning_velocity,
                 "champion_strategy": champion.get("strategy"),
-                "champion_sharpe": champion.get("sharpe"),
+                "champion_sharpe": (
+                    champion.get("corrected_sharpe")
+                    if champion.get("corrected_sharpe") is not None
+                    else champion.get("sharpe")
+                ),
             }
 
         def _generator():
@@ -534,6 +586,10 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         )[:20]
         results = []
         for d in dirs:
+            cfg = _read_json(d / "config.json") or {}
+            provider = str((cfg.get("data") or {}).get("provider") or "")
+            if classify_provider(provider) != "real":
+                continue
             m = _read_json(d / "metrics.json")
             if m is None:
                 m = {}
@@ -605,11 +661,16 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             for d in sorted(runs_dir.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True)[:10]:
                 if d.is_dir():
                     m = _read_json(d / "metrics.json") or {}
+                    c = _read_json(d / "config.json") or {}
+                    provider = str((c.get("data") or {}).get("provider") or "")
+                    if classify_provider(provider) != "real":
+                        continue
+                    summary = m.get("summary") or m
                     run_items.append({
                         "name": d.name,
                         "path": str(d.relative_to(artifacts_dir)),
-                        "sharpe": m.get("sharpe"), "cagr": m.get("cagr"),
-                        "mdd": m.get("max_drawdown"),
+                        "sharpe": summary.get("sharpe"), "cagr": summary.get("cagr"),
+                        "mdd": summary.get("max_drawdown"),
                         "mtime": _time.strftime('%Y-%m-%d %H:%M', _time.localtime(d.stat().st_mtime)),
                         "files": [f.name for f in d.iterdir() if f.is_file()],
                     })
@@ -926,8 +987,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 if "run backtest" in low:
                     cfg_path = _find_existing_file(user_msg, allowed_roots=[_repo_root()], must_suffix=".json")
                     if cfg_path is None:
-                        default_cfg = _repo_root() / "configs" / "run_synthetic_funding.json"
-                        cfg_path = default_cfg if default_cfg.exists() else None
+                        cfg_path = _pick_default_backtest_config()
                     if cfg_path is None or not cfg_path.exists():
                         tool_result = {"tool": "run_backtest", "ok": False, "error": "No config file found"}
                     else:
@@ -941,8 +1001,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 elif "run experiment" in low:
                     cfg_path = _find_existing_file(user_msg, allowed_roots=[_repo_root()], must_suffix=".json")
                     if cfg_path is None:
-                        default_cfg = _repo_root() / "configs" / "run_synthetic_funding.json"
-                        cfg_path = default_cfg if default_cfg.exists() else None
+                        cfg_path = _pick_default_backtest_config()
                     if cfg_path is None or not cfg_path.exists():
                         tool_result = {"tool": "run_experiment", "ok": False, "error": "No config file found"}
                     else:
@@ -1056,13 +1115,7 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         def _bg_run():
             try:
                 from ..orchestration.research_cycle import ResearchCycle
-                # pick first available config
-                cfg = None
-                for name in ["run_synthetic_funding.json", "run_synthetic_ml_factor.json"]:
-                    p = _repo_root() / "configs" / name
-                    if p.exists():
-                        cfg = p
-                        break
+                cfg = _pick_default_research_config()
                 cycle = ResearchCycle(artifacts_dir=artifacts_dir, config_path=cfg)
                 cycle.run()
             except Exception:
@@ -1790,20 +1843,53 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         except Exception as e:
             return JSONResponse({"processes": [], "error": str(e)})
 
+        pid_info: Dict[str, str] = {}
+        pid_pref: Dict[str, int] = {}
+        pid_file = Path("/tmp/nexus_pids.txt")
+        if pid_file.exists():
+            saved = pid_file.read_text("utf-8", errors="replace").strip().split()
+            labels = ["dashboard", "brain"]
+            for i, pid in enumerate(saved):
+                if i >= len(labels):
+                    break
+                k = labels[i]
+                pid_info[k] = pid
+                try:
+                    pid_pref[k] = int(pid)
+                except Exception:
+                    pass
+
+        def _pick_hit(target: str, hits: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+            if not hits:
+                return None
+            pref = pid_pref.get(target)
+            if pref is not None:
+                for h in hits:
+                    if int(h.get("pid") or -1) == pref:
+                        return h
+            # Prefer most recently created process (higher pid), then resource usage.
+            return sorted(
+                hits,
+                key=lambda x: (int(x.get("pid") or 0), float(x.get("cpu_pct") or 0.0), float(x.get("mem_mb") or 0.0)),
+                reverse=True,
+            )[0]
+
         rows: List[Dict[str, Any]] = []
         for target, meta in profiles.items():
             pats = [str(p).lower() for p in (meta.get("patterns") or [])]
             hits = [p for p in parsed if any(pat in p["command_l"] for pat in pats)]
-            if hits:
-                top = sorted(hits, key=lambda x: (x["cpu_pct"], x["mem_mb"]), reverse=True)[0]
+            pick = _pick_hit(target, hits)
+            if pick:
                 rows.append({
                     "target": target,
                     "name": meta.get("name") or target.title(),
                     "status": "running",
-                    "pid": str(top["pid"]),
-                    "cpu_pct": round(float(top["cpu_pct"]), 2),
-                    "mem_mb": round(float(top["mem_mb"]), 1),
-                    "command": str(top["command"])[:180],
+                    "pid": str(pick["pid"]),
+                    "cpu_pct": round(float(pick["cpu_pct"]), 2),
+                    "mem_mb": round(float(pick["mem_mb"]), 1),
+                    "command": str(pick["command"])[:180],
+                    "instances": len(hits),
+                    "preferred_pid": str(pid_pref.get(target) or ""),
                 })
             else:
                 rows.append({
@@ -1814,6 +1900,8 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                     "cpu_pct": 0.0,
                     "mem_mb": 0.0,
                     "command": "",
+                    "instances": 0,
+                    "preferred_pid": str(pid_pref.get(target) or ""),
                 })
 
         known = [pat for meta in profiles.values() for pat in (meta.get("patterns") or [])]
@@ -1834,15 +1922,6 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
                 "command": str(p["command"])[:180],
             })
         rows.extend(extras[:8])
-
-        pid_info: Dict[str, str] = {}
-        pid_file = Path("/tmp/nexus_pids.txt")
-        if pid_file.exists():
-            saved = pid_file.read_text("utf-8", errors="replace").strip().split()
-            labels = ["dashboard", "brain"]
-            for i, pid in enumerate(saved):
-                if i < len(labels):
-                    pid_info[labels[i]] = pid
 
         return JSONResponse(
             {
@@ -2160,6 +2239,59 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         except Exception as e:
             return JSONResponse({"error": str(e)}, status_code=500)
 
+    # ── Model Stack Status ──────────────────────────────────────────
+    @app.get("/api/models")
+    async def api_models() -> JSONResponse:
+        """Return status of all integrated AI models."""
+        import os, shutil
+        models = [
+            {
+                "name": "Claude Sonnet 4.6",
+                "codename": "SENTINEL",
+                "provider": "ZAI (Anthropic)",
+                "cost": "paid",
+                "role": "Strategy research, risk analysis, architecture",
+                "available": bool(os.environ.get("ZAI_API_KEY")),
+            },
+            {
+                "name": "GPT-5.2 (Codex)",
+                "codename": "FORGE",
+                "provider": "OpenAI (local CLI)",
+                "cost": "paid",
+                "role": "Code generation, strategy math, refactoring",
+                "available": os.path.exists("/Applications/Codex.app/Contents/Resources/codex"),
+            },
+            {
+                "name": "Gemini 2.5 Pro",
+                "codename": "ORACLE",
+                "provider": "Google (OpenAI-compat)",
+                "cost": "free",
+                "role": "Complex reasoning, cross-verification, data analysis",
+                "available": bool(os.environ.get("GEMINI_API_KEY")) or bool(shutil.which("gemini")),
+            },
+            {
+                "name": "Gemini 2.5 Flash",
+                "codename": "ORACLE-FAST",
+                "provider": "Google (OpenAI-compat)",
+                "cost": "free",
+                "role": "QA, monitoring, diary synthesis, fast tasks",
+                "available": bool(os.environ.get("GEMINI_API_KEY")) or bool(shutil.which("gemini")),
+            },
+            {
+                "name": "GLM-5",
+                "codename": "SAGE",
+                "provider": "ZAI (ZhipuAI)",
+                "cost": "low",
+                "role": "Experiment design, low-cost throughput",
+                "available": bool(os.environ.get("ZAI_API_KEY")),
+            },
+        ]
+        return JSONResponse({
+            "models": models,
+            "total": len(models),
+            "available": sum(1 for m in models if m["available"]),
+        })
+
     # ── Analysis Log (Research Journal) ──────────────────────────────
     @app.get("/api/analysis_log")
     async def api_analysis_log(
@@ -2180,6 +2312,93 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             return JSONResponse({"entries": entries, "total": len(entries)})
         except Exception as e:
             return JSONResponse({"entries": [], "error": str(e)})
+
+    @app.get("/api/analysis_log_stream")
+    async def api_analysis_log_stream(
+        request: StarletteRequest,
+        n: int = 150,
+        entry_type: str = "",
+        source: str = "",
+    ):
+        """SSE stream for analysis journal entries (Logs tab)."""
+        import asyncio
+        from fastapi.responses import StreamingResponse
+        from ..logs.writer import read_log
+
+        log_dir = artifacts_dir / "logs" if artifacts_dir else Path("artifacts/logs")
+        fp = log_dir / "analysis.jsonl"
+        n_safe = max(20, min(int(n or 150), 1000))
+        type_filter = str(entry_type or "").strip()
+        source_filter = str(source or "").strip()
+
+        def _accept(obj: Dict[str, Any]) -> bool:
+            if type_filter and str(obj.get("type") or "") != type_filter:
+                return False
+            if source_filter and str(obj.get("source") or "") != source_filter:
+                return False
+            return True
+
+        async def _generator():
+            pos = 0
+            bootstrapped = False
+            while True:
+                if await request.is_disconnected():
+                    break
+                payload: Dict[str, Any] = {
+                    "entries": [],
+                    "path": str(fp),
+                    "exists": fp.exists(),
+                    "ts": time.time(),
+                }
+                try:
+                    if fp.exists():
+                        if not bootstrapped:
+                            payload["entries"] = read_log(
+                                log_dir=log_dir,
+                                n=n_safe,
+                                entry_type=type_filter or None,
+                                source=source_filter or None,
+                            )
+                            try:
+                                pos = int(fp.stat().st_size)
+                            except Exception:
+                                pos = 0
+                            bootstrapped = True
+                        else:
+                            size = int(fp.stat().st_size)
+                            if size < pos:
+                                pos = 0
+                            if size > pos:
+                                with fp.open("rb") as f:
+                                    f.seek(pos)
+                                    chunk = f.read(size - pos)
+                                    pos = int(f.tell())
+                                if chunk:
+                                    text = chunk.decode("utf-8", errors="replace")
+                                    new_entries: List[Dict[str, Any]] = []
+                                    for ln in text.splitlines():
+                                        try:
+                                            obj = json.loads(ln)
+                                            if isinstance(obj, dict) and _accept(obj):
+                                                new_entries.append(obj)
+                                        except Exception:
+                                            continue
+                                    if new_entries:
+                                        payload["entries"] = new_entries[-200:]
+                except Exception as exc:
+                    payload["error"] = str(exc)
+                yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+                await asyncio.sleep(1.0)
+
+        return StreamingResponse(
+            _generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
+        )
 
     @app.post("/api/analysis_log")
     async def api_analysis_log_write(body: dict) -> JSONResponse:
