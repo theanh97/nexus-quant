@@ -1,8 +1,8 @@
 {
   "_comment": "PRODUCTION CONFIG \u2014 P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
-  "_version": "2.2.0",
+  "_version": "2.3.0",
   "_created": "2026-02-20",
-  "_validated": "Phases 91-129: walk-forward stable, OOS validated, cost-robust, regime-insured, vol tilt (P113) + price vol overlay (P129) validated; global_ls_overlay (P118b) WF PASS 2026-02-21; breadth regime switching (P144-146): LOYO 4/5 +0.3179 OBJ, WF 1/2, capture 87.5%",
+  "_validated": "Phases 91-129: walk-forward stable, OOS validated, cost-robust, regime-insured, vol tilt (P113) + price vol overlay (P129) validated; global_ls_overlay (P118b) WF PASS 2026-02-21; breadth regime switching (P144-146): LOYO 4/5 +0.3179 OBJ, WF 1/2, capture 87.5%; funding dispersion boost (P148): LOYO 3/5, WF 2/2, OBJ=1.8886",
   "run_name": "production_p91b",
   "seed": 42,
   "venue": {
@@ -246,5 +246,15 @@
       }
     },
     "mechanism": "At each bar: compute % symbols with positive 168h return (breadth). Rolling percentile rank vs prior 336h. If <33rd pct \u2192 LOW weights. If 33-67% \u2192 MID weights. If >67% \u2192 HIGH weights. Apply on top of existing vol_regime_overlay (both active simultaneously)."
+  },
+  "funding_dispersion_overlay": {
+    "_comment": "Phase 148: Funding rate cross-sectional dispersion boost",
+    "_validated": "LOYO 3/5 wins avg_delta=+0.0087 | WF 2/2 wins avg_delta=+0.0284 | IS OBJ=1.8886 (+0.0086)",
+    "enabled": true,
+    "signal": "funding_rate_cross_sectional_std",
+    "percentile_window": 336,
+    "boost_threshold_pct": 0.75,
+    "boost_scale": 1.15,
+    "mechanism": "At each bar: compute std of funding rates across all 10 symbols. Rolling 336h percentile rank. If std_pct > 0.75 (high cross-sectional dispersion = differentiated market) \u2192 boost portfolio returns \u00d71.15. Logic: high dispersion = cross-sectional signals (idio, V1) can differentiate more effectively."
   }
 }
