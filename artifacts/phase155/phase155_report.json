@@ -1,0 +1,197 @@
+{
+  "phase": 155,
+  "description": "5th signal hunt: RS acceleration + lead-lag + dispersion",
+  "elapsed_seconds": 284.3,
+  "base_yearly": {
+    "2021": 3.6038,
+    "2022": 1.9048,
+    "2023": 1.4249,
+    "2024": 3.4695,
+    "2025": 2.2089
+  },
+  "base_obj": 2.0893,
+  "candidates_tested": 8,
+  "candidates": {
+    "rsa_72_336_k2": {
+      "strategy": "rs_acceleration_alpha",
+      "params": {
+        "k_per_side": 2,
+        "rs_short_bars": 72,
+        "rs_long_bars": 336,
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.25,
+        "rebalance_interval_bars": 24
+      },
+      "yearly": {
+        "2021": 3.7699,
+        "2022": 1.9865,
+        "2023": 1.1653,
+        "2024": 3.3187,
+        "2025": 1.6553
+      },
+      "obj": 1.8807,
+      "delta": -0.2086,
+      "loyo_wins": 2,
+      "pass": false
+    },
+    "rsa_48_240_k2": {
+      "strategy": "rs_acceleration_alpha",
+      "params": {
+        "k_per_side": 2,
+        "rs_short_bars": 48,
+        "rs_long_bars": 240,
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.25,
+        "rebalance_interval_bars": 24
+      },
+      "yearly": {
+        "2021": 3.7235,
+        "2022": 1.8457,
+        "2023": 1.219,
+        "2024": 3.2346,
+        "2025": 1.6744
+      },
+      "obj": 1.8568,
+      "delta": -0.2325,
+      "loyo_wins": 1,
+      "pass": false
+    },
+    "rsa_96_336_k3": {
+      "strategy": "rs_acceleration_alpha",
+      "params": {
+        "k_per_side": 3,
+        "rs_short_bars": 96,
+        "rs_long_bars": 336,
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.25,
+        "rebalance_interval_bars": 24
+      },
+      "yearly": {
+        "2021": 3.8412,
+        "2022": 1.9183,
+        "2023": 1.1413,
+        "2024": 3.2306,
+        "2025": 1.8844
+      },
+      "obj": 1.9108,
+      "delta": -0.1785,
+      "loyo_wins": 2,
+      "pass": false
+    },
+    "ll_btc12_k2": {
+      "strategy": "lead_lag_alpha",
+      "params": {
+        "k_per_side": 2,
+        "btc_lookback_bars": 12,
+        "beta_lookback_bars": 168,
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.25,
+        "rebalance_interval_bars": 24
+      },
+      "yearly": {
+        "2021": 3.5898,
+        "2022": 1.8703,
+        "2023": 1.0844,
+        "2024": 3.1251,
+        "2025": 2.0328
+      },
+      "obj": 1.8894,
+      "delta": -0.1999,
+      "loyo_wins": 0,
+      "pass": false
+    },
+    "ll_btc8_k2": {
+      "strategy": "lead_lag_alpha",
+      "params": {
+        "k_per_side": 2,
+        "btc_lookback_bars": 8,
+        "beta_lookback_bars": 168,
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.25,
+        "rebalance_interval_bars": 24
+      },
+      "yearly": {
+        "2021": 3.6644,
+        "2022": 1.9153,
+        "2023": 1.2583,
+        "2024": 3.068,
+        "2025": 2.2385
+      },
+      "obj": 2.0043,
+      "delta": -0.085,
+      "loyo_wins": 3,
+      "pass": false
+    },
+    "ll_btc4_k2": {
+      "strategy": "lead_lag_alpha",
+      "params": {
+        "k_per_side": 2,
+        "btc_lookback_bars": 4,
+        "beta_lookback_bars": 168,
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.25,
+        "rebalance_interval_bars": 24
+      },
+      "yearly": {
+        "2021": 3.6265,
+        "2022": 1.693,
+        "2023": 0.6679,
+        "2024": 2.9241,
+        "2025": 1.877
+      },
+      "obj": 1.6449,
+      "delta": -0.4444,
+      "loyo_wins": 1,
+      "pass": false
+    },
+    "disp_72_k2": {
+      "strategy": "dispersion_alpha",
+      "params": {
+        "k_per_side": 2,
+        "momentum_lookback_bars": 72,
+        "dispersion_lookback_bars": 72,
+        "dispersion_threshold": 0.0,
+        "target_gross_leverage": 0.2,
+        "rebalance_interval_bars": 24
+      },
+      "yearly": {
+        "2021": 3.7256,
+        "2022": 2.0186,
+        "2023": 1.3048,
+        "2024": 3.24,
+        "2025": 1.9392
+      },
+      "obj": 1.9979,
+      "delta": -0.0914,
+      "loyo_wins": 2,
+      "pass": false
+    },
+    "disp_48_k2": {
+      "strategy": "dispersion_alpha",
+      "params": {
+        "k_per_side": 2,
+        "momentum_lookback_bars": 48,
+        "dispersion_lookback_bars": 72,
+        "dispersion_threshold": 0.0,
+        "target_gross_leverage": 0.2,
+        "rebalance_interval_bars": 24
+      },
+      "yearly": {
+        "2021": 3.6881,
+        "2022": 1.9472,
+        "2023": 1.3011,
+        "2024": 3.358,
+        "2025": 1.9705
+      },
+      "obj": 1.9969,
+      "delta": -0.0924,
+      "loyo_wins": 2,
+      "pass": false
+    }
+  },
+  "winners": [],
+  "verdict": "NO 5TH SIGNAL FOUND \u2014 all candidates fail LOYO>=3 threshold. Best: ll_btc8_k2 \u0394=-0.0850 LOYO=3/5. v2.6.0 is the signal floor \u2014 diminishing returns on 5th signal.",
+  "next_phase_notes": "Phase 156: Accept v2.6.0 as production-ready. Deploy focus: (a) live paper trading, (b) risk management tuning, (c) post-live performance monitoring vs backtest expectation. OR explore regime-specific signal activation (only run 5th signal in certain regimes).",
+  "partial": false,
+  "timestamp": "2026-02-21T01:34:25"
+}
