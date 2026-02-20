@@ -1,0 +1,124 @@
+{
+  "_comment": "Phase 83 balanced: AVG=2.019, MIN=1.368. YbY=[3.19, 1.368, 1.369, 2.576, 1.591]",
+  "run_name": "ensemble_p83_balanced",
+  "seed": 42,
+  "venue": {
+    "name": "binance_usdm",
+    "kind": "crypto_perp",
+    "vip_tier": 0
+  },
+  "data": {
+    "provider": "binance_rest_v1",
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT",
+      "ADAUSDT",
+      "DOGEUSDT",
+      "AVAXUSDT",
+      "DOTUSDT",
+      "LINKUSDT"
+    ],
+    "bar_interval": "1h",
+    "cache_dir": ".cache/binance_rest"
+  },
+  "execution": {
+    "style": "taker",
+    "slippage_bps": 3.0
+  },
+  "costs": {
+    "fee_rate": 0.0005,
+    "slippage_rate": 0.0003,
+    "cost_multiplier": 1.0
+  },
+  "benchmark": {
+    "version": "v1",
+    "walk_forward": {
+      "enabled": true
+    }
+  },
+  "risk": {
+    "max_drawdown": 0.3,
+    "max_turnover_per_rebalance": 0.8,
+    "max_gross_leverage": 0.7,
+    "max_position_per_symbol": 0.3
+  },
+  "self_learn": {
+    "enabled": false
+  },
+  "_strategies": [
+    {
+      "name": "nexus_alpha_v1",
+      "params": {
+        "k_per_side": 2,
+        "w_carry": 0.35,
+        "w_mom": 0.45,
+        "w_confirm": 0.0,
+        "w_mean_reversion": 0.2,
+        "w_vol_momentum": 0.0,
+        "w_funding_trend": 0.0,
+        "momentum_lookback_bars": 336,
+        "mean_reversion_lookback_bars": 72,
+        "vol_lookback_bars": 168,
+        "target_portfolio_vol": 0.0,
+        "use_min_variance": false,
+        "target_gross_leverage": 0.35,
+        "min_gross_leverage": 0.05,
+        "max_gross_leverage": 0.65,
+        "rebalance_interval_bars": 60,
+        "strict_agreement": false
+      },
+      "weight": 0.275
+    },
+    {
+      "name": "idio_momentum_alpha",
+      "params": {
+        "k_per_side": 4,
+        "lookback_bars": 437,
+        "beta_window_bars": 168,
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.3,
+        "rebalance_interval_bars": 48
+      },
+      "weight": 0.175
+    },
+    {
+      "name": "idio_momentum_alpha",
+      "params": {
+        "k_per_side": 4,
+        "lookback_bars": 460,
+        "beta_window_bars": 168,
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.3,
+        "rebalance_interval_bars": 48
+      },
+      "weight": 0.15
+    },
+    {
+      "name": "idio_momentum_alpha",
+      "params": {
+        "k_per_side": 2,
+        "lookback_bars": 600,
+        "beta_window_bars": 168,
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.3,
+        "rebalance_interval_bars": 48
+      },
+      "weight": 0.1
+    },
+    {
+      "name": "funding_momentum_alpha",
+      "params": {
+        "k_per_side": 2,
+        "funding_lookback_bars": 144,
+        "direction": "contrarian",
+        "vol_lookback_bars": 168,
+        "target_gross_leverage": 0.25,
+        "rebalance_interval_bars": 24
+      },
+      "weight": 0.3
+    }
+  ]
+}
