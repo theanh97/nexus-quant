@@ -194,14 +194,16 @@ def apply_overlay(
     return tilted
 
 
-def compute_sharpe(returns) -> float:
-    rets = np.array(returns, dtype=np.float64)
-    if len(rets) < 100:
+def compute_sharpe(returns, min_bars: int = 50) -> float:
+    # Phase 118b fix: np.asarray + ravel guards non-contiguous/list inputs
+    rets = np.asarray(returns, dtype=np.float64).ravel()
+    rets = rets[np.isfinite(rets)]
+    if len(rets) < min_bars:
         return 0.0
-    rets = rets[~np.isnan(rets)]
-    if len(rets) < 100 or np.std(rets) == 0:
+    std = float(np.std(rets, ddof=0))
+    if std == 0.0 or not np.isfinite(std):
         return 0.0
-    return float(np.mean(rets) / np.std(rets) * np.sqrt(8760))
+    return float(np.mean(rets) / std * np.sqrt(8760))
 
 
 def compute_mdd(equity) -> float:

@@ -1,12 +1,10 @@
 {
-  "_comment": "PRODUCTION CONFIG — P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
-  "_version": "2.1.0",
+  "_comment": "PRODUCTION CONFIG \u2014 P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
+  "_version": "2.1.1",
   "_created": "2026-02-20",
-  "_validated": "Phases 91-129: walk-forward stable, OOS validated, cost-robust, regime-insured, vol tilt (P113) + price vol overlay (P129) validated",
-
+  "_validated": "Phases 91-129: walk-forward stable, OOS validated, cost-robust, regime-insured, vol tilt (P113) + price vol overlay (P129) validated; global_ls_overlay (P118b) WF PASS 2026-02-21",
   "run_name": "production_p91b",
   "seed": 42,
-
   "venue": {
     "name": "binance_usdm",
     "kind": "crypto_perp",
@@ -14,25 +12,32 @@
     "maker_fee_rate": 0.0002,
     "taker_fee_rate": 0.0005
   },
-
   "data": {
     "provider": "binance_rest_v1",
     "symbols": [
-      "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
-      "ADAUSDT", "DOGEUSDT", "AVAXUSDT", "DOTUSDT", "LINKUSDT"
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "BNBUSDT",
+      "XRPUSDT",
+      "ADAUSDT",
+      "DOGEUSDT",
+      "AVAXUSDT",
+      "DOTUSDT",
+      "LINKUSDT"
     ],
     "bar_interval": "1h",
     "cache_dir": ".cache/binance_rest"
   },
-
   "data_policy": {
     "_comment": "Hard gate: production only accepts real, whitelisted providers",
     "require_real_data": true,
-    "allowed_providers": ["binance_rest_v1"],
+    "allowed_providers": [
+      "binance_rest_v1"
+    ],
     "strict_unknown_provider": true,
     "allow_synthetic": false
   },
-
   "execution": {
     "style": "taker",
     "slippage_bps": 3.0,
@@ -42,7 +47,6 @@
       "coef_bps": 0.0
     }
   },
-
   "costs": {
     "fee_rate": 0.0005,
     "slippage_rate": 0.0003,
@@ -50,40 +54,36 @@
     "maker_fee_rate": 0.0002,
     "cost_multiplier": 1.0
   },
-
   "risk": {
     "max_drawdown": 0.25,
-    "max_turnover_per_rebalance": 0.80,
-    "max_gross_leverage": 0.70,
-    "max_position_per_symbol": 0.30
+    "max_turnover_per_rebalance": 0.8,
+    "max_gross_leverage": 0.7,
+    "max_position_per_symbol": 0.3
   },
-
   "volume_tilt": {
     "_comment": "Phase 111-113: reduce leverage when aggregate volume momentum is high (crowded market)",
-    "_validated": "3/4 WF windows positive, avg Δ=+0.066, ratio perfectly stable (std=0.00)",
+    "_validated": "3/4 WF windows positive, avg \u0394=+0.066, ratio perfectly stable (std=0.00)",
     "enabled": true,
     "lookback_bars": 168,
     "tilt_ratio": 0.65,
     "signal": "vol_mom_z",
-    "condition": "z_score > 0 → multiply returns by tilt_ratio",
-    "mechanism": "Sum perp_volume across all symbols → log momentum (168h) → rolling z-score → contrarian tilt"
+    "condition": "z_score > 0 \u2192 multiply returns by tilt_ratio",
+    "mechanism": "Sum perp_volume across all symbols \u2192 log momentum (168h) \u2192 rolling z-score \u2192 contrarian tilt"
   },
-
   "vol_regime_overlay": {
     "_comment": "Phase 127-129: reduce leverage + tilt F144 when BTC price vol is high",
-    "_validated": "LOYO 3/5 wins avg Δ=+0.232, expanding 2/4 wins, fixed threshold OBJ=1.72 vs baseline 1.57",
+    "_validated": "LOYO 3/5 wins avg \u0394=+0.232, expanding 2/4 wins, fixed threshold OBJ=1.72 vs baseline 1.57",
     "enabled": true,
     "window_bars": 168,
-    "threshold": 0.50,
-    "scale_factor": 0.50,
-    "f144_boost": 0.20,
+    "threshold": 0.5,
+    "scale_factor": 0.5,
+    "f144_boost": 0.2,
     "signal": "btc_rolling_price_vol",
-    "condition": "ann_vol > threshold → tilt F144 +20% and scale leverage ×0.50",
-    "mechanism": "BTC hourly returns → rolling 168h std × √8760 → if > 0.50 → reduce + tilt"
+    "condition": "ann_vol > threshold \u2192 tilt F144 +20% and scale leverage \u00d70.50",
+    "mechanism": "BTC hourly returns \u2192 rolling 168h std \u00d7 \u221a8760 \u2192 if > 0.50 \u2192 reduce + tilt"
   },
-
   "ensemble": {
-    "_comment": "4-signal blend — DO NOT remove v1 (regime insurance, Phase 102)",
+    "_comment": "4-signal blend \u2014 DO NOT remove v1 (regime insurance, Phase 102)",
     "weights": {
       "v1": 0.2747,
       "i460bw168": 0.1967,
@@ -97,7 +97,7 @@
           "k_per_side": 2,
           "w_carry": 0.35,
           "w_mom": 0.45,
-          "w_mean_reversion": 0.20,
+          "w_mean_reversion": 0.2,
           "momentum_lookback_bars": 336,
           "mean_reversion_lookback_bars": 72,
           "vol_lookback_bars": 168,
@@ -111,7 +111,7 @@
           "k_per_side": 4,
           "lookback_bars": 460,
           "beta_window_bars": 168,
-          "target_gross_leverage": 0.30,
+          "target_gross_leverage": 0.3,
           "rebalance_interval_bars": 48
         }
       },
@@ -121,7 +121,7 @@
           "k_per_side": 4,
           "lookback_bars": 415,
           "beta_window_bars": 216,
-          "target_gross_leverage": 0.30,
+          "target_gross_leverage": 0.3,
           "rebalance_interval_bars": 48
         }
       },
@@ -137,14 +137,13 @@
       }
     }
   },
-
   "monitoring": {
-    "_comment": "Thresholds for live monitoring — halt trading if breached",
+    "_comment": "Thresholds for live monitoring \u2014 halt trading if breached",
     "halt_conditions": {
       "rolling_30d_sharpe_below": -1.0,
       "max_drawdown_pct": 15.0,
       "max_daily_loss_pct": 5.0,
-      "correlation_with_btc_above": 0.60,
+      "correlation_with_btc_above": 0.6,
       "consecutive_losing_days": 14
     },
     "warning_conditions": {
@@ -154,18 +153,17 @@
     },
     "expected_performance": {
       "annual_sharpe_backtest": 2.005,
-      "annual_sharpe_realistic": 0.80,
-      "annual_sharpe_conservative": 0.70,
+      "annual_sharpe_realistic": 0.8,
+      "annual_sharpe_conservative": 0.7,
       "max_drawdown_backtest_pct": 25.1,
       "expected_live_drawdown_pct": 15.0,
-      "is_oos_degradation_ratio": 0.50
+      "is_oos_degradation_ratio": 0.5
     }
   },
-
   "position_sizing": {
     "_comment": "Guidelines for different account sizes",
     "target_gross_leverage": 0.35,
-    "max_gross_leverage": 0.70,
+    "max_gross_leverage": 0.7,
     "sizing_rules": {
       "small_account_under_10k": {
         "note": "Minimum viable: $10K. Below this, fees eat too much alpha.",
@@ -175,17 +173,16 @@
       "medium_account_10k_100k": {
         "note": "Sweet spot. Full strategy as designed.",
         "leverage": 0.35,
-        "max_position_usd_pct": 0.30
+        "max_position_usd_pct": 0.3
       },
       "large_account_100k_plus": {
         "note": "May need to reduce leverage or add execution optimization.",
         "leverage": 0.25,
-        "max_position_usd_pct": 0.20,
+        "max_position_usd_pct": 0.2,
         "consider_maker_orders": true
       }
     }
   },
-
   "operational": {
     "rebalance_frequency": "hourly",
     "data_refresh_interval_minutes": 60,
@@ -194,5 +191,25 @@
     "api_rate_limit_buffer_pct": 20,
     "max_retries_on_api_error": 3,
     "retry_delay_seconds": 5
+  },
+  "global_ls_overlay": {
+    "_comment": "Phase 118b: Binance Vision global long/short ratio z-score overlay",
+    "_validated": "IS avg \u0394=+0.380 (2022/2023/2024), OOS 2025 \u0394=+0.1764 \u2014 WF PASS (3 IS + OOS primary gate)",
+    "_candidate_notes": "taker_ls_z168_low also passes (OOS25=+0.07, OOS26=+0.17) \u2014 consider Phase 119 test",
+    "enabled": true,
+    "metric": "global_ls_ratio",
+    "lookback_bars": 168,
+    "tilt_ratio": 0.65,
+    "direction": "reduce_on_low",
+    "mechanism": "Binance Vision global L/S account ratio \u2192 log momentum \u2192 rolling 168h z-score \u2192 when z < 0 (crowd net short) \u2192 reduce portfolio returns by tilt_ratio=0.65 (contrarian protection)",
+    "data_source": "data.binance.vision daily metrics CSV resampled to 1h; local cache in .cache/binance_vision_metrics/",
+    "walk_forward": {
+      "2022_is": "+0.270",
+      "2023_is": "+0.480",
+      "2024_is": "+0.390",
+      "2025_oos": "+0.1764",
+      "2026_ytd_oos": "-0.0297 (51 days, within noise)"
+    },
+    "date_integrated": "2026-02-21"
   }
 }

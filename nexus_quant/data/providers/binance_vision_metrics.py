@@ -34,12 +34,21 @@ from __future__ import annotations
 import csv
 import io
 import os
+import ssl
 import time
 import urllib.request
 import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+# SSL context: try certifi first (like binance_rest.py), else unverified
+try:
+    import certifi as _certifi
+    _SSL_CTX = ssl.create_default_context(cafile=_certifi.where())
+except ImportError:
+    _SSL_CTX = ssl._create_unverified_context()  # fallback for static CDN data
 
 VISION_BASE = "https://data.binance.vision/data/futures/um/daily/metrics"
 CACHE_DIR = Path(".cache/binance_vision_metrics")
@@ -69,7 +78,7 @@ def _download_day(symbol: str, date: datetime, cache_dir: Path) -> Optional[str]
     url = f"{VISION_BASE}/{symbol}/{symbol}-metrics-{date_str}.zip"
     try:
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=15, context=_SSL_CTX) as resp:
             zip_data = resp.read()
     except Exception:
         return None
@@ -180,37 +189,50 @@ def load_vision_metrics(
 
     result: Dict[str, Dict[str, Dict[int, float]]] = {}
 
-    for sym in symbols:
-        print(f"  [VisionMetrics] {sym}: downloading {total_days} days of metrics...")
-        all_hourly: Dict[int, Tuple[float, float, float, float, float]] = {}
+    # Build date list once (shared across symbols)
+    date_list: List[datetime] = []
+    d = start_dt
+    while d < end_dt:
+        date_list.append(d)
+        d += timedelta(days=1)
 
+    for sym in symbols:
+        print(f"  [VisionMetrics] {sym}: {total_days} days (parallel=8)...", flush=True)
+        all_hourly: Dict[int, Tuple[float, float, float, float, float]] = {}
         downloaded = 0
-        cached = 0
+        cached_count = 0
         failed = 0
 
-        d = start_dt
-        while d < end_dt:
-            csv_cache = cache_dir / sym / f"{sym}-metrics-{d.strftime('%Y-%m-%d')}.csv"
-            is_cached = csv_cache.exists()
+        def _fetch_one(date: datetime):
+            """Download one day; returns (date, hourly_dict | None, was_cached)."""
+            csv_cache = cache_dir / sym / f"{sym}-metrics-{date.strftime('%Y-%m-%d')}.csv"
+            was_cached = csv_cache.exists()
+            text = _download_day(sym, date, cache_dir)
+            if text:
+                rows = _parse_csv_to_5min(text)
+                hourly = _resample_to_hourly(rows)
+                return date, hourly, was_cached
+            return date, None, was_cached
 
-            csv_text = _download_day(sym, d, cache_dir)
-            if csv_text:
-                rows_5m = _parse_csv_to_5min(csv_text)
-                hourly = _resample_to_hourly(rows_5m)
-                all_hourly.update(hourly)
-                if is_cached:
-                    cached += 1
-                else:
-                    downloaded += 1
-                    # Rate limit: only sleep on actual downloads
-                    if downloaded % 50 == 0:
-                        time.sleep(1.0)
-            else:
-                failed += 1
+        # Parallel download with 8 threads (Binance Vision is static CDN; high concurrency OK)
+        with ThreadPoolExecutor(max_workers=8) as exe:
+            futures = {exe.submit(_fetch_one, date): date for date in date_list}
+            for fut in as_completed(futures):
+                try:
+                    _, hourly, was_cached = fut.result()
+                    if hourly is not None:
+                        all_hourly.update(hourly)
+                        if was_cached:
+                            cached_count += 1
+                        else:
+                            downloaded += 1
+                    else:
+                        failed += 1
+                except Exception:
+                    failed += 1
 
-            d += timedelta(days=1)
-
-        print(f"    -> {len(all_hourly)} hourly bars ({downloaded} downloaded, {cached} cached, {failed} failed)")
+        print(f"    -> {len(all_hourly)} hourly bars "
+              f"({downloaded} downloaded, {cached_count} cached, {failed} failed)", flush=True)
 
         # Split into individual metric dicts
         oi_map: Dict[int, float] = {}
