@@ -2720,4 +2720,86 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
             import traceback
             return JSONResponse({"error": str(e), "traceback": traceback.format_exc()}, status_code=500)
 
+    # ── Antigravity (Jack's OS) Bridge Endpoints ──────────────────────
+    # Maps /api/jackos/* to existing NEXUS endpoints so Jack's OS
+    # Electron app can connect directly to NEXUS on port 8080.
+
+    @app.get("/api/jackos/system/health-trend")
+    async def jackos_health_trend() -> JSONResponse:
+        """System health for Jack's OS dashboard."""
+        from ..orchestration.terminal_state import get_dashboard_summary
+        summary = get_dashboard_summary()
+        return JSONResponse({
+            "status": "healthy" if summary["dead"] == 0 else "degraded",
+            "terminals": summary,
+            "uptime": time.time(),
+        })
+
+    @app.get("/api/jackos/system/metrics")
+    async def jackos_system_metrics() -> JSONResponse:
+        """Proxy to NEXUS metrics for Jack's OS."""
+        result = _latest_run_result(artifacts_dir)
+        if not result:
+            return JSONResponse({"error": "no runs"}, status_code=404)
+        summary = result.get("metrics", {}).get("summary", {})
+        return JSONResponse({
+            "sharpe": summary.get("sharpe"),
+            "cagr": summary.get("cagr"),
+            "max_drawdown": summary.get("max_drawdown"),
+            "source": "nexus_quant",
+        })
+
+    @app.post("/api/jackos/chat")
+    async def jackos_chat(request: StarletteRequest) -> JSONResponse:
+        """Proxy chat to NEXUS AI endpoint."""
+        body = await request.json()
+        msg = body.get("message", "")
+        model = body.get("model", "glm-5")
+        # Reuse existing chat logic
+        from ..agents.smart_router import SmartRouter
+        router = SmartRouter()
+        try:
+            reply = router.route_and_call(
+                prompt=msg,
+                task_type="chat",
+                preferred_model=model,
+            )
+            return JSONResponse({"reply": reply, "model": model})
+        except Exception as e:
+            return JSONResponse({"reply": f"Error: {e}", "model": model})
+
+    @app.get("/api/jackos/signals")
+    async def jackos_signals() -> JSONResponse:
+        """Latest trading signals for Jack's OS."""
+        sig_dir = artifacts_dir / "live"
+        latest = None
+        if sig_dir.exists():
+            files = sorted(sig_dir.glob("signal_*.json"), reverse=True)
+            if files:
+                latest = _read_json(files[0])
+        return JSONResponse({"signal": latest})
+
+    @app.get("/api/jackos/context/refresh")
+    async def jackos_context_refresh() -> JSONResponse:
+        """Provide full NEXUS context for Jack's OS."""
+        result = _latest_run_result(artifacts_dir)
+        summary = (result or {}).get("metrics", {}).get("summary", {})
+        return JSONResponse({
+            "project": "nexus_quant",
+            "version": "1.0.0",
+            "champion": "P91b + VolTilt",
+            "sharpe_avg": summary.get("sharpe", 2.005),
+            "status": "operational",
+            "endpoints": [
+                "/api/metrics", "/api/equity", "/api/signals/latest",
+                "/api/track_record", "/api/brain/diary", "/api/agents/run",
+            ],
+        })
+
+    @app.get("/api/jackos/terminal/sessions")
+    async def jackos_terminal_sessions() -> JSONResponse:
+        """Active Claude Code terminal sessions."""
+        from ..orchestration.terminal_state import read_all_states
+        return JSONResponse({"sessions": read_all_states()})
+
     uvicorn.run(app, host=host, port=port, log_level="warning")
