@@ -1,0 +1,30 @@
+{
+  "research_id": "R68",
+  "title": "Butterfly-Focused Strategy Optimization",
+  "best_bf_params": {
+    "lb": 120,
+    "z_in": 1.5,
+    "z_out": 0.0
+  },
+  "best_bf_sharpe": 2.644,
+  "best_pair": {
+    "f1": "butterfly_25d",
+    "f2": "bf_ratio",
+    "sharpe": 1.613
+  },
+  "r60_sharpe": 3.0659,
+  "wf_oos_sharpe": 1.3387,
+  "feature_sharpes": {
+    "butterfly_25d": 1.8023,
+    "skew_25d": 1.0204,
+    "term_spread": 0.808,
+    "iv_atm": 0.1664,
+    "iv_25d_put": 0.0833,
+    "iv_25d_call": 0.1306,
+    "bf_ratio": 1.4361,
+    "skew_bf_spread": 0.9295,
+    "put_call_spread": 1.0172,
+    "iv_atm_5d_change": 1.1297
+  },
+  "verdict": "BF standalone viable: Sharpe 2.64 \u2014 can run without VRP"
+}
