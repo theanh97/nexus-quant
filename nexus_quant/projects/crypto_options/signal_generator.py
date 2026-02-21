@@ -8,6 +8,7 @@ daily trading signals.
 
 Ensemble: Mixed-frequency (hourly VRP + daily Skew MR)
 Weights: VRP 40% + Skew MR 60% (wisdom v6.0.0)
+Per-asset: ETH VRP lookback 60d (R35+R36 validated)
 
 Signals:
     VRP: Always short vol unless VRP z-score < -3.0 (extreme vol spike).
@@ -55,8 +56,13 @@ ENSEMBLE_WEIGHTS = {"VRP": 0.40, "Skew_MR": 0.60}
 VRP_PARAMS = {
     "base_leverage": 1.5,          # total short vol leverage
     "exit_z_threshold": -3.0,      # exit when z < this (never in practice)
-    "vrp_lookback_days": 30,       # 30 days of data for z-score
+    "vrp_lookback_days": 30,       # 30 days of data for z-score (BTC default)
     "rebalance_days": 7,           # weekly rebalance
+}
+
+# Per-asset VRP lookback overrides (R35+R36: ETH needs longer lookback due to higher base vol)
+VRP_LOOKBACK_OVERRIDES = {
+    "ETH": 60,  # R35: ETH VRP lb=60 robustly better than 30 (LOYO +0.199)
 }
 
 # Skew MR params (daily-validated champion)
@@ -224,7 +230,7 @@ class OptionsSignalGenerator:
 
     def _compute_vrp_zscore(self, daily: List[Dict], sym: str) -> Optional[float]:
         """Compute VRP z-score from daily data."""
-        lookback = VRP_PARAMS["vrp_lookback_days"]
+        lookback = VRP_LOOKBACK_OVERRIDES.get(sym, VRP_PARAMS["vrp_lookback_days"])
         recent = daily[-lookback:] if len(daily) >= lookback else daily
 
         vrp_vals = []
