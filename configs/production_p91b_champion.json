@@ -266,7 +266,7 @@
     "long_window_bars": 72,
     "rolling_percentile_window": 336,
     "reduce_threshold": 0.55,
-    "reduce_scale": 0.0,
+    "reduce_scale": 0.05,
     "boost_threshold": 0.22,
     "boost_scale": 2.0,
     "mechanism": "spread = rolling_mean(cross-sectional funding, 12h) - rolling_mean(cross-sectional funding, 96h). Rolling percentile (336h). If spread_pct > 60th: scale\u00d70.40. If spread_pct < 25th: scale\u00d71.50. P168 re-sweep: rt=0.70\u21920.60, rs=0.60\u21920.40, bs=1.15\u21921.25. P169 fine-tune: bt=0.30\u21920.25 (tighter boost window), bs=1.25\u21921.50 (stronger boost). Peak at bs=1.50 confirmed (bs=1.60 regresses). LOYO 3/5 \u0394=+0.0089."
@@ -345,7 +345,7 @@
       "HIGH": 0.5
     }
   },
-  "version": "v2.49.1",
+  "version": "v2.49.0",
   "v1_per_regime_weights": {
     "LOW": {
       "w_carry": 0.1,
