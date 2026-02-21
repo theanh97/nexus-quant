@@ -76,7 +76,7 @@
     "enabled": true,
     "window_bars": 168,
     "threshold": 0.5,
-    "scale_factor": 0.3,
+    "scale_factor": 0.4,
     "f144_boost": 0.0,
     "signal": "btc_rolling_price_vol",
     "condition": "ann_vol > 0.50 \u2192 tilt F168 +15% and scale leverage \u00d70.40",
@@ -327,5 +327,5 @@
       "HIGH": 0.5
     }
   },
-  "version": "2.42.2"
+  "version": "2.42.3"
 }
