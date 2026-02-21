@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import os
+import ssl
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, replace
@@ -28,6 +29,18 @@ from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+
+def _make_ssl_context() -> ssl.SSLContext:
+    """Create SSL context with certifi CA bundle (macOS fix)."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        return ssl.create_default_context()
+
+
+_SSL_CTX = _make_ssl_context()
 
 
 class TaskType(str, Enum):
@@ -228,6 +241,11 @@ ROUTING_TABLE: Dict[TaskType, ModelSpec] = {
 ECHO_SECONDARY_MODEL: ModelSpec = GOOGLE_GEMINI_PRO
 
 
+def _gemini_api_key() -> Optional[str]:
+    """Get Gemini API key — try GEMINI_API_KEY first, then GOOGLE_API_KEY."""
+    return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+
+
 class SmartRouter:
     def __init__(
         self,
@@ -239,7 +257,7 @@ class SmartRouter:
         # Prefer Gemini Flash (free) as fallback if API key available, else GLM-5
         if fallback_model:
             self._fallback_model = fallback_model
-        elif os.environ.get("GEMINI_API_KEY"):
+        elif _gemini_api_key():
             self._fallback_model = GOOGLE_GEMINI_FLASH
         else:
             self._fallback_model = ZAI_GLM5
@@ -272,7 +290,7 @@ class SmartRouter:
                 spec = self._fallback_model
 
         # Auto-fallback: Gemini API → Gemini CLI when no API key
-        if spec.provider == "google" and not os.environ.get(spec.api_key_env):
+        if spec.provider == "google" and not _gemini_api_key():
             if self._gemini_cli_available():
                 cli_spec = GEMINI_CLI_PRO if "pro" in spec.name else GEMINI_CLI_FLASH
                 spec = cli_spec
@@ -290,7 +308,7 @@ class SmartRouter:
             s = spec
             if s.provider == "zai":
                 s = replace(s, base_url=_zai_base_url())
-            if s.provider == "google" and not os.environ.get(s.api_key_env):
+            if s.provider == "google" and not _gemini_api_key():
                 if self._gemini_cli_available():
                     s = GEMINI_CLI_PRO if "pro" in s.name else GEMINI_CLI_FLASH
                 else:
@@ -397,6 +415,9 @@ class SmartRouter:
         models: List[str],
     ) -> str:
         api_key = os.environ.get(spec.api_key_env)
+        # Fallback: Google's generative AI accepts both GEMINI_API_KEY and GOOGLE_API_KEY
+        if not api_key and spec.provider == "google":
+            api_key = _gemini_api_key()
         if not api_key:
             raise RuntimeError(f"Missing API key env var: {spec.api_key_env}")
 
@@ -423,7 +444,7 @@ class SmartRouter:
             )
 
             try:
-                with urllib.request.urlopen(req, timeout=60) as resp:
+                with urllib.request.urlopen(req, timeout=60, context=_SSL_CTX) as resp:
                     body = resp.read().decode("utf-8")
                 data = json.loads(body)
                 text = (
