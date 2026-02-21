@@ -1,9 +1,9 @@
 {
   "_project": "crypto_options",
-  "_version": "22.0.0",
+  "_version": "23.0.0",
   "_updated": "2026-02-21",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). 51 research studies. R51 BREAKTHROUGH: First REAL Sharpe ratios computed. BTC VRP=2.905, Skew MR=1.551, Ensemble=3.094 on real DVOL + real option trade data (2019-2026).",
-  "_status": "REAL DATA VALIDATED (R51). BTC strategies confirmed on real data. ETH VRP weaker (1.125). 2025-2026 showing degradation.",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). 58 research studies. R51-R58: Full real-data validation cycle. BTC VRP+Butterfly is the PRODUCTION champion: OOS Sharpe ~2.4, all-year positive except 2026. ETH excluded (hurts portfolio). Butterfly MR (Sharpe 1.80, corr=0.055 with VRP) is a NEW diversifying alpha source confirmed OOS.",
+  "_status": "PRODUCTION-READY (R57). BTC VRP+Butterfly validated OOS via walk-forward + LOYO. ETH EXCLUDED (drags Sharpe). 2025-2026 degradation acknowledged but strategy remains profitable.",
 
   "CRITICAL_DATA_AUTHENTICITY_WARNING": {
     "summary": "ALL R1-R48 research results are computed on SYNTHETIC implied volatility data. NO Sharpe number should be treated as a proven real-world result.",
@@ -61,23 +61,30 @@
   },
 
   "ENSEMBLE_CHAMPION": {
-    "type": "daily_40_60_vrp_skew",
-    "weights": {"VRP": 0.40, "Skew_MR": 0.60},
-    "REAL_DATA_SHARPE": 3.094,
-    "REAL_DATA_NOTE": "R51 — first REAL Sharpe on actual Deribit DVOL + option trade skew data",
-    "real_data_stats": {
-      "sharpe": 3.094,
-      "t_stat": 6.86,
-      "ann_return": 0.0425,
-      "ann_vol": 0.0137,
-      "max_dd": 0.0188,
-      "win_rate": 0.736,
-      "period": "2021-03-25 to 2026-02-18 (1795 days)"
+    "type": "daily_vrp_butterfly_multifactor",
+    "PRODUCTION_CONFIG": {
+      "primary": "70% VRP + 30% Butterfly MR (simple, robust)",
+      "optimal_risk_adjusted": "50% VRP + 50% Butterfly MR (higher Sharpe, lower return)",
+      "VRP_params": {"leverage": 2.0, "lookback": 30, "rebalance_freq": 5},
+      "Butterfly_params": {"lookback": 120, "z_entry": 1.5, "z_exit": 0.3},
+      "asset": "BTC ONLY — ETH excluded (drags portfolio)"
     },
-    "real_yearly": {"2021": 5.204, "2022": 3.489, "2023": 2.359, "2024": 2.963, "2025": 1.777, "2026": -2.470},
-    "synthetic_sharpe_was": 2.723,
-    "synthetic_yearly": {"2021": 2.02, "2022": 2.60, "2023": 3.65, "2024": 2.44, "2025": 2.90},
-    "note": "Real ensemble EXCEEDS synthetic (3.09 vs 2.72). BUT 2025-2026 degradation is a concern."
+    "REAL_DATA_STATS": {
+      "vrp_bf_70_30": {"sharpe": 2.84, "ann_ret": "7.02%", "max_dd": "2.19%"},
+      "vrp_bf_50_50": {"sharpe": 2.91, "ann_ret": "5.16%", "max_dd": "1.59%"},
+      "vrp_only": {"sharpe": 2.78, "ann_ret": "9.81%", "max_dd": "3.10%"}
+    },
+    "OOS_VALIDATION": {
+      "walk_forward_oos_sharpe": 2.44,
+      "walk_forward_positive_pct": "88%",
+      "loyo_avg_sharpe": 2.26,
+      "degradation_from_train": 1.14,
+      "note": "R57 — butterfly alpha CONFIRMED out-of-sample"
+    },
+    "yearly_vrp_bf_70_30": {"2021": 5.29, "2022": 4.01, "2023": 2.21, "2024": 2.70, "2025": 0.92, "2026": -2.10},
+    "pnl_correlation_vrp_bf": 0.055,
+    "previous_champion": "R51 VRP+Skew 40/60 (Sharpe 3.094) — Skew MR weak on real data, replaced by Butterfly MR",
+    "note": "Butterfly MR salvages weak VRP periods: 2025 Sharpe +0.04, 2026 +0.13 vs VRP-only"
   },
 
   "ENSEMBLE_DAILY_ONLY": {
@@ -157,24 +164,20 @@
   },
 
   "STRATEGY_4_BUTTERFLY_MR": {
-    "status": "VALIDATED_STANDALONE",
+    "status": "★ VALIDATED_ON_REAL_DATA — KEY DIVERSIFIER",
+    "REAL_DATA_SHARPE": {"BTC": 1.80, "ETH": 0.71},
+    "REAL_DATA_NOTE": "R56: Butterfly MR Sharpe 1.80 on REAL surface data. PnL correlation with VRP = 0.055 (nearly uncorrelated). Best diversifier found.",
     "class": "FeatureMRStrategy",
-    "wf_avg_sharpe": 1.082,
-    "wf_min_sharpe": 0.812,
-    "conservative_avg": 1.031,
-    "conservative_min": 0.722,
-    "params": {
+    "real_params": {
       "feature_key": "butterfly_25d",
       "lookback": 120,
-      "z_entry": 2.0,
-      "z_exit": 0.3,
-      "target_leverage": 0.5,
-      "rebalance_freq": 3,
-      "min_bars": 120
+      "z_entry": 1.5,
+      "z_exit": 0.3
     },
-    "correlations": {"vs_VRP": -0.014, "vs_Skew": 0.189},
-    "ensemble_impact": "Does NOT improve 2-way. 3-way best Sharpe 1.657 vs 2-way 1.701.",
-    "key_insight": "Vol smile convexity mean-reverts over 120-day cycles. Signal is real but too weak to improve ensemble."
+    "real_correlations": {"vs_VRP": 0.055, "vs_Skew": 0.186, "vs_TermSpread": 0.127},
+    "OOS_validated": "R57: Walk-forward OOS Sharpe 2.44 (VRP+BF combo). LOYO Sharpe 2.26. Confirmed genuine alpha.",
+    "synthetic_was": {"wf_avg_sharpe": 1.082, "ensemble_impact": "did not improve ensemble on synthetic — reversed on real data!"},
+    "key_insight": "On REAL data, butterfly MR is the best VRP diversifier. Synthetic data UNDERSTATED its value. Low correlation (0.055) provides genuine risk reduction."
   },
 
   "STRATEGY_5_SKEW_SPREAD": {
@@ -563,7 +566,13 @@
     "Per-asset skew lookback optimization (R46): BTC lookback 45d (+0.028 marginal), ETH lookback 75d (+0.036 marginal), ETH z_entry_short=0.75 (+0.064). Combined: avg=4.924 (+0.108) but min drops 3.973→3.864.",
     "R46 LOYO validation (R47): R46 combined 4/5 years improve but 2022 drops -0.109. z_short-only (ETH=0.75) only 2/5 years improve — NOT ROBUST. All R46 configs degrade min Sharpe. DECISION: Keep current params.",
     "Position-level risk management (R48): 29 configs across 4 approaches (DD trigger, bar-loss limit, rolling Sharpe floor, vol-cap) — 0/29 improve. 5th confirmation that carry trades must be always fully invested (R7, R21, R26, R45, R48).",
-    "★ FIRST REAL DATA VALIDATION (R49): VRP is REAL. Using Deribit DVOL (real IV from option prices, March 2021-Feb 2026, 1765 days). BTC VRP mean +9.9% (t=34.3, p≈0, VRP>0 in 81% of days). ETH VRP mean +6.7% (t=17.8, p≈0, VRP>0 in 71% of days). BTC synthetic calibration was CONSERVATIVE (8.0% vs real 9.9%). ETH synthetic was OPTIMISTIC (10.0% vs real 6.7%). WARNING: ETH VRP went negative in 2025 (-3.3%). VRP strategy edge is CONFIRMED on real data."
+    "★ FIRST REAL DATA VALIDATION (R49): VRP is REAL. Using Deribit DVOL (real IV from option prices, March 2021-Feb 2026, 1765 days). BTC VRP mean +9.9% (t=34.3, p≈0, VRP>0 in 81% of days). ETH VRP mean +6.7% (t=17.8, p≈0, VRP>0 in 71% of days). BTC synthetic calibration was CONSERVATIVE (8.0% vs real 9.9%). ETH synthetic was OPTIMISTIC (10.0% vs real 6.7%). WARNING: ETH VRP went negative in 2025 (-3.3%). VRP strategy edge is CONFIRMED on real data.",
+    "★ WALK-FORWARD OOS VALIDATION (R54): Edge confirmed OOS. LOYO: OOS Sharpe 1.54 (no degradation from train 1.35). Walk-Forward: OOS Sharpe 1.99, 89% positive periods. Rolling 1yr Sharpe above 1.0 in 94% of windows. Parameters stable: w=0.7, lev=2.0, lb=60 consistently preferred across all subsets.",
+    "Regime-adaptive strategy marginal (R55): Adaptive Sharpe 2.55 vs static 2.54. VRP dominates ALL regimes (w_vrp=0.7-0.9 optimal everywhere). Main benefit is leverage adjustment: HIGH→1.5x, LOW→2.5x. Not worth complexity.",
+    "★ BUTTERFLY MR IS NEW REAL ALPHA (R56): Sharpe 1.80 on REAL data, PnL correlation with VRP = 0.055 (essentially uncorrelated). Multi-factor improves weak years: 2025 VRP=0.88→MF=1.79, 2026 VRP=-2.23→MF=-0.24. Reverses synthetic-data finding where butterfly did not help.",
+    "★ BUTTERFLY CONFIRMED OOS (R57): Walk-Forward VRP+BF Sharpe 2.44 (best), LOYO 2.26. Adding factors monotonically improves OOS: VRP-only 2.11 → 4-factor 2.37. Fixed 50/50 VRP+BF: Sharpe 2.91, MaxDD 1.59%. Butterfly improves EVERY year.",
+    "ETH EXCLUDED from portfolio (R58): ETH factors all weak (VRP=1.11, BF=0.71). BTC-ETH VRP correlation 0.69 — no diversification. BTC-only (2.84) > 80/20 (2.46) > 70/30 (2.26). ETH drag is structural.",
+    "Skew MR weak on REAL data (R55/R56): Real skew mean +1.4% (vs synthetic -5%) — 6.4% difference makes z-score signals weaker. Optimizer consistently pushes w_vrp toward 0.7-0.9. Replaced by Butterfly MR as diversifier."
   ],
 
   "failed_hypotheses": [
@@ -572,7 +581,7 @@
     "VRP overlays (z-scaling, IV pct, vol regime) — ALL destroy Sharpe",
     "Cross-sectional z-score — wrong approach for 2-symbol universe",
     "Daily rebalancing for VRP — costs exceed income",
-    "Butterfly improves ensemble — dilutes rather than enhances",
+    "Butterfly improves ensemble — dilutes on SYNTHETIC, but REVERSAL: IMPROVES on REAL data (R56/R57)",
     "Skew spread improves ensemble — marginal, fails conservative costs",
     "Hourly Skew MR — ALL 72 configs NEGATIVE. Signal too noisy at hourly freq",
     "Dynamic ensemble allocation — ALL worse than static OOS",
@@ -620,13 +629,13 @@
   "SYNTHETIC_DATA_STATUS": "PARTIALLY VALIDATED. R49 confirms VRP edge is REAL using Deribit DVOL. Skew MR strategy still needs real skew data (not available free). Architecture principles validated. Parameter optimization still synthetic-only.",
 
   "next_research": [
-    "★ PRIORITY 0: Run full VRP backtest with REAL DVOL data (R49 proved VRP is real, now optimize params)",
-    "PRIORITY 1: Get real skew data — Laevitas Premium ($50/mo) has 1yr skew history, or Tardis.dev for 2019+ option chain",
-    "PRIORITY 2: IV-percentile sizing with REAL data — R25 promising (+0.258), needs real IV dynamics",
-    "PRIORITY 3: Multi-expiry VRP with REAL data — gross Sharpe scales with 1/sqrt(DTE), revisit with real term structure",
-    "Expand universe: SOL, DOGE options when API data becomes available",
-    "Intraday vol pattern exploitation: hourly vol seasonality (Asia/EU/US sessions) — needs real data",
-    "Production signal generator: integrate freq=3 rebalancing if real data validates R32 finding",
-    "VRP gamma cost decomposition: understand hourly-vs-daily VRP mechanism with real intraday data"
+    "★ PRIORITY 0: IV-percentile sizing with REAL DVOL — R25 was +0.258 on synthetic, validate on real DVOL distribution",
+    "PRIORITY 1: Hourly VRP with REAL data — hourly was +75% better on synthetic (3.649 vs 2.088). Need real intraday DVOL.",
+    "PRIORITY 2: Multi-expiry VRP with REAL term structure — real term_spread available from R50 surface data",
+    "PRIORITY 3: Delta hedging simulation with REAL market data — combine R18 methodology with real prices/funding",
+    "PRIORITY 4: Investigate 2025-2026 degradation — structural (market maturation) or cyclical? IV at all-time lows.",
+    "Production deployment: Build live signal generator using VRP+BF(70/30) config with BTC-only",
+    "SOL/DOGE universe expansion when Deribit option volume increases",
+    "VRP gamma cost decomposition: understand hourly-vs-daily mechanism with real intraday data"
   ]
 }
