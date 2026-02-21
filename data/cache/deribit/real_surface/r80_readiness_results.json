@@ -1,0 +1,18 @@
+{
+  "research_id": "R80",
+  "title": "Production Deployment Readiness Assessment",
+  "overall_pct": 85.71428571428571,
+  "verdict": "CONDITIONAL GO \u2014 Ready with caveats",
+  "gaps": [
+    "Infrastructure: Automated daily execution",
+    "Infrastructure: Position tracking system",
+    "Infrastructure: Alert/notification system"
+  ],
+  "latest_signal": {
+    "date": "2026-02-18",
+    "bf_z": 0.25394571539679234,
+    "bf_signal": "HOLD (prev position)",
+    "iv": 0.5367000000000001,
+    "recent_sharpe": 2.582
+  }
+}
