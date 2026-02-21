@@ -1,9 +1,9 @@
 {
   "_project": "crypto_options",
-  "_version": "10.0.0",
+  "_version": "11.0.0",
   "_updated": "2026-02-21",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). Exhaustive R&D: 5000+ configs across 11 strategy types + 3 dynamic allocation + hourly frequency analysis + regime filter + IV sizing research. Delta hedging costs quantified. Tail events stress-tested. Cross-project portfolio integration complete. DeribitExecutor fully implemented. Paper state tracker active.",
-  "_status": "PRODUCTION-READY: Mixed-freq ensemble Sharpe 2.723. Delta hedge drag -6.6% (optimal config). Tail stress: 3/3 PASS. Cross-project portfolio (25% perps + 75% options) Sharpe 3.103. IV-percentile sizing promising (+0.258, R25). 11/11 production tests PASS.",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). Exhaustive R&D: 5000+ configs across 11 strategy types + 3 dynamic allocation + hourly frequency analysis + regime filter + IV sizing research (R25-R28). Delta hedging costs quantified. Tail events stress-tested. Cross-project portfolio integration complete. DeribitExecutor fully implemented. Paper state tracker active.",
+  "_status": "PRODUCTION-READY: IV-sized ensemble Sharpe 2.593 (R28 optimized 0.5/1.7). Delta hedge drag -6.6%. Tail stress: 3/3 PASS. Cross-project portfolio 25/75 Sharpe 3.103. 11/11 production tests PASS. Equity-curve overlays (R26) and carry sizing (R27) confirmed as harmful — carry must be always-on.",
 
   "ENSEMBLE_CHAMPION": {
     "type": "mixed_frequency",
@@ -472,7 +472,8 @@
     "Ensemble max drawdown -1.51% across 5 years — zero days with >1% loss",
     "IV-percentile position sizing: step function (0.5x/1.0x/1.5x) with 180d lookback improves VRP avg +0.258 AND min +0.343 — sizing ≠ filtering",
     "Equity-curve overlays (R26): 0/24 configs improve carry. DD threshold, MA envelope, time-HWM, graduated DD — ALL hurt. Carry earns most during recovery (high IV post-drawdown). Confirms: always fully invested.",
-    "VRP carry magnitude sizing (R27): direct carry spread (IV²-RV²) is too noisy for sizing — single-day RV swamps signal. IV percentile (R25) wins because it's a smooth proxy. 3/26 marginal improvements, none beat R25."
+    "VRP carry magnitude sizing (R27): direct carry spread (IV²-RV²) is too noisy for sizing — single-day RV swamps signal. IV percentile (R25) wins because it's a smooth proxy. 3/26 marginal improvements, none beat R25.",
+    "IV sizing parameter optimization (R28): 55 configs, best 0.3/2.0x (avg=2.677 Δ=+0.418). High-scale factor is primary driver (monotonic). Production-safe 0.5/1.7x (avg=2.593 Δ=+0.334). 25/75 thresholds and 180d lookback confirmed optimal."
   ],
 
   "failed_hypotheses": [
@@ -499,6 +500,8 @@
     "Multi-expiry VRP with REAL data: gross Sharpe scales with 1/sqrt(DTE), revisit when real term structure available",
     "Expand universe: SOL, DOGE options when API data becomes available",
     "Intraday vol pattern exploitation: hourly vol seasonality (Asia/EU/US sessions) — needs real data",
-    "VRP carry Z-score sizing: scale position by VRP spread magnitude (direct carry richness proxy, different from IV-percentile proxy)"
+    "VRP carry Z-score sizing (R27): tested, marginal (3/26). IV percentile is better proxy.",
+    "Smoothed RV for carry sizing: use 5-day or 10-day RV instead of single-day for carry spread calculation — may reduce noise that killed R27",
+    "Multi-asset correlation dynamics: how does BTC-ETH vol correlation affect ensemble during stress? Cross-asset hedging potential."
   ]
 }

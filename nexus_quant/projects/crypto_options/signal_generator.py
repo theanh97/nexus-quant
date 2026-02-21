@@ -73,14 +73,15 @@ MIN_DATA_DAYS_VRP = 21             # need at least 21 days for VRP
 MIN_DATA_DAYS_SKEW = 45            # need at least 45 days for Skew MR
 MIN_DATA_DAYS_FULL_CONFIDENCE = 60 # full confidence after 60 days
 
-# IV-percentile position sizing (R25, validated on synthetic + delta hedging)
-# Step function: <25th pct → 0.5x, 25-75th → 1.0x, >75th → 1.5x
+# IV-percentile position sizing (R25+R28 optimized, validated on synthetic + delta hedging)
+# Step function: <25th pct → 0.5x, 25-75th → 1.0x, >75th → 1.7x
+# R28 sweep: 55 configs, best=0.3/2.0 (avg=2.677), production-safe=0.5/1.7 (avg=2.593)
 IV_SIZING_ENABLED = True
 IV_SIZING_LOOKBACK = 180           # 180-day lookback for percentile calculation
 IV_SIZING_PCT_LOW = 0.25           # below this → scale down
 IV_SIZING_PCT_HIGH = 0.75          # above this → scale up
 IV_SIZING_SCALE_LOW = 0.50         # scale factor when IV is low
-IV_SIZING_SCALE_HIGH = 1.50        # scale factor when IV is high
+IV_SIZING_SCALE_HIGH = 1.70        # scale factor when IV is high (R28: 1.5→1.7)
 
 
 class OptionsSignalGenerator:
