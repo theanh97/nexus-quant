@@ -345,7 +345,7 @@
       "HIGH": 0.5
     }
   },
-  "version": "v2.49.2",
+  "version": "v2.49.3",
   "v1_per_regime_weights": {
     "LOW": {
       "w_carry": 0.1,
