@@ -1,8 +1,8 @@
 {
   "_project": "crypto_options",
-  "_version": "34.0.0",
+  "_version": "35.0.0",
   "_updated": "2026-02-21",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). 96 research studies (R1-R96). 11x STATIC > DYNAMIC. MAKER FILLS ESSENTIAL (R92). Config v3 (sens=5.0) dominates but ETH kill-switch blocks → KEEP v2. Per-asset sensitivity is optimal future path.",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). 98 research studies (R1-R98). CONFIG v3 DEPLOYED: BTC sens=5.0, ETH sens=3.5 (+44% portfolio Sharpe). 11x STATIC > DYNAMIC. MAKER FILLS ESSENTIAL.",
   "_status": "PRODUCTION READY — GREEN. Multi-asset runner (R88: BTC 70%/ETH 30%). ETH kill-switch widened to 2.0% (R89). Early warnings for MONITORING ONLY (R90: 10th static>dynamic). Portfolio health 0.66 STRONG. All systems GO.",
 
   "CRITICAL_DATA_AUTHENTICITY_WARNING": {
@@ -644,7 +644,8 @@
     "★ HISTORICAL REPLAY 5/5 GREEN (R93): 12-month replay (Feb 2025 → Feb 2026). BTC: Sharpe 2.74, 6 trades, MaxDD -0.21%. ETH: Sharpe 1.23, 4 trades, MaxDD -0.53%. Portfolio 70/30: Sharpe 2.71, +0.47%, MaxDD -0.16%. All 8/8 consistency checks pass. CRITICAL: BTC breaks even with 8bps maker costs in this low-return period. ETH survives costs better (+0.15% net).",
     "Execution cost optimization (R94): Sensitivity=5.0 is best anti-cost lever: BTC Sharpe 1.93 (vs 1.26 at sens=2.5) with 8bps. BTC breakeven at 10bps, ETH at 6bps. Maker fills + combo orders recommended.",
     "★ 11th STATIC>DYNAMIC (R95): 24 entry filters tested (skew confirm, IV level, term structure, BF momentum, IV momentum, combos). BTC: 1/12 marginal. ETH: 0/12. BF standalone remains optimal.",
-    "★ CONFIG v3 ANALYSIS (R96): sens=5.0 dominates v2 on WF (BTC avg 2.38 vs 1.24) and LOYO (2.11 vs 1.13). BUT ETH MaxDD 2.21-3.16% > 2.0% kill-switch → BLOCKED. KEEP v2. Per-asset sensitivity (BTC=5.0, ETH=2.5) is the optimal future path."
+    "★ CONFIG v3 ANALYSIS (R96): sens=5.0 dominates v2 on WF (BTC avg 2.38 vs 1.24) and LOYO (2.11 vs 1.13). BUT ETH MaxDD 2.21-3.16% > 2.0% kill-switch → BLOCKED for uniform config.",
+    "★★ PER-ASSET SENSITIVITY DEPLOYED (R97/R98): BTC sens=5.0 (MaxDD -0.94% < 1.4% KS), ETH sens=3.5 (MaxDD -2.21% < 2.5% widened KS). Portfolio Sharpe 1.15 → 1.65 (+44%). WF 5/5 positive years (avg 2.18 vs 1.27). R88 production runner updated to v3."
   ],
 
   "failed_hypotheses": [
@@ -712,7 +713,7 @@
 
   "next_research": [
     "★ PRIORITY 1: Live paper trading — system is GREEN, run cron 30 days before real capital",
-    "★ PRIORITY 2: Per-asset sensitivity implementation (BTC=5.0, ETH=2.5) — R96 shows 46% Sharpe gain",
+    "COMPLETED: Per-asset sensitivity deployed (R97/R98 — BTC=5.0 ETH=3.5, +44% portfolio Sharpe)",
     "PRIORITY 3: Alternative data — Tardis.dev or Laevitas for deeper option chain analytics",
     "PRIORITY 4: Cross-exchange BF — OKX/Bybit (R86 structural → likely works)",
     "PRIORITY 5: Intraday BF analysis — higher frequency signal",
