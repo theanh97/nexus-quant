@@ -231,10 +231,10 @@
         "_regime": "LOW momentum (<20th pct breadth) \u2014 defensive"
       },
       "MID": {
-        "f168": 0.78,
-        "v1": 0.2,
+        "f168": 0.95,
+        "v1": 0.05,
         "i460bw168": 0.0,
-        "i415bw216": 0.02,
+        "i415bw216": 0.0,
         "_regime": "MID momentum (20-60%) \u2014 balanced"
       },
       "HIGH": {
@@ -327,5 +327,5 @@
       "HIGH": 0.5
     }
   },
-  "version": "2.42.3"
+  "version": "2.42.4"
 }
