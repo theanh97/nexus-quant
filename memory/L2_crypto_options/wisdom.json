@@ -495,7 +495,8 @@
     "Multi-expiry VRP — 75+ configs, best improvement +0.051 Sharpe (marginal, not worth complexity on synthetic data)",
     "Tail-hedged VRP (OTM puts) — 23 configs, ALL worse. Put premium cost vastly exceeds payoff when VRP MDD is only -2.6%",
     "Equity-curve position scaling (R26) — 24 configs across 4 approaches (DD threshold, MA envelope, time-HWM, graduated DD), ALL 0/24 improve. Carry trades must be always fully invested. Portfolio-state overlays destroy carry same as market-signal overlays.",
-    "VRP carry magnitude sizing (R27) — 26 configs: carry_pct (0/10), carry_z (3/9 marginal), IV/RV ratio (0/7). Direct carry spread is too noisy (single-day RV). IV percentile (R25) is a smoother, better proxy. Best carry_z only +0.025 vs R25's +0.276."
+    "VRP carry magnitude sizing (R27) — 26 configs: carry_pct (0/10), carry_z (3/9 marginal), IV/RV ratio (0/7). Direct carry spread is too noisy (single-day RV). IV percentile (R25) is a smoother, better proxy. Best carry_z only +0.025 vs R25's +0.276.",
+    "Smoothed RV carry sizing (R33) — 14 configs with 5/10/21/30d RV windows. 0/14 beat baseline. Smoothing reduces noise (5d avg Δ=-0.09 vs 1d avg Δ=-0.34) but not enough. Carry spread sizing is structurally flawed: high carry → scaling up → amplifies gamma losses when RV spikes. Closes carry-sizing research line."
   ],
 
   "next_research": [
