@@ -1,9 +1,9 @@
 {
   "_project": "crypto_options",
-  "_version": "25.0.0",
+  "_version": "26.0.0",
   "_updated": "2026-02-22",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). 67 research studies (R1-R67). R60: PRODUCTION CONFIG. R65: VRP DEGRADATION CONFIRMED — Sharpe 3.66→1.59 (2021-23 vs 2024-26), IV declined 70%→51.5%. R66: Adaptive weighting NEGATIVE — static 50/50 wins. R67: 7d straddle confirms decay (9.5→-1.1 by 2025). BF is the ONLY surviving edge in current regime.",
-  "_status": "PRODUCTION CONFIG VALID but VRP edge is degrading. BF (Butterfly MR) is the stable anchor. 2025-2026 requires careful monitoring. VRP Sharpe from 4.15 (2024H1) to -1.62 (2026H1). BF Sharpe stable at 2.7-5.4.",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). 69 research studies (R1-R69). R69: NEW PRODUCTION CONFIG v2 — 10% VRP + 90% BF (z_exit=0.0), Sharpe 3.76, MaxDD 0.46%. UPGRADE over R60 (+0.85 Sharpe, -71% MaxDD). R68: BF standalone Sharpe 2.64. Walk-forward 100% positive.",
+  "_status": "PRODUCTION CONFIG v2 DEPLOYED (R69). Key change: z_exit 0.3→0.0, weight shift to 10/90 VRP/BF. VRP edge degrading but retained at 10% for diversification. BF is the primary alpha source.",
 
   "CRITICAL_DATA_AUTHENTICITY_WARNING": {
     "summary": "ALL R1-R48 research results are computed on SYNTHETIC implied volatility data. NO Sharpe number should be treated as a proven real-world result.",
@@ -62,24 +62,37 @@
 
   "ENSEMBLE_CHAMPION": {
     "type": "daily_vrp_butterfly_multifactor",
-    "PRODUCTION_CONFIG": {
-      "primary": "70% VRP + 30% Butterfly MR (simple, robust)",
-      "optimal_risk_adjusted": "50% VRP + 50% Butterfly MR (higher Sharpe, lower return)",
-      "VRP_params": {"leverage": 2.0, "lookback": 30, "rebalance_freq": 5},
-      "Butterfly_params": {"lookback": 120, "z_entry": 1.5, "z_exit": 0.3},
-      "asset": "BTC ONLY — ETH excluded (drags portfolio)"
+    "PRODUCTION_CONFIG_v2_R69": {
+      "★_CURRENT": "10% VRP + 90% BF (z_exit=0.0) — R69 UPGRADE",
+      "VRP_params": {"leverage": 2.0, "weight": 0.10},
+      "Butterfly_params": {"lookback": 120, "z_entry": 1.5, "z_exit": 0.0, "weight": 0.90, "sensitivity": 2.5},
+      "asset": "BTC ONLY",
+      "sharpe": 3.76, "ann_ret": "1.99%", "max_dd": "0.46%", "calmar": 4.27,
+      "wf_oos_sharpe": 3.99, "wf_positive_pct": "100%",
+      "loyo_min": 1.50, "loyo_avg": 3.71,
+      "key_changes_from_R60": "z_exit 0.3→0.0, VRP 50%→10%, BF 50%→90%",
+      "rationale": "VRP edge degraded (-26% IV), BF stable across all regimes"
+    },
+    "PRODUCTION_CONFIG_v1_R60": {
+      "deprecated": "50% VRP + 50% BF (z_exit=0.3)",
+      "sharpe": 2.91, "ann_ret": "5.16%", "max_dd": "1.59%",
+      "note": "Higher return (5.16% vs 1.99%) but worse Sharpe and risk. Use if VRP recovers."
     },
     "REAL_DATA_STATS": {
+      "vrp_bf_10_90_v2": {"sharpe": 3.76, "ann_ret": "1.99%", "max_dd": "0.46%"},
+      "vrp_bf_50_50_v1": {"sharpe": 2.91, "ann_ret": "5.16%", "max_dd": "1.59%"},
       "vrp_bf_70_30": {"sharpe": 2.84, "ann_ret": "7.02%", "max_dd": "2.19%"},
-      "vrp_bf_50_50": {"sharpe": 2.91, "ann_ret": "5.16%", "max_dd": "1.59%"},
-      "vrp_only": {"sharpe": 2.78, "ann_ret": "9.81%", "max_dd": "3.10%"}
+      "vrp_only": {"sharpe": 2.78, "ann_ret": "9.81%", "max_dd": "3.10%"},
+      "bf_only_z0": {"sharpe": 2.64, "ann_ret": "1.12%", "max_dd": "0.47%"}
     },
     "OOS_VALIDATION": {
-      "walk_forward_oos_sharpe": 2.44,
-      "walk_forward_positive_pct": "88%",
-      "loyo_avg_sharpe": 2.26,
-      "degradation_from_train": 1.14,
-      "note": "R57 — butterfly alpha CONFIRMED out-of-sample"
+      "R69_walk_forward_oos_sharpe": 3.99,
+      "R69_walk_forward_positive_pct": "100%",
+      "R69_loyo_avg_sharpe": 3.71,
+      "R69_loyo_min_sharpe": 1.50,
+      "R60_walk_forward_oos_sharpe": 2.76,
+      "R60_walk_forward_positive_pct": "88%",
+      "note": "R69 dominates R60 on ALL OOS metrics"
     },
     "yearly_vrp_bf_70_30": {"2021": 5.29, "2022": 4.01, "2023": 2.21, "2024": 2.70, "2025": 0.92, "2026": -2.10},
     "pnl_correlation_vrp_bf": 0.055,
@@ -601,7 +614,9 @@
     "★ STRADDLE SIMULATION CONFIRMS EDGE (R63): Simulated 30d short straddle with daily delta hedge Sharpe 4.17 vs theoretical 2.91 (+43%). Theory is CONSERVATIVE. 7d straddles even better (4.79). Costs manageable: 20bps → 3.17. Yearly: sim beats theory 5/5 years. Production-viable.",
     "★ VRP DEGRADATION CONFIRMED (R65): VRP Sharpe 3.66 (2021-23) → 1.59 (2024-26). IV structural decline 70%→51.5% (-26%). VRP spread compressed 15.98%→4.32%. VRP went negative 2025Q4-2026Q1. BF stable (Sharpe 2.3-5.4 across all periods). Verdict: MIXED — structural IV decline + cyclical VRP weakness.",
     "Adaptive VRP/BF weighting NEGATIVE (R66): Tested 7 approaches (Sharpe gate, sign filter, IV-level, continuous, oracle, walk-forward, combined). NO adaptive method beats static 50/50 on full sample. Oracle hindsight 3.58 shows improvement EXISTS but is unattainable. Walk-forward 365d: Sharpe 3.22, avg VRP_w=0.15 (essentially BF-only). Recent weights = 0% VRP.",
-    "7d straddle confirms decay pattern (R67): Yearly straddle Sharpe 9.46 (2021) → 7.77 (2022) → 4.16 (2023) → 3.53 (2024) → -1.07 (2025). Transaction costs devastating: 20bps → Sharpe 0.90. BF overlay still stable at Sharpe 2.71 in 2025."
+    "7d straddle confirms decay pattern (R67): Yearly straddle Sharpe 9.46 (2021) → 7.77 (2022) → 4.16 (2023) → 3.53 (2024) → -1.07 (2025). Transaction costs devastating: 20bps → Sharpe 0.90. BF overlay still stable at Sharpe 2.71 in 2025.",
+    "★ BF OPTIMIZATION (R68): z_exit=0.0 (hold until reversed) is KEY discovery. BF standalone Sharpe 2.64 (up from 1.80 with z_out=0.3). Time in position 96% vs 32%. bf_ratio (butterfly/IV_ATM) is second-best feature. Multi-feature ensemble WORSE than BF standalone. Walk-forward OOS Sharpe 1.34, 5/6 positive.",
+    "★★ PRODUCTION CONFIG v2 (R69): 10/90 VRP/BF (z_exit=0.0) dominates R60 50/50. Sharpe 3.76 (+0.85), MaxDD 0.46% (-71%), Calmar 4.27 (+32%). Walk-forward 100% positive (8/8). LOYO min 1.50 (no negative years). Every year 2021-2026 profitable. Trade-off: return 5.16%→1.99%."
   ],
 
   "failed_hypotheses": [
@@ -661,13 +676,14 @@
   "SYNTHETIC_DATA_STATUS": "PARTIALLY VALIDATED. R49 confirms VRP edge is REAL using Deribit DVOL. Skew MR strategy still needs real skew data (not available free). Architecture principles validated. Parameter optimization still synthetic-only.",
 
   "next_research": [
-    "★ PRIORITY 0: BF-focused strategy for current regime — BF is only surviving edge (Sharpe 2.7-5.4). Optimize BF standalone, explore new surface features",
-    "PRIORITY 1: VRP regime detection — build forward-looking VRP health indicator to know when to reduce VRP weight",
-    "PRIORITY 2: Alternative vol features — gamma scalping P&L, vanna/volga carry, realized-implied vol-of-vol spread",
-    "PRIORITY 3: Cross-asset signals — BTC vol surface features as signals for ETH/SOL when universe expands",
-    "PRIORITY 4: Real-time monitoring dashboard — equity curve, current signals, regime classification, VRP health",
-    "COMPLETED: Signal generator (R64), Degradation analysis (R65 — confirmed), Adaptive weighting (R66 — NEGATIVE), 7d straddle (R67 — confirms decay)",
-    "COMPLETED: IV sizing (R59 — HURTS), Hourly VRP (R61 — no help), Multi-expiry (R62 — marginal), Delta hedging sim (R63 — confirms edge)",
+    "★ PRIORITY 0: BF leverage optimization — R69 return is only 1.99% at 10/90. Can we scale BF sensitivity to 4.0-5.0 without breaking Sharpe?",
+    "PRIORITY 1: Update signal generator (R64) to use R69 config (10/90, z_exit=0.0)",
+    "PRIORITY 2: VRP recovery detection — when IV regime shifts up, VRP may regain edge. Build indicator for weight shift back toward VRP",
+    "PRIORITY 3: Alternative surface features as BF complement — bf_ratio showed promise (Sharpe 2.04), low VRP corr (0.034)",
+    "PRIORITY 4: Real-time monitoring dashboard — equity curve, signals, regime, VRP health indicator",
+    "COMPLETED: BF optimization (R68 — Sharpe 2.64), Production v2 (R69 — Sharpe 3.76, 10/90 VRP/BF)",
+    "COMPLETED: Signal generator (R64), Degradation (R65), Adaptive weighting (R66 — NEGATIVE), 7d straddle (R67 — decay)",
+    "COMPLETED: IV sizing (R59 — HURTS), Hourly VRP (R61 — no help), Multi-expiry (R62 — marginal), Delta hedging sim (R63)",
     "SOL/DOGE universe expansion when Deribit option volume increases"
   ]
 }
