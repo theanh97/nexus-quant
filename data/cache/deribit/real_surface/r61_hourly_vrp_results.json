@@ -1,0 +1,128 @@
+{
+  "research_id": "R61",
+  "title": "Hourly VRP with Real Intraday Data",
+  "synthetic_finding": "+75% Sharpe from hourly (R7)",
+  "real_finding": "1h Sharpe 2.78 vs Daily 2.91 \u2014 MARGINAL \u2014 hourly rebalancing shows no meaningful advantage (2.5x higher MaxDD makes hourly impractical)",
+  "grid_sensitivity_8h": {
+    "mean": 3.7831,
+    "std": 0.846
+  },
+  "frequency_comparison": {
+    "1h": {
+      "sharpe": 2.7825,
+      "ann_ret": 0.088156,
+      "max_dd": 0.077066,
+      "calmar": 1.1439
+    },
+    "4h": {
+      "sharpe": 1.4569,
+      "ann_ret": 0.072486,
+      "max_dd": 0.142304,
+      "calmar": 0.5094
+    },
+    "8h": {
+      "sharpe": 4.1795,
+      "ann_ret": 0.11293,
+      "max_dd": 0.041749,
+      "calmar": 2.705
+    },
+    "12h": {
+      "sharpe": 1.6081,
+      "ann_ret": 0.075494,
+      "max_dd": 0.112508,
+      "calmar": 0.671
+    },
+    "24h": {
+      "sharpe": 2.6929,
+      "ann_ret": 0.108672,
+      "max_dd": 0.060979,
+      "calmar": 1.7821
+    }
+  },
+  "daily_baseline": {
+    "sharpe": 2.9051,
+    "ann_ret": 0.108925,
+    "max_dd": 0.031046
+  },
+  "best_frequency_1h": {
+    "sharpe": 2.7825,
+    "delta_vs_daily": -0.1227,
+    "pct_change": -4.22
+  },
+  "walk_forward": [
+    {
+      "period": "2021H2",
+      "hourly_sharpe": 12.81,
+      "daily_sharpe": 5.92,
+      "delta": 6.89,
+      "hourly_ret": 37.02,
+      "daily_ret": 35.11
+    },
+    {
+      "period": "2022H1",
+      "hourly_sharpe": 2.84,
+      "daily_sharpe": 1.16,
+      "delta": 1.68,
+      "hourly_ret": 9.4,
+      "daily_ret": 5.39
+    },
+    {
+      "period": "2022H2",
+      "hourly_sharpe": 8.3,
+      "daily_sharpe": 8.55,
+      "delta": -0.25,
+      "hourly_ret": 23.76,
+      "daily_ret": 25.3
+    },
+    {
+      "period": "2023H1",
+      "hourly_sharpe": 0.89,
+      "daily_sharpe": 0.94,
+      "delta": -0.05,
+      "hourly_ret": 2.57,
+      "daily_ret": 2.99
+    },
+    {
+      "period": "2023H2",
+      "hourly_sharpe": 6.74,
+      "daily_sharpe": 4.04,
+      "delta": 2.7,
+      "hourly_ret": 9.1,
+      "daily_ret": 8.51
+    },
+    {
+      "period": "2024H1",
+      "hourly_sharpe": 5.25,
+      "daily_sharpe": 4.15,
+      "delta": 1.09,
+      "hourly_ret": 9.24,
+      "daily_ret": 10.73
+    },
+    {
+      "period": "2024H2",
+      "hourly_sharpe": 3.68,
+      "daily_sharpe": 1.47,
+      "delta": 2.2,
+      "hourly_ret": 6.67,
+      "daily_ret": 4.82
+    },
+    {
+      "period": "2025H1",
+      "hourly_sharpe": 1.22,
+      "daily_sharpe": 1.11,
+      "delta": 0.11,
+      "hourly_ret": 2.57,
+      "daily_ret": 3.06
+    },
+    {
+      "period": "2025H2",
+      "hourly_sharpe": 1.81,
+      "daily_sharpe": 0.6,
+      "delta": 1.22,
+      "hourly_ret": 1.91,
+      "daily_ret": 1.23
+    }
+  ],
+  "hourly_wins_ratio": "7/9",
+  "verdict": "MARGINAL \u2014 hourly rebalancing shows no meaningful advantage (2.5x higher MaxDD makes hourly impractical)"
+}
