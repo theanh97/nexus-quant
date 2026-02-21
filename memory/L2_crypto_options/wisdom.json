@@ -1,9 +1,9 @@
 {
   "_project": "crypto_options",
-  "_version": "28.0.0",
+  "_version": "29.0.0",
   "_updated": "2026-02-22",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). 75 research studies (R1-R75). R69 production config CONFIRMED optimal by R72-R75. BF ROBUST across ALL regimes (R75). No dynamic weighting, feature complement, or regime adaptation improves on static 10/90.",
-  "_status": "PRODUCTION CONFIG v2 DEPLOYED (R69-R75). Research converging: 4 consecutive studies (R72-R75) confirm current config cannot be improved. BF positive in ALL 15 regime conditions tested. System is mature.",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). 79 research studies (R1-R79). Production config v2 (R69) confirmed optimal by R72-R79. BF compression is real (R78) but does NOT affect Sharpe. Sensitivity adaptation fails (R79, 9th static>dynamic). Execution viable with maker orders (R76). Edge persistence STRONG (R77).",
+  "_status": "PRODUCTION CONFIG v2 CONFIRMED MATURE (R69-R79). BF std declining (t=-7.59) but Sharpe independent (r=-0.088). Execution viable at 3bps maker. Health indicator STRONG (0.603). 9x static>dynamic confirmed. System ready for production deployment.",
 
   "CRITICAL_DATA_AUTHENTICITY_WARNING": {
     "summary": "ALL R1-R48 research results are computed on SYNTHETIC implied volatility data. NO Sharpe number should be treated as a proven real-world result.",
@@ -626,7 +626,11 @@
     "★★ PRODUCTION CONFIG v2 (R69): 10/90 VRP/BF (z_exit=0.0) dominates R60 50/50. Sharpe 3.76 (+0.85), MaxDD 0.46% (-71%), Calmar 4.27 (+32%). Walk-forward 100% positive (8/8). LOYO min 1.50 (no negative years). Every year 2021-2026 profitable. Trade-off: return 5.16%→1.99%.",
     "BF sensitivity is scalable (R70): Sharpe ~scale-invariant (3.76→3.52→3.31 at s=2.5→5.0→7.5). Return scales linearly: ~2%/4%/6%. Best joint: s=5.0, lev=2.0, vrp_w=0.20 → Sharpe 3.77, Return 3.75%. Only 5.7 trades/year.",
     "Signal generator updated to R69/R70 (R71): CONFIG = 10/90 VRP/BF, z_exit=0.0, sens configurable (2.5 default). BF PnL uses CONFIG sensitivity. Backtest Sharpe 3.76 confirmed.",
-    "★ BF IS ROBUST ACROSS ALL REGIMES (R75): Positive Sharpe in ALL 15 regime conditions. By IV: 1.41-4.20. By trend: 1.52-3.88. By VoV: 1.88-3.06. Portfolio >3.0 everywhere. Regime-adaptive params ALL worse (5/5 configs). Production config optimal even conditioned on regime. 8th static-params confirmation."
+    "★ BF IS ROBUST ACROSS ALL REGIMES (R75): Positive Sharpe in ALL 15 regime conditions. By IV: 1.41-4.20. By trend: 1.52-3.88. By VoV: 1.88-3.06. Portfolio >3.0 everywhere. Regime-adaptive params ALL worse (5/5 configs). Production config optimal even conditioned on regime. 8th static-params confirmation.",
+    "BF execution viable with maker orders (R76): 28 trades in 4.9yr (5.7/yr), almost all reversals. Best case (maker+combo+quarterly) Sharpe 2.70, base case 2.01. Conservative (taker+monthly) -0.51. Min position 0.3 BTC (~$20k). Use combo orders + quarterly options.",
+    "BF edge persistence STRONG (R77): Rolling Sharpe trend +0.15/yr — BF getting STRONGER. Current health 0.603 (STRONG). Built composite health indicator: STRONG>0.55, MODERATE 0.40-0.55, WEAK 0.25-0.40, CRITICAL<0.25. No degradation signs.",
+    "★ BF compression is REAL but BENIGN (R78): BF std decline statistically significant (t=-7.59, R²=0.865) driven by IV decline (r=0.645). BUT Sharpe NOT linked to BF std (r=-0.088). Q1 (lowest std) still Sharpe 2.87. Structural break at 2023-12-28. Both BTC+ETH show compression (market-wide). Z-score normalization adapts automatically.",
+    "BF sensitivity adaptation FAILS (R79): Static sens=2.5 beats ALL adaptive on WF (5.72 vs 4.92) and LOYO (6.23 vs 5.86). Inverse-variance, IV-scaling, step-function all worse. Sensitivity is purely leverage choice. Higher sens = more return, proportionally more risk, lower Sharpe. 9th static>dynamic confirmation."
   ],
 
   "failed_hypotheses": [
@@ -655,7 +659,8 @@
     "VRP recovery detection (R72) — 7 analyses: VRP health indicator, rolling Sharpe, dynamic weighting. NO dynamic VRP weighting beats static 10/90 (best Health 10-30% Sharpe 3.29 vs 3.76). VRP IS IV-dependent (IV>60% Sharpe 4.63) but variance penalty outweighs return gain. 7th static-weights confirmation.",
     "bf_ratio complement (R73) — bf_ratio PnL correlation with butterfly_25d = 0.831 (too similar). Best ensemble keeps w_ratio=0%. Walk-forward: static wins 6/7. Essentially same trade as butterfly_25d.",
     "iv_atm MR complement (R74) — BF-IV PnL correlation -0.033 (ideal). In-sample +0.14 but WF delta -0.04 (wins 2/7). LOYO 3/6. Marginal — doesn't survive OOS.",
-    "Regime-adaptive BF (R75) — ALL 5 adaptive configs worse than static. Best: low→lb=180 high→lb=60 (+0.032 marginal). Worst: low→z_in=1.0 high→z_in=2.0 (-0.451). BF doesn't need regime adaptation."
+    "Regime-adaptive BF (R75) — ALL 5 adaptive configs worse than static. Best: low→lb=180 high→lb=60 (+0.032 marginal). Worst: low→z_in=1.0 high→z_in=2.0 (-0.451). BF doesn't need regime adaptation.",
+    "BF sensitivity adaptation (R79) — 6 inverse-variance configs, 4 IV-scaled configs, 4 step-function configs. ALL worse than static sens=2.5 on WF and LOYO. Best adaptive WF avg 4.92 vs static 2.5 WF avg 5.72. Sensitivity is leverage, not signal quality. 9th static>dynamic confirmation."
   ],
 
   "REAL_DATA_VALIDATION": {
@@ -690,19 +695,18 @@
   "SYNTHETIC_DATA_STATUS": "PARTIALLY VALIDATED. R49 confirms VRP edge is REAL using Deribit DVOL. Skew MR strategy still needs real skew data (not available free). Architecture principles validated. Parameter optimization still synthetic-only.",
 
   "next_research": [
-    "★ PRIORITY 1: Transaction cost & execution analysis — model realistic execution for BF MR (option spreads, slippage, rolling)",
-    "PRIORITY 2: BF edge persistence monitoring — early warning system for BF degradation (like VRP degraded)",
-    "PRIORITY 3: Real-time monitoring dashboard — equity curve, signals, regime, health indicator",
-    "PRIORITY 4: Alternative data sources — Tardis.dev or Laevitas for deeper option chain analytics",
-    "COMPLETED: VRP recovery detection (R72 — NEGATIVE, 7th static-weights confirmation)",
-    "COMPLETED: bf_ratio complement (R73 — MARGINAL, corr 0.831 with BF)",
-    "COMPLETED: iv_atm MR complement (R74 — MARGINAL, doesn't survive OOS)",
+    "★ PRIORITY 1: Real-time monitoring dashboard — equity curve, signals, regime, health indicator (integrating R77+R64)",
+    "PRIORITY 2: Alternative data sources — Tardis.dev or Laevitas for deeper option chain analytics",
+    "PRIORITY 3: Production execution framework — integrate R76 cost recommendations into live execution",
+    "PRIORITY 4: Cross-exchange BF analysis — does BF MR work on other venues (OKX, Bybit)?",
+    "COMPLETED: Transaction cost analysis (R76 — VIABLE with maker, Sharpe 2.70)",
+    "COMPLETED: BF edge persistence (R77 — STRONG health 0.603, BF getting stronger +0.15/yr)",
+    "COMPLETED: BF structural compression (R78 — REAL but BENIGN, Sharpe independent of BF std)",
+    "COMPLETED: BF sensitivity adaptation (R79 — FAILS, 9th static>dynamic confirmation)",
+    "COMPLETED: VRP recovery detection (R72 — NEGATIVE), bf_ratio (R73 — MARGINAL), iv_atm (R74 — MARGINAL)",
     "COMPLETED: BF regime robustness (R75 — ROBUST in ALL regimes, 8th static-params confirmation)",
-    "COMPLETED: BF leverage/sensitivity (R70 — Sharpe scale-invariant, tiers 2.5/5.0/7.5)",
-    "COMPLETED: Signal generator updated to R69/R70 config (R71)",
-    "COMPLETED: BF optimization (R68 — Sharpe 2.64), Production v2 (R69 — Sharpe 3.76, 10/90 VRP/BF)",
-    "COMPLETED: Signal generator (R64), Degradation (R65), Adaptive weighting (R66 — NEGATIVE), 7d straddle (R67 — decay)",
-    "COMPLETED: IV sizing (R59 — HURTS), Hourly VRP (R61 — no help), Multi-expiry (R62 — marginal), Delta hedging sim (R63)",
+    "COMPLETED: R68-R71 (BF optimization, Production v2, sensitivity tiers, signal generator)",
+    "COMPLETED: R64-R67 (signal generator, degradation, adaptive weighting, 7d straddle)",
     "SOL/DOGE universe expansion when Deribit option volume increases"
   ]
 }
