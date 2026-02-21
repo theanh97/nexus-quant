@@ -100,9 +100,29 @@ def run_cycle(mode: str = "paper") -> Dict[str, Any]:
         _log_event(result)
         return result
 
-    # ── 2. Paper Mode — stop here ──
+    # ── 2. Paper Mode — track hypothetical P&L, no execution ──
     if mode == "paper":
         result["orders"] = {"mode": "paper", "note": "Signals aggregated, no execution"}
+
+        # Update options paper P&L tracker
+        try:
+            from ..projects.crypto_options.paper_state import OptionsPaperTracker
+            from ..projects.crypto_options.signal_generator import OptionsSignalGenerator
+
+            opts_gen = OptionsSignalGenerator()
+            opts_signal = opts_gen.generate()
+            tracker = OptionsPaperTracker()
+            paper_result = tracker.update(opts_signal)
+            result["options_paper"] = {
+                "equity": tracker.state.equity,
+                "cycle_pnl": paper_result["cycle_pnl"],
+                "cumulative_pnl": tracker.state.cumulative_pnl,
+            }
+            _log(f"  Options paper: equity=${tracker.state.equity:,.2f} "
+                 f"cycle_pnl=${paper_result['cycle_pnl']:+,.2f}")
+        except Exception as e:
+            _log(f"  Options paper tracker: {e}")
+
         _log("  Paper mode -- signals logged, no orders placed")
         _log_event(result)
         return result

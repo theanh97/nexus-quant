@@ -17,9 +17,10 @@ Tests:
   8. DeribitExecutor — dry-run order generation, Greeks checks
   9. Portfolio integration — aggregator + risk overlay pipeline
   10. Correlation estimator — EWMA update and spike detection
+  11. Paper state tracker — model-based P&L, persistence, drawdown
 
 Pass criteria:
-  - ALL 10 tests must PASS
+  - ALL 11 tests must PASS
   - Sharpe ratios within 20% of wisdom.json benchmarks
   - No import errors, no crashes, no NaN values
 """
@@ -490,12 +491,72 @@ def test_correlation_estimator():
         return mark("correlation_estimator", False, str(e))
 
 
+def test_paper_tracker():
+    """Test 11: Options paper state tracker — P&L model and persistence."""
+    print(f"\n  [11] Options Paper State Tracker")
+    try:
+        from nexus_quant.projects.crypto_options.paper_state import OptionsPaperTracker
+
+        tracker = OptionsPaperTracker(initial_equity=100_000.0)
+        tracker.reset()
+
+        # Cycle 1: open positions (no prior state → P&L=0)
+        signal1 = {
+            "target_weights": {"BTC": -0.30, "ETH": -0.20},
+            "vrp_signal": {"BTC": -0.75, "ETH": -0.75},
+            "skew_signal": {"BTC": 0.0, "ETH": 0.0},
+            "confidence": "high",
+            "gross_leverage": 0.50,
+            "market_snapshot": {
+                "BTC": {"iv_atm": 0.55, "rv_24h": 0.45, "skew_25d": -0.03, "price": 97000},
+                "ETH": {"iv_atm": 0.60, "rv_24h": 0.50, "skew_25d": -0.05, "price": 2800},
+            },
+        }
+        r1 = tracker.update(signal1)
+        assert r1["cycle_pnl"] == 0.0, f"First cycle should be 0, got {r1['cycle_pnl']}"
+
+        # Cycle 2: VRP carry (IV > RV → positive for short vol)
+        signal2 = {
+            "target_weights": {"BTC": -0.30, "ETH": -0.20},
+            "vrp_signal": {"BTC": -0.75, "ETH": -0.75},
+            "skew_signal": {"BTC": 0.0, "ETH": 0.0},
+            "confidence": "high",
+            "gross_leverage": 0.50,
+            "market_snapshot": {
+                "BTC": {"iv_atm": 0.58, "rv_24h": 0.42, "skew_25d": -0.02, "price": 98000},
+                "ETH": {"iv_atm": 0.63, "rv_24h": 0.47, "skew_25d": -0.04, "price": 2850},
+            },
+        }
+        r2 = tracker.update(signal2)
+        assert r2["vrp_pnl"] > 0, f"VRP carry should be positive, got {r2['vrp_pnl']}"
+        assert tracker.state.equity > 100_000.0, "Equity should grow with VRP carry"
+        assert tracker.state.n_cycles == 2
+
+        # Verify persistence
+        from nexus_quant.projects.crypto_options.paper_state import OptionsPaperState
+        loaded = OptionsPaperState.load()
+        assert loaded is not None, "Paper state should persist to disk"
+        assert loaded.n_cycles == 2, f"Loaded state should have 2 cycles, got {loaded.n_cycles}"
+        assert abs(loaded.equity - tracker.state.equity) < 0.01
+
+        print(f"      Equity: ${tracker.state.equity:,.2f}")
+        print(f"      VRP P&L: ${tracker.state.vrp_pnl:+,.2f}")
+        print(f"      Cycles: {tracker.state.n_cycles}")
+        print(f"      Persistence: OK")
+        return mark("paper_tracker", True,
+                     f"equity=${tracker.state.equity:,.2f}, VRP carry=${tracker.state.vrp_pnl:+,.2f}")
+
+    except Exception as e:
+        traceback.print_exc()
+        return mark("paper_tracker", False, str(e))
+
+
 def main():
     print(DIVIDER)
     print("CRYPTO OPTIONS — PRODUCTION READINESS TEST")
     print(DIVIDER)
     print(f"\nTimestamp: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
-    print(f"Running 10 validation tests...\n")
+    print(f"Running 11 validation tests...\n")
 
     test_data_provider()
     test_vrp_strategy()
@@ -507,6 +568,7 @@ def main():
     test_deribit_executor()
     test_portfolio_integration()
     test_correlation_estimator()
+    test_paper_tracker()
 
     # Summary
     print(f"\n{DIVIDER}")
