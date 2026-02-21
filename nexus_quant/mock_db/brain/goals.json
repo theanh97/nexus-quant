@@ -1,0 +1,7 @@
+{
+  "goals": [
+    "Deploy P91b to live",
+    "Verify OOS max_dd",
+    "Reduce latency by 15ms"
+  ]
+}

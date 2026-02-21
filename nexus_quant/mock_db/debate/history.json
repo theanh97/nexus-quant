@@ -1,0 +1,23 @@
+[
+  {
+    "topic": "Signal decay on momentum",
+    "consensus_score": 0.85,
+    "ts": "2026-02-20T17:00:00",
+    "contributions": [
+      1,
+      2,
+      3
+    ],
+    "synthesis": "Use shorter half-life. P91b requires 14-day exponential decay."
+  },
+  {
+    "topic": "Drawdown limits for V3",
+    "consensus_score": 0.92,
+    "ts": "2026-02-19T10:00:00",
+    "contributions": [
+      1,
+      2
+    ],
+    "synthesis": "Implement hard stop at -5%."
+  }
+]

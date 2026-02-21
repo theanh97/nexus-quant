@@ -1,0 +1,42 @@
+[
+  {
+    "id": "t1",
+    "title": "Refine Momentum Alpha",
+    "status": "todo",
+    "priority": "high",
+    "category": "research",
+    "assignee": "Model V3",
+    "delegated_by": "NEXUS",
+    "history": []
+  },
+  {
+    "id": "t2",
+    "title": "Fix P91b Drawdown issue",
+    "status": "done",
+    "priority": "high",
+    "category": "practice",
+    "assignee": "Quants",
+    "delegated_by": "human",
+    "history": []
+  },
+  {
+    "id": "t3",
+    "title": "Monitor Live Execution",
+    "status": "in_progress",
+    "priority": "high",
+    "category": "procedure",
+    "assignee": "System",
+    "delegated_by": "atlas",
+    "history": []
+  },
+  {
+    "id": "t4",
+    "title": "Train V3 Factor Model",
+    "status": "review",
+    "priority": "medium",
+    "category": "research",
+    "assignee": "GLM-5",
+    "delegated_by": "nexus",
+    "history": []
+  }
+]

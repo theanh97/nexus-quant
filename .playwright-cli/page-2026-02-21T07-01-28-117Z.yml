@@ -1,0 +1,43 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - progressbar [ref=e6]
+      - main [ref=e14]:
+        - generic [ref=e15]:
+          - img [ref=e18]
+          - generic [ref=e23]:
+            - heading "Đăng nhập" [level=1] [ref=e24]
+            - generic [ref=e25]: bằng Tài khoản Google của bạn. Bạn sẽ có thể truy cập vào các ứng dụng khác của Google trong trình duyệt bằng tài khoản này.
+        - generic [ref=e28]:
+          - generic [ref=e33]:
+            - generic [ref=e38]:
+              - textbox "Email hoặc số điện thoại" [active] [ref=e39]
+              - generic: Email hoặc số điện thoại
+            - button "Bạn quên địa chỉ email?" [ref=e43] [cursor=pointer]
+          - generic [ref=e46]:
+            - text: Đây không phải máy tính của bạn? Hãy sử dụng Chế độ khách để đăng nhập một cách riêng tư.
+            - link "Tìm hiểu thêm về cách sử dụng Chế độ khách" [ref=e47] [cursor=pointer]:
+              - /url: https://support.google.com/chrome/answer/6130773?hl=vi
+        - generic [ref=e49]:
+          - button "Tiếp theo" [ref=e53]:
+            - generic [ref=e56]: Tiếp theo
+          - button "Tạo tài khoản" [ref=e62]:
+            - generic [ref=e65]: Tạo tài khoản
+    - contentinfo [ref=e69]:
+      - combobox "Thay đổi ngôn ngữ Tiếng Việt" [ref=e73] [cursor=pointer]:
+        - generic:
+          - generic: Tiếng Việt
+        - generic:
+          - img
+      - list [ref=e75]:
+        - listitem [ref=e76]:
+          - link "Trợ giúp" [ref=e77] [cursor=pointer]:
+            - /url: https://support.google.com/accounts?hl=vi&p=account_iph
+        - listitem [ref=e78]:
+          - link "Quyền riêng tư" [ref=e79] [cursor=pointer]:
+            - /url: https://accounts.google.com/TOS?loc=VN&hl=vi&privacy=true
+        - listitem [ref=e80]:
+          - link "Điều khoản" [ref=e81] [cursor=pointer]:
+            - /url: https://accounts.google.com/TOS?loc=VN&hl=vi
+  - iframe [ref=e82]:
+    

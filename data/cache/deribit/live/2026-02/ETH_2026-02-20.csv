@@ -1,0 +1,3 @@
+ts_utc,symbol,price,iv_atm,iv_25d_put,iv_25d_call,skew_25d,term_spread,rv_1h,rv_24h
+2026-02-20T16:10:33Z,ETH,1963.56,,,,,,,
+2026-02-20T16:11:31Z,ETH,1962.33,0.6485,0.7951,0.6546,0.1405,-0.022,,
