@@ -27,7 +27,9 @@
       "LINKUSDT"
     ],
     "bar_interval": "1h",
-    "cache_dir": ".cache/binance_rest"
+    "cache_dir": ".cache/binance_rest",
+    "start": "2023-01-01T00:00:00Z",
+    "end": "2026-02-21T00:00:00Z"
   },
   "data_policy": {
     "_comment": "Hard gate: production only accepts real, whitelisted providers",
@@ -60,6 +62,51 @@
     "max_gross_leverage": 0.7,
     "max_position_per_symbol": 0.3
   },
+  "strategy": {
+    "name": "breadth_adaptive_ensemble",
+    "params": {
+      "breadth_window_bars": 192,
+      "p_low": 0.3,
+      "p_high": 0.6,
+      "target_gross_leverage": 0.35,
+      "prod_weights": {"v1": 0.3, "i460": 0.05, "i415": 0.25, "f144": 0.4},
+      "p143b_weights": {"v1": 0.5, "i460": 0.5, "i415": 0.0, "f144": 0.0},
+      "v1_params": {
+        "k_per_side": 2,
+        "w_carry": 0.15,
+        "w_mom": 0.55,
+        "w_mean_reversion": 0.3,
+        "momentum_lookback_bars": 312,
+        "mean_reversion_lookback_bars": 84,
+        "vol_lookback_bars": 192,
+        "target_gross_leverage": 0.35,
+        "rebalance_interval_bars": 60
+      },
+      "i460_params": {
+        "k_per_side": 4,
+        "lookback_bars": 480,
+        "beta_window_bars": 168,
+        "target_gross_leverage": 0.2,
+        "rebalance_interval_bars": 48
+      },
+      "i415_params": {
+        "k_per_side": 4,
+        "lookback_bars": 415,
+        "beta_window_bars": 144,
+        "target_gross_leverage": 0.2,
+        "rebalance_interval_bars": 48
+      },
+      "f144_params": {
+        "k_per_side": 2,
+        "funding_lookback_bars": 168,
+        "direction": "contrarian",
+        "target_gross_leverage": 0.25,
+        "rebalance_interval_bars": 36
+      }
+    }
+  },
+  "benchmark": {"version": "v1", "walk_forward": {"enabled": true}},
+  "self_learn": {"enabled": true},
   "volume_tilt": {
     "_comment": "Phase 111-113: reduce leverage when aggregate volume momentum is high (crowded market)",
     "_validated": "3/4 WF windows positive, avg Δ=+0.066, ratio perfectly stable (std=0.00)",
