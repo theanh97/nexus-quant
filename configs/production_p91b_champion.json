@@ -221,7 +221,7 @@
     "breadth_lookback_bars": 192,
     "rolling_percentile_window": 336,
     "p_low": 0.3,
-    "p_high": 0.6,
+    "p_high": 0.68,
     "regime_weights": {
       "LOW": {
         "f168": 0.4,
@@ -327,7 +327,7 @@
       "HIGH": 0.5
     }
   },
-  "version": "v2.42.11",
+  "version": "v2.42.12",
   "v1_per_regime_weights": {
     "LOW": {
       "w_carry": 0.1,
