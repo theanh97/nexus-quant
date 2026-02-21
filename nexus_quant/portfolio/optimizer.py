@@ -157,9 +157,10 @@ class PortfolioOptimizer:
                 name="crypto_options",
                 market="crypto_options",
                 year_sharpe={
-                    # Mixed-freq ensemble: hourly VRP 40% + daily Skew MR 60%
-                    # From wisdom v6.0.0 ENSEMBLE_CHAMPION
-                    2021: 2.02, 2022: 2.60, 2023: 3.65, 2024: 2.44, 2025: 2.90
+                    # Multi-asset ensemble: BTC+ETH VRP 40% + Skew MR 60%
+                    # R35 per-asset params + R40 cost-validated (wisdom v16.0.0)
+                    # ETH VRP lb=60d, IV sizing 0.5/1.7x, 50/50 BTC/ETH
+                    2021: 3.09, 2022: 3.63, 2023: 4.12, 2024: 3.62, 2025: 3.15
                 },
                 # Options ensemble: VRP carry + Skew MR signal.
                 # Low daily vol (carry-dominated). Estimated 4-6% annual vol.
