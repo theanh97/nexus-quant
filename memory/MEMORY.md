@@ -27,13 +27,14 @@ Regime weights (P245):
 - FTS HIGH: rs=0.4/bs=2.0/rt=0.55/bt=0.25/pct_win=400h
 - VOL LOW=0.40/MID=0.15/HIGH=0.10 | DISP LOW=0.5/MID=1.5(AMP)/HIGH=0.5
 
-### Engine Track: v2.42.10, OBJ=2.9956
-Current config regime weights (mixed — Engine P257 wrote MID/HIGH):
-- LOW: v1=0.35, i460=0.10, i415=0.15, f168=0.40 (from NumPy P245)
-- MID: v1=0.50, i460=0.00, i415=0.00, f168=1.00 (from Engine P257)
-- HIGH: v1=0.20, i460=0.18, i415=0.27, f168=0.35 (from Engine P257)
+### Engine Track: v2.42.13, OBJ=2.9980
+Current config regime weights (v2.42.13):
+- LOW: v1=0.35, i460=0.10, i415=0.15, f168=0.40 (sum=1.0 ✅)
+- MID: v1=0.15, i460=0.00, i415=0.00, f168=0.85 (sum=1.0 ✅ — P257b constrained fix)
+- HIGH: v1=0.20, i460=0.18, i415=0.27, f168=0.35 (sum=1.0 ✅ — P257)
 - V1: wc=0.15, wm=0.55, wmr=0.30, mom_lb=312h (P255/P256)
-- FTS global: rt=0.55, rs=0.08, bt=0.22, bs=2.75 (P259 tuned — but LOYO 2/5 not saved)
+- p_high: 0.68 (P260 breadth threshold)
+- Vol scales: LOW=0.40, MID=0.50, HIGH=0.35 (P260 retune)
 
 ## Running Processes
 - **P246 NumPy** (PID 83413): Per-regime V1 lookback sweep (170+/410 precompute)
@@ -83,13 +84,16 @@ P254(B): I460 CONFIRMED OPTIMAL
 P255(B): V1 lb mom=312h VALIDATED LOYO 4/5 Δ=+0.0275 v2.42.7
 P256(B): V1 weights wc=0.15/wm=0.55/wr=0.30 VALIDATED LOYO 4/5 Δ=+0.1054 v2.42.8
 P257(B)-HIGH: retune2 VALIDATED LOYO 3/5 Δ=+0.0916 v2.42.9
-P257(B)-ALL: all-regime retune **VALIDATED LOYO 4/5 Δ=+0.5812** v2.42.10 ← BIGGEST ENGINE WIN
-  MID: v1=0.5/f168=1.0 | HIGH: v1=0.2/f168=0.35/i460=0.18/i415=0.27
+P257(B)-ALL: all-regime retune VALIDATED LOYO 4/5 Δ=+0.5812 v2.42.10 ← BIGGEST ENGINE WIN
+  MID: v1=0.5/f168=1.0 [BUG: sum=1.5] | HIGH: v1=0.2/f168=0.35/i460=0.18/i415=0.27
+P257b-HOTFIX: MID weights sum=1.0 — f168=0.85 v1=0.15 (constrained) v2.42.11
 P244(NumPy): per-regime V1 weights VALIDATED OBJ=3.9048 v2.43.0 [commit 40e7878]
 P245(NumPy VECTORIZED): regime weight reopt8 VALIDATED OBJ=4.0145 LOYO 4/5 Δ=+0.1097 v2.44.0
-P258(B): MID retune2 CONFIRMED OPTIMAL (f168=1.0 stays)
-P259(B): FTS retune2 CONFIRMED OPTIMAL LOYO 2/5 (rs=0.08 marginal improvement, not validated)
-P246(NumPy): Per-regime V1 lookback sweep RUNNING
+P258(B): MID retune2 CONFIRMED OPTIMAL (ran on unconstrained MID — ignore)
+P259(B): FTS retune2 NOT validated LOYO 2/5
+P260: breadth p_high=0.60→0.68 v2.42.12 OBJ=2.9941
+P260-VOL: per-regime vol scale VALIDATED LOYO 3/5 Δ=+0.1942 v2.42.13
+  HIGH=0.10→0.35, MID=0.15→0.50, LOW=0.40 (confirmed optimal)
 
 ## Key Architectural Insights
 - **NumPy vs Engine OBJ scale**: NumPy ~4.0 vs Engine ~3.0 — different cost models
@@ -111,3 +115,7 @@ After P246 finishes:
 - `get_config()` returns 7 values — unpack all 7
 - `python` → `python3` (python not in PATH)
 - NumPy track `_version`, Engine track `version` — two different keys in config
+- make_weights() / make_mid_w(): does NOT enforce sum=1.0 constraint!
+  If v1_w + f168_w > 1.0, remainder = max(0, 1-v1-f168) = 0 BUT weights still sum to >1
+  Fix: cap candidates so v1+f168 ≤ 1.0, or normalize after sweep
+  Symptom: OBJ monotonically increases with any weight = over-leverage artifact
