@@ -35,10 +35,15 @@ def autopilot_main(
             policy_eval = policy.evaluate()
             policy_enqueue = orion.enqueue_policy_actions(policy_eval.get("actions") or [])
 
-            if bootstrap:
-                pending = [t for t in orion.task_store.recent(limit=200) if t.status == "pending"]
-                if not pending:
+            # Constitution Rule 1: NEVER STOP — always bootstrap when queue empty
+            pending = [t for t in orion.task_store.recent(limit=200) if t.status == "pending"]
+            if not pending:
+                if bootstrap:
                     orion.bootstrap(include_improve=bool(policy_eval.get("allow_improve", True)))
+                else:
+                    # Even without --bootstrap flag, enqueue lightweight tasks to avoid idling
+                    allow_improve = bool(policy_eval.get("allow_improve", True))
+                    orion.bootstrap(include_improve=allow_improve)
 
             max_steps = max(1, min(int(steps), 200))
             last = None
@@ -46,7 +51,9 @@ def autopilot_main(
                 last = orion.run_once()
                 _write_heartbeat(artifacts_dir, orion, last, policy=policy_eval, policy_enqueue=policy_enqueue)
                 if last.get("message") == "no pending tasks":
-                    break
+                    # Constitution Rule 1: Don't break — re-bootstrap and continue
+                    orion.bootstrap(include_improve=bool(policy_eval.get("allow_improve", True)))
+                    continue
 
             _write_heartbeat(
                 artifacts_dir,
@@ -79,12 +86,20 @@ def _write_heartbeat(
     policy: Dict[str, Any] | None = None,
     policy_enqueue: Dict[str, Any] | None = None,
 ) -> None:
+    # Collect learning metrics — proof the system is learning
+    learning_metrics = {}
+    try:
+        learning_metrics = orion.learner.metrics()
+    except Exception:
+        pass
+
     hb = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "last": last,
         "tasks": orion.task_store.counts(),
         "policy": policy or {},
         "policy_enqueue": policy_enqueue or {},
+        "learning": learning_metrics,
     }
     p = artifacts_dir / "state" / "orion_heartbeat.json"
     p.parent.mkdir(parents=True, exist_ok=True)

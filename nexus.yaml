@@ -11,6 +11,8 @@ version: "1.0.0"
 # Projects are defined in nexus_quant/projects/<name>/project.yaml
 projects:
   - crypto_perps
+  - commodity_cta
+  - crypto_options
   - fx_majors
 
 # ── Model Configuration ──────────────────────────────────────────
@@ -29,6 +31,14 @@ scheduler:
     enabled: true
     brain_interval: 600
     max_concurrent_runs: 2
+  commodity_cta:
+    enabled: true
+    brain_interval: 3600
+    max_concurrent_runs: 1
+  crypto_options:
+    enabled: true
+    brain_interval: 3600
+    max_concurrent_runs: 1
   fx_majors:
     enabled: false
     brain_interval: 3600

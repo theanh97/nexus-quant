@@ -159,6 +159,23 @@ def _parse_args() -> argparse.Namespace:
     live_p.add_argument("--testnet", action="store_true", help="Use Binance testnet instead of mainnet")
     live_p.add_argument("--once", action="store_true", help="Run one cycle and exit (no loop)")
 
+    # ── Constitution & Watchdog ─────────────────────────────────────
+    comply_p = sub.add_parser("comply", help="Check constitution compliance (all 10 rules)")
+    comply_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+
+    wd_p = sub.add_parser("watchdog", help="24/7 watchdog — ensures all 3 projects stay alive")
+    wd_p.add_argument("--loop", action="store_true", help="Run continuously")
+    wd_p.add_argument("--interval", type=int, default=120, help="Check interval in seconds (default: 120)")
+
+    # ── Operational Learning Engine ──────────────────────────────────
+    ol_p = sub.add_parser("learning", help="Operational Learning Engine — show metrics, manage lessons")
+    ol_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    ol_p.add_argument("--add-lesson", action="store_true", help="Add a new lesson interactively")
+    ol_p.add_argument("--category", default=None, help="Lesson category (stall|data_access|model_routing|rule_violation|task_failure)")
+    ol_p.add_argument("--pattern", default=None, help="Regex pattern to match against errors")
+    ol_p.add_argument("--correction", default=None, help="What to do instead")
+    ol_p.add_argument("--list", action="store_true", dest="list_lessons", help="List all active lessons")
+
     # ── Multi-project commands ───────────────────────────────────────
     proj_p = sub.add_parser("projects", help="List all discovered projects and their status")
 
@@ -176,6 +193,50 @@ def main() -> int:
     args = _parse_args()
     if args.cmd == "status":
         print_status(artifacts_dir=Path(args.artifacts), tail=int(args.tail))
+        return 0
+
+    # ── Constitution & Watchdog (no config required) ────────────────
+    if args.cmd == "comply":
+        from .orchestration.constitution import check_compliance
+        report = check_compliance(Path(args.artifacts))
+        print(json.dumps(report, indent=2, sort_keys=True))
+        if not report["ok"]:
+            print(f"\n!! {report['summary']['critical']} CRITICAL violation(s) found !!")
+        return 0 if report["ok"] else 1
+
+    if args.cmd == "watchdog":
+        from .watchdog import watchdog_run
+        return watchdog_run(loop=bool(args.loop), interval=int(args.interval))
+
+    if args.cmd == "learning":
+        from .learning.operational import OperationalLearner
+        learner = OperationalLearner(Path(args.artifacts))
+        try:
+            if args.add_lesson and args.category and args.pattern and args.correction:
+                lid = learner.add_user_lesson(
+                    category=args.category,
+                    pattern=args.pattern,
+                    correction=args.correction,
+                )
+                print(f"Lesson added (id={lid}): [{args.category}] {args.correction}")
+                return 0
+            if args.list_lessons:
+                lessons = learner.store.get_active_lessons()
+                print(f"{'ID':>4} {'Cat':<15} {'Sev':<10} {'Hits':>5} {'Miss':>5} {'Source':<16} Correction")
+                print("-" * 100)
+                for l in lessons:
+                    print(f"{l.id:>4} {l.category:<15} {l.severity:<10} {l.hit_count:>5} {l.miss_count:>5} {l.source:<16} {l.correction[:60]}")
+                return 0
+            # Default: show metrics
+            metrics = learner.metrics()
+            print(json.dumps(metrics, indent=2, sort_keys=True))
+            print(f"\nLearning effective: {metrics.get('learning_effective', 'insufficient data')}")
+            print(f"Prevention rate: {metrics.get('prevention_rate', 0):.1%}")
+            print(f"Total lessons: {metrics.get('total_lessons', 0)}")
+            print(f"Failures prevented: {metrics.get('total_hits_prevented', 0)}")
+            print(f"Failures missed: {metrics.get('total_misses', 0)}")
+        finally:
+            learner.close()
         return 0
 
     # ── Multi-project commands (no config required) ──────────────────

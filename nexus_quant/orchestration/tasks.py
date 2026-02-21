@@ -22,6 +22,7 @@ class Task:
     payload: Dict[str, Any]
     result: Dict[str, Any]
     error: Optional[str]
+    retry_count: int = 0
 
 
 class TaskStore:
@@ -105,6 +106,23 @@ class TaskStore:
         rows = cur.execute("SELECT status, COUNT(1) AS c FROM tasks GROUP BY status").fetchall()
         return {str(r["status"]): int(r["c"]) for r in rows}
 
+    def requeue_for_retry(self, task_id: int, max_retries: int = 1) -> bool:
+        """Requeue a failed task for retry. Returns True if requeued, False if max retries exceeded."""
+        cur = self._conn.cursor()
+        row = cur.execute("SELECT retry_count FROM tasks WHERE id=?", (int(task_id),)).fetchone()
+        if not row:
+            return False
+        current_retries = int(row["retry_count"] or 0)
+        if current_retries >= max_retries:
+            return False
+        now = _utc_iso()
+        cur.execute(
+            "UPDATE tasks SET status='pending', updated_at=?, error=NULL, retry_count=? WHERE id=?",
+            (now, current_retries + 1, int(task_id)),
+        )
+        self._conn.commit()
+        return True
+
     def _init_schema(self) -> None:
         cur = self._conn.cursor()
         cur.execute(
@@ -117,10 +135,19 @@ class TaskStore:
                 status TEXT NOT NULL,
                 payload_json TEXT NOT NULL,
                 result_json TEXT NOT NULL,
-                error TEXT NULL
+                error TEXT NULL,
+                retry_count INTEGER NOT NULL DEFAULT 0
             )
             """
         )
+        # Migrate: add retry_count column if missing (existing DBs)
+        try:
+            cur.execute("SELECT retry_count FROM tasks LIMIT 1")
+        except Exception:
+            try:
+                cur.execute("ALTER TABLE tasks ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0")
+            except Exception:
+                pass
         self._conn.commit()
 
     def _row_to_task(self, r: sqlite3.Row) -> Task:
@@ -132,6 +159,10 @@ class TaskStore:
             result = json.loads(r["result_json"]) or {}
         except Exception:
             result = {}
+        try:
+            retry_count = int(r["retry_count"] or 0)
+        except Exception:
+            retry_count = 0
         return Task(
             id=int(r["id"]),
             created_at=str(r["created_at"]),
@@ -141,4 +172,5 @@ class TaskStore:
             payload=payload,
             result=result,
             error=str(r["error"]) if r["error"] is not None else None,
+            retry_count=retry_count,
         )

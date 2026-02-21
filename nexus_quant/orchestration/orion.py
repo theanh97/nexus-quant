@@ -12,6 +12,7 @@ from ..run import run_one, improve_one
 from ..wisdom.curate import curate_wisdom
 from ..learning.reflection import reflect_and_update
 from ..learning.critic import critique_recent
+from ..learning.operational import OperationalLearner
 from .overrides import load_overrides
 from .tasks import TaskStore
 from .opus_rebuttal import OpusRebuttalConfig, persist_opus_rebuttal, run_opus_rebuttal
@@ -47,10 +48,12 @@ class Orion:
         self.cfg = cfg
         self.task_store = TaskStore(cfg.artifacts_dir / "state" / "tasks.db")
         self.memory = MemoryStore(cfg.artifacts_dir / "memory" / "memory.db")
+        self.learner = OperationalLearner(cfg.artifacts_dir)
 
     def close(self) -> None:
         self.task_store.close()
         self.memory.close()
+        self.learner.close()
 
     def bootstrap(self, *, include_improve: bool = True) -> None:
         self.task_store.create(kind="run", payload={"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir)})
@@ -118,6 +121,24 @@ class Orion:
         task = self.task_store.claim_next()
         if not task:
             return {"ok": True, "message": "no pending tasks"}
+
+        # ── PREFLIGHT: Check operational lessons before executing ──
+        preflight_warnings = self.learner.preflight(
+            task_kind=task.kind,
+            context=task.payload,
+        )
+        # Log critical preflight warnings (but don't block — lessons are guidance)
+        for w in preflight_warnings:
+            if w.severity == "critical":
+                self.memory.add(
+                    created_at=_utc_iso(),
+                    kind="preflight_warning",
+                    tags=["operational", w.category, "critical"],
+                    content=f"PREFLIGHT [{w.category}]: {w.correction}",
+                    meta={"lesson_id": w.lesson_id, "task_kind": task.kind, "pattern": w.pattern_matched},
+                    run_id=None,
+                )
+
         try:
             ov = load_overrides(self.cfg.artifacts_dir)
             cfg_override = ov.get("config_overrides") if isinstance(ov, dict) else None
@@ -185,8 +206,19 @@ class Orion:
                 return {"ok": True, "task": task.kind, "review": out}
             raise ValueError(f"Unknown task kind: {task.kind}")
         except Exception as e:
+            # ── POSTMORTEM: Extract lessons from failure ──
+            postmortem = self.learner.postmortem(
+                task_kind=task.kind,
+                error=str(e),
+                context=task.payload,
+            )
+
+            # Constitution Rule 8: Auto-retry once before marking failed
+            requeued = self.task_store.requeue_for_retry(task.id, max_retries=1)
+            if requeued:
+                return {"ok": False, "task": task.kind, "error": str(e), "retrying": True, "retry_count": task.retry_count + 1, "postmortem": postmortem}
             self.task_store.mark_failed(task.id, str(e))
-            return {"ok": False, "task": task.kind, "error": str(e)}
+            return {"ok": False, "task": task.kind, "error": str(e), "retrying": False, "postmortem": postmortem}
 
     def _enqueue_experiments(self, config_path: Path, artifacts_dir: Path, next_experiments: list[dict]) -> Dict[str, Any]:
         max_n = 3
@@ -666,6 +698,13 @@ class Orion:
         except Exception:
             memory_items = []
 
+        # ── Load operational lessons for agents ──
+        operational_lessons = []
+        try:
+            operational_lessons = self.learner.get_agent_lessons(max_lessons=15)
+        except Exception:
+            pass
+
         return AgentContext(
             wisdom=wisdom,
             recent_metrics=recent_metrics,
@@ -678,9 +717,9 @@ class Orion:
                     "window_runs": int(policy_state.get("window_runs") or 0) if isinstance(policy_state, dict) else 0,
                     "working_memory_ttl_runs": wm_ttl,
                     "prior_half_life_runs": prior_half_life,
-                }
-                ,
+                },
                 "hard_rules": hard_rules,
+                "operational_lessons": operational_lessons,
             },
         )
 

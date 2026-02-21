@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nexus.watchdog</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>-m</string>
+    <string>nexus_quant.watchdog</string>
+    <string>--loop</string>
+    <string>--interval</string>
+    <string>120</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/truonglys/projects/quant</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/nexus_watchdog.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/nexus_watchdog.log</string>
+</dict>
+</plist>
