@@ -230,6 +230,12 @@
       "rule": "EWMA correlation estimator (half_life=20) converges within 0.20 of true correlation after 100 observations. Reacts to regime shifts within 2x half-life (40 steps).",
       "detail": "Tested: convergence to rho=0.60, regime shift 0.10→0.80, uncorrelated, perfect correlation, crash decorrelation, spike detection, persistence. 7/7 tests PASS.",
       "status": "VALIDATED and INTEGRATED into NexusSignalAggregator → PortfolioRiskOverlay pipeline"
+    },
+    "R23_multi_expiry_marginal": {
+      "rule": "Multi-expiry VRP provides only marginal improvement (+0.051 Sharpe) on synthetic data. Stick with single 30d tenor. Revisit with real data.",
+      "detail": "Tested 4 single tenors, 7 ladder configs, 2-tenor grid (54 combos), 3-tenor grid. Gross VRP scales with 1/sqrt(DTE) (7d:2.934 > 30d:2.604 > 60d:2.289 zero-cost Sharpe). But rolling costs destroy short-tenor advantage. Best multi-expiry: 14d:30%+30d:70% avg=2.115 vs 30d baseline 2.064.",
+      "status": "MARGINAL — not worth complexity on synthetic data",
+      "key_insight": "With better execution (lower rolling costs), front-loading DTE would be optimal. Real term structure dynamics may make multi-expiry more beneficial."
     }
   },
 
@@ -249,7 +255,8 @@
     "delta_hedge_funding_5_combo": "v1 always-cost: 0.375. v2 bidirectional: 0.792. v2+optimal: 1.951. Bidirectional funding is critical.",
     "tail_stress_6_tests": "ALL PASS. Historical crashes, VaR/CVaR, drawdown, correlation, tail protection. Ensemble MDD -1.51%.",
     "vrp_regime_filter_22_configs": "ALL WORSE than baseline (avg=2.556). Term structure (5 thresholds), skew z-score (5 configs), IV level (4 ranges), combined (4 combos). Best single filter: term_-0.05 (Δ=-0.060). Worst combined: all_three (Δ=-1.079). Confirms R7+R21: overlays/filters destroy carry.",
-    "correlation_estimator_7_tests": "ALL PASS. Convergence, regime shift, uncorrelated, perfect correlation, crash decorrelation, spike detection, persistence."
+    "correlation_estimator_7_tests": "ALL PASS. Convergence, regime shift, uncorrelated, perfect correlation, crash decorrelation, spike detection, persistence.",
+    "multi_expiry_vrp_75_configs": "Best: 14d:30%+30d:70% (avg=2.115, Δ=+0.051 vs 30d baseline 2.064). Marginal improvement. 4 single tenors + 7 ladders + 54 2-tenor + ~12 3-tenor combos. Gross Sharpe: 7d=2.934, 14d=2.829, 30d=2.604, 60d=2.289 (zero-cost). Rolling costs dominate short-DTE."
   },
 
   "NEXUS_PORTFOLIO_INTEGRATION": {
@@ -435,12 +442,13 @@
     "Hourly Skew MR — ALL 72 configs NEGATIVE. Signal too noisy at hourly freq",
     "Dynamic ensemble allocation — ALL worse than static OOS",
     "SOL universe expansion — API data unavailable",
-    "VRP regime filters (term structure, skew z-score, IV level) — ALL 22 configs worse than unfiltered baseline"
+    "VRP regime filters (term structure, skew z-score, IV level) — ALL 22 configs worse than unfiltered baseline",
+    "Multi-expiry VRP — 75+ configs, best improvement +0.051 Sharpe (marginal, not worth complexity on synthetic data)"
   ],
 
   "next_research": [
     "Real Deribit data validation when 60 days collected (~April 2026)",
-    "Multi-expiry VRP: diversify DTE (7d, 14d, 30d, 60d) to reduce rollover gamma exposure",
+    "Multi-expiry VRP with REAL data: gross Sharpe scales with 1/sqrt(DTE), revisit when real term structure available",
     "Implement optimal delta hedge in production: 25-30% tolerance, maker orders, bidirectional funding tracking",
     "Expand universe: SOL, DOGE options when API data becomes available",
     "Intraday vol pattern exploitation: hourly vol seasonality (Asia/EU/US sessions)",
