@@ -315,7 +315,9 @@
       "key_insight": "VRP tail risk is already well-managed by delta-neutral positioning + weekly rebalancing + z-score exit. Adding explicit tail hedges is not cost-effective when MDD < 3%."
     },
     "R25_iv_percentile_sizing": {
-      "rule": "Scale VRP position size by IV percentile rank. Step function with 180d lookback: <25th→0.5x, 25-75th→1.0x, >75th→1.5x gives +0.258 avg Sharpe AND +0.343 min Sharpe improvement.",
+      "rule": "★ REVERSAL ON REAL DATA (R59): IV sizing HURTS on real data (-0.55 Sharpe). Synthetic was +0.258 but real DVOL is structurally declining → 44% below 25th pctl → 0.5x → lost returns. DO NOT USE IN PRODUCTION.",
+      "R59_real_data_result": "Unsized VRP+BF(50/50) Sharpe=2.78 > Sized 2.23. Walk-forward delta=-0.53. Cause: synthetic IV was stationary AR(1), real IV is trending down (96%→42%).",
+      "original_synthetic_rule": "Scale VRP position size by IV percentile rank. Step function with 180d lookback: <25th→0.5x, 25-75th→1.0x, >75th→1.5x gives +0.258 avg Sharpe AND +0.343 min Sharpe improvement on SYNTHETIC data.",
       "detail": "Tested 5 sizing models × 5 lookbacks = 25 configs. 15/25 better than baseline (vs 0/22 for regime filters R21). Step model dominates (avg Δ=+0.193). Inverse sizing (contrarian: more when IV low) is worst (avg Δ=-0.409) — confirms directional causation. Longer lookbacks (90-180d) consistently better than short (30-60d). Best: step_lb180 avg=2.210 min=1.546 (baseline avg=1.952 min=1.203). Every single year improved.",
       "status": "PROMISING on synthetic data — needs real data validation before production",
       "why_different_from_R21": "R21 (regime filtering) removes you from market → lost carry time. IV sizing keeps you ALWAYS in market but scales proportionally to carry richness. No time-out-of-market penalty.",
