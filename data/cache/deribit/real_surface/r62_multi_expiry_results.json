@@ -1,0 +1,86 @@
+{
+  "research_id": "R62",
+  "title": "Multi-Expiry VRP with Real Term Structure",
+  "term_spread_stats": {
+    "mean": -0.0147,
+    "std": 0.0256,
+    "pct_contango": 0.222
+  },
+  "model_comparison": {
+    "VRP (standard)": {
+      "sharpe": 2.9051
+    },
+    "VRP (back-month)": {
+      "sharpe": 3.3209
+    },
+    "VRP (blend 70/30)": {
+      "sharpe": 3.0222
+    },
+    "VRP (blend 50/50)": {
+      "sharpe": 3.106
+    },
+    "VRP (blend 30/70)": {
+      "sharpe": 3.191
+    },
+    "VRP (TS-cond lb=60)": {
+      "sharpe": 1.139
+    },
+    "VRP (TS-cond lb=90)": {
+      "sharpe": 1.2035
+    },
+    "VRP (TS-cond lb=120)": {
+      "sharpe": 1.3184
+    },
+    "VRP (dynamic lb=60)": {
+      "sharpe": 3.2186
+    },
+    "VRP (dynamic lb=90)": {
+      "sharpe": 3.2233
+    },
+    "VRP (dynamic lb=120)": {
+      "sharpe": 3.2228
+    }
+  },
+  "best_ts_mr": "TS-MR lb=120 z=2.0",
+  "best_ts_mr_sharpe": 1.2273,
+  "ensemble_comparison": {
+    "100/0/0": {
+      "sharpe": 2.7847,
+      "max_dd": 0.031046
+    },
+    "50/50/0": {
+      "sharpe": 2.9066,
+      "max_dd": 0.015913
+    },
+    "70/30/0": {
+      "sharpe": 2.8394,
+      "max_dd": 0.021853
+    },
+    "50/30/20": {
+      "sharpe": 2.9066,
+      "max_dd": 0.016392
+    },
+    "40/40/20": {
+      "sharpe": 2.9606,
+      "max_dd": 0.013311
+    },
+    "50/25/25": {
+      "sharpe": 2.9042,
+      "max_dd": 0.016638
+    },
+    "33/33/34": {
+      "sharpe": 2.9933,
+      "max_dd": 0.011844
+    },
+    "40/30/30": {
+      "sharpe": 2.9519,
+      "max_dd": 0.013803
+    }
+  },
+  "r60_sharpe": 2.9066,
+  "best_triple": "33/33/34",
+  "best_triple_sharpe": 2.9933,
+  "delta_sharpe": 0.0867,
+  "walk_forward_triple_wins": "8/10",
+  "verdict": "MARGINAL \u2014 term spread adds negligible value"
+}
