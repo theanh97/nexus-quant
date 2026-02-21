@@ -238,10 +238,10 @@
         "_regime": "MID momentum (20-60%) \u2014 balanced"
       },
       "HIGH": {
-        "f168": 0.0,
-        "v1": 0.5,
-        "i460bw168": 0.5,
-        "i415bw216": 0.0,
+        "f168": 0.35,
+        "v1": 0.2,
+        "i460bw168": 0.1575,
+        "i415bw216": 0.2925,
         "_regime": "HIGH momentum (>60th pct) \u2014 momentum-heavy"
       }
     },
@@ -345,7 +345,7 @@
       "HIGH": 0.5
     }
   },
-  "version": "v2.49.3",
+  "version": "v2.49.4",
   "v1_per_regime_weights": {
     "LOW": {
       "w_carry": 0.1,
