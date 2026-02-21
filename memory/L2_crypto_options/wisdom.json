@@ -1,9 +1,9 @@
 {
   "_project": "crypto_options",
-  "_version": "31.0.0",
+  "_version": "32.0.0",
   "_updated": "2026-02-22",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). 87 research studies (R1-R87). Production system fully deployed (R80-R85). BF edge CONFIRMED STRUCTURAL via ETH cross-validation (R86). Monte Carlo stress test 5/5 PASS (R87). GREEN for live deployment.",
-  "_status": "PRODUCTION READY — GREEN. R86: BF edge confirmed structural (ETH Sharpe 1.76, BTC-ETH BF corr=0.101). R87: MC stress test 5/5 PASS (kill-switch 0.0% prob, P(1Y loss)=0.0%, bootstrap Sharpe CI [4.20, 6.03]). 70/30 BTC/ETH optimal (Sharpe 4.09). System GO for live trading.",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). 90 research studies (R1-R90). Multi-asset production system (BTC 70% + ETH 30%). BF edge CONFIRMED STRUCTURAL. 10x STATIC > DYNAMIC rule. GREEN for live deployment.",
+  "_status": "PRODUCTION READY — GREEN. Multi-asset runner (R88: BTC 70%/ETH 30%). ETH kill-switch widened to 2.0% (R89). Early warnings for MONITORING ONLY (R90: 10th static>dynamic). Portfolio health 0.66 STRONG. All systems GO.",
 
   "CRITICAL_DATA_AUTHENTICITY_WARNING": {
     "summary": "ALL R1-R48 research results are computed on SYNTHETIC implied volatility data. NO Sharpe number should be treated as a proven real-world result.",
@@ -635,7 +635,10 @@
     "Full production infrastructure built (R81-R83): R81 daily runner (signal+health+alerts in one cron), R82 position tracker (persistent state, 28 trades, +9.10% cumulative), R83 alert system (CRITICAL/WARNING/INFO, macOS notify, exit codes for cron). All 3 R80 gaps closed → system is GO.",
     "Production cron + dashboard (R84-R85): R84 daily cron (00:15 UTC, R81→R82→R83 pipeline). R85 monitoring dashboard (Chart.js, equity curve, drawdown, trade log, health panel).",
     "★★ BF EDGE CONFIRMED STRUCTURAL (R86): ETH BF Sharpe 1.76 (BTC 3.64). BTC-ETH BF correlation 0.101 (nearly independent!). 70/30 BTC/ETH: Sharpe 4.09 (best). ETH WF 4/4 positive (avg 2.95). ETH LOYO 6/6 positive (avg 3.90). Evidence score 4.0/4.0. BF mean-reversion is a vol surface structural phenomenon, not BTC-specific.",
-    "★ MC STRESS TEST 5/5 PASS (R87): Bootstrap Sharpe 95% CI [4.20, 6.03], P(>1)=100%. Kill-switch (1.4%) hit probability 0.00%. P(1Y loss) 0.00%. Worst MC drawdown -0.54%. Worst synthetic scenario (30d×-2σ) -1.06% (no kill). Return distribution: slight fat tails (kurt=1.35) but benign. Avg DD 5.1 days, avg recovery 3.1 days. Capital 0.3 BTC adequate. GREEN for deployment."
+    "★ MC STRESS TEST 5/5 PASS (R87): Bootstrap Sharpe 95% CI [4.20, 6.03], P(>1)=100%. Kill-switch (1.4%) hit probability 0.00%. P(1Y loss) 0.00%. Worst MC drawdown -0.54%. Worst synthetic scenario (30d×-2σ) -1.06% (no kill). Return distribution: slight fat tails (kurt=1.35) but benign. Avg DD 5.1 days, avg recovery 3.1 days. Capital 0.3 BTC adequate. GREEN for deployment.",
+    "Multi-asset runner deployed (R88): BTC 70% + ETH 30%. Per-asset signals: BTC BF=HOLD z=0.254 health=0.623, ETH BF=HOLD z=-0.048 health=0.747. Portfolio health 0.66 STRONG.",
+    "★ DRAWDOWN ANATOMY (R89): BTC worst DD -0.47% (102 days), ETH worst -1.58% (24 days). Early warnings EXIST: elevated IV (+14%), z-volatility (2.25×), BF std (+25%). Losses at extreme z-scores (entry zone). Recovery fast (median 6 days). ETH kill-switch widened to 2.0% (was 1.4%). BTC-ETH P&L correlation -0.029.",
+    "★ 10th STATIC>DYNAMIC (R90): Warning-based position sizing tested (5 methods). ALL hurt Sharpe (BTC -0.19 to -0.56, ETH -0.26 to -0.67). Walk-forward avg delta: BTC -0.49, ETH -0.60. Paradox: high-warning days have BETTER returns (elevated IV = more carry). Warnings for MONITORING ONLY. 10th confirmation: never use dynamic sizing/timing/filtering."
   ],
 
   "failed_hypotheses": [
@@ -665,7 +668,8 @@
     "bf_ratio complement (R73) — bf_ratio PnL correlation with butterfly_25d = 0.831 (too similar). Best ensemble keeps w_ratio=0%. Walk-forward: static wins 6/7. Essentially same trade as butterfly_25d.",
     "iv_atm MR complement (R74) — BF-IV PnL correlation -0.033 (ideal). In-sample +0.14 but WF delta -0.04 (wins 2/7). LOYO 3/6. Marginal — doesn't survive OOS.",
     "Regime-adaptive BF (R75) — ALL 5 adaptive configs worse than static. Best: low→lb=180 high→lb=60 (+0.032 marginal). Worst: low→z_in=1.0 high→z_in=2.0 (-0.451). BF doesn't need regime adaptation.",
-    "BF sensitivity adaptation (R79) — 6 inverse-variance configs, 4 IV-scaled configs, 4 step-function configs. ALL worse than static sens=2.5 on WF and LOYO. Best adaptive WF avg 4.92 vs static 2.5 WF avg 5.72. Sensitivity is leverage, not signal quality. 9th static>dynamic confirmation."
+    "BF sensitivity adaptation (R79) — 6 inverse-variance configs, 4 IV-scaled configs, 4 step-function configs. ALL worse than static sens=2.5 on WF and LOYO. Best adaptive WF avg 4.92 vs static 2.5 WF avg 5.72. Sensitivity is leverage, not signal quality. 9th static>dynamic confirmation.",
+    "Early warning position sizing (R90) — 3 indicators (IV elevation, z-volatility, BF std ratio), composite warning score, 5 sizing rules (half/zero/graduated/inverse). ALL hurt Sharpe on BOTH BTC (-0.19 to -0.56) and ETH (-0.26 to -0.67). Walk-forward 1/5 positive. Paradox: high-warning days have better avg P&L. 10th static>dynamic confirmation."
   ],
 
   "REAL_DATA_VALIDATION": {
@@ -700,18 +704,16 @@
   "SYNTHETIC_DATA_STATUS": "PARTIALLY VALIDATED. R49 confirms VRP edge is REAL using Deribit DVOL. Skew MR strategy still needs real skew data (not available free). Architecture principles validated. Parameter optimization still synthetic-only.",
 
   "next_research": [
-    "★ PRIORITY 1: Multi-asset production extension — extend R81-R85 to trade BTC+ETH (70/30 optimal from R86)",
-    "PRIORITY 2: Live paper trading — run cron 30 days before real capital (system is GREEN from R87)",
-    "PRIORITY 3: Alternative data sources — Tardis.dev or Laevitas for deeper option chain analytics",
-    "PRIORITY 4: Cross-exchange BF analysis — does BF MR work on OKX/Bybit? (R86 confirms structural → likely yes)",
-    "COMPLETED: Dashboard (R85 — Chart.js equity/drawdown/trade log/health)",
-    "COMPLETED: ETH cross-validation (R86 — BF CONFIRMED STRUCTURAL, corr=0.101, 70/30 Sharpe 4.09)",
-    "COMPLETED: MC stress testing (R87 — 5/5 PASS, GREEN deployment, kill prob 0.0%)",
-    "COMPLETED: Production cron (R84 — 00:15 UTC daily pipeline)",
-    "COMPLETED: Production infrastructure (R80-R83)",
-    "COMPLETED: R76-R79 (execution costs, persistence, compression, sensitivity)",
-    "COMPLETED: R72-R75 (VRP recovery, bf_ratio, iv_atm, regime robustness)",
-    "COMPLETED: R68-R71 (BF optimization, Production v2, sensitivity tiers, signal generator)",
+    "★ PRIORITY 1: Live paper trading — run cron 30 days before real capital (system is GREEN)",
+    "PRIORITY 2: Alternative data sources — Tardis.dev or Laevitas for deeper option chain analytics",
+    "PRIORITY 3: Cross-exchange BF analysis — does BF MR work on OKX/Bybit? (R86 confirms structural → likely yes)",
+    "PRIORITY 4: Intraday BF analysis — does BF MR work at higher frequency?",
+    "COMPLETED: Multi-asset runner (R88 — BTC 70%/ETH 30%, per-asset kill-switches)",
+    "COMPLETED: Drawdown anatomy (R89 — early warnings exist, ETH DD widened to 2.0%)",
+    "COMPLETED: Early warning system (R90 — 10th static>dynamic, MONITOR_ONLY)",
+    "COMPLETED: Dashboard (R85), ETH validation (R86), MC stress (R87)",
+    "COMPLETED: Production infrastructure (R80-R84)",
+    "COMPLETED: R76-R79, R72-R75, R68-R71",
     "SOL/DOGE universe expansion when Deribit option volume increases"
   ]
 }
