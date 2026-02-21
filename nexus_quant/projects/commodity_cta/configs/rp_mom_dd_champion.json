@@ -1,8 +1,8 @@
 {
   "strategy": "rp_mom_dd",
-  "version": "3.0.0",
-  "phase": "145",
-  "title": "Sector-Balanced RP + Momentum Tilt + DD (14-div Champion v3)",
+  "version": "4.0.0",
+  "phase": "146",
+  "title": "Sector RP + Regime-Adaptive Vol + Momentum Tilt + DD (14-div Champion v4)",
   "universe": [
     "CL=F", "NG=F", "GC=F", "SI=F", "HG=F", "ZW=F", "ZC=F", "ZS=F",
     "EURUSD=X", "GBPUSD=X", "AUDUSD=X", "JPY=X",
@@ -12,7 +12,11 @@
     "w_commodity": 0.50,
     "w_fx": 0.20,
     "w_bond": 0.30,
-    "vol_target": 0.08,
+    "vt_low": 0.10,
+    "vt_mid": 0.08,
+    "vt_high": 0.05,
+    "regime_low": 0.35,
+    "regime_high": 0.75,
     "base_pct": 0.90,
     "tilt_pct": 0.10,
     "signal_scale": 1.0,
@@ -34,9 +38,9 @@
     "OOS2": ["2021-01-01", "2026-02-20"]
   },
   "results": {
-    "FULL":  {"sharpe": 0.614, "cagr": 0.077, "max_drawdown": 0.385},
-    "IS":    {"sharpe": 0.195, "cagr": 0.017, "max_drawdown": 0.385},
-    "OOS1":  {"sharpe": 0.803, "cagr": 0.100, "max_drawdown": 0.243},
-    "OOS2":  {"sharpe": 0.749, "cagr": 0.091, "max_drawdown": 0.254}
+    "FULL":  {"sharpe": 0.640, "cagr": 0.083, "max_drawdown": 0.397},
+    "IS":    {"sharpe": 0.233, "cagr": 0.023, "max_drawdown": 0.397},
+    "OOS1":  {"sharpe": 0.835, "cagr": 0.106, "max_drawdown": 0.243},
+    "OOS2":  {"sharpe": 0.767, "cagr": 0.097, "max_drawdown": 0.266}
   }
 }

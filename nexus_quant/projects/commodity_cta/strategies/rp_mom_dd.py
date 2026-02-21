@@ -1,19 +1,19 @@
 """
 Strategy: Sector-Balanced Risk-Parity + Momentum Tilt + DD Deleveraging
 ========================================================================
-Phase 145 Champion — sector-balanced RP on 14-div universe.
+Phase 146 Champion — regime-adaptive sector RP on 14-div universe.
 
 Architecture:
-  1. Sector-balanced risk parity (equal risk per sector, inv-vol within)
+  1. Sector-balanced risk parity (50/20/30 comm/fx/bond, inv-vol within)
   2. TSMOM 6m/12m momentum tilt (90/10 base/tilt)
   3. Cross-sectional momentum rank tilt (5%)
-  4. Vol-targeting (8% portfolio vol)
+  4. Regime-adaptive vol targeting (10%/8%/5% by vol regime)
   5. Drawdown deleveraging (tight: 5%→15% ramp)
   6. Vol regime ceiling
 
-Best config (Phase 145, c50/f20/b30):
-  FULL=+0.614  IS=+0.195  OOS1=+0.803  OOS2=+0.749
-  MDD=38.5%  CAGR=7.7%  OOS_MIN=+0.749
+Best config (Phase 146):
+  FULL=+0.640  IS=+0.233  OOS1=+0.835  OOS2=+0.767
+  MDD=39.7%  CAGR=8.3%  OOS_MIN=+0.767
   Universe: 8 commodities + 4 FX + 2 bonds = 14 instruments
 """
 from __future__ import annotations
@@ -62,8 +62,12 @@ class RPMomDDStrategy(Strategy):
         # Cross-sectional momentum
         self.xsect_weight: float = float(p.get("xsect_weight", 0.05))
 
-        # Portfolio vol target
-        self.vol_target: float = float(p.get("vol_target", 0.08))
+        # Regime-adaptive vol targeting
+        self.vt_low: float = float(p.get("vt_low", 0.10))
+        self.vt_mid: float = float(p.get("vt_mid", 0.08))
+        self.vt_high: float = float(p.get("vt_high", 0.05))
+        self.regime_low: float = float(p.get("regime_low", 0.35))
+        self.regime_high: float = float(p.get("regime_high", 0.75))
 
         # Drawdown deleveraging
         self.dd_threshold: float = float(p.get("dd_threshold", 0.05))
@@ -152,21 +156,7 @@ class RPMomDDStrategy(Strategy):
             factor = max(0.0, ts_factor + xs_factor)
             weights[sym] = rp_weights.get(sym, 0) * factor
 
-        # 5. Scale to vol target
-        port_vol_sq = sum(
-            (weights.get(s, 0) * port_vols.get(s, 0.2)) ** 2 for s in syms
-        )
-        port_vol = math.sqrt(port_vol_sq) if port_vol_sq > 0 else 0.01
-        if port_vol > 0.01:
-            scale = self.vol_target / port_vol
-            weights = {s: w * min(scale, 3.0) for s, w in weights.items()}
-
-        # 6. Drawdown deleveraging
-        dd_factor = self._dd_factor(dataset, idx)
-        if dd_factor < 1.0:
-            weights = {s: w * dd_factor for s, w in weights.items()}
-
-        # 7. Vol regime ceiling
+        # 5. Regime-adaptive vol targeting
         avg_vr = 0.0
         for sym in syms:
             arr = vol_regime.get(sym, [])
@@ -175,6 +165,28 @@ class RPMomDDStrategy(Strategy):
                 if v == v:
                     avg_vr += v
         avg_vr /= len(syms) if syms else 1
+
+        if avg_vr < self.regime_low:
+            vt = self.vt_low
+        elif avg_vr > self.regime_high:
+            vt = self.vt_high
+        else:
+            vt = self.vt_mid
+
+        port_vol_sq = sum(
+            (weights.get(s, 0) * port_vols.get(s, 0.2)) ** 2 for s in syms
+        )
+        port_vol = math.sqrt(port_vol_sq) if port_vol_sq > 0 else 0.01
+        if port_vol > 0.01:
+            scale = vt / port_vol
+            weights = {s: w * min(scale, 3.0) for s, w in weights.items()}
+
+        # 6. Drawdown deleveraging
+        dd_factor = self._dd_factor(dataset, idx)
+        if dd_factor < 1.0:
+            weights = {s: w * dd_factor for s, w in weights.items()}
+
+        # 7. Vol regime ceiling (avg_vr computed above in step 5)
         if avg_vr > 0.8:
             weights = {
                 s: w * max(0.5, 1.0 - (avg_vr - 0.8))
@@ -227,7 +239,11 @@ CHAMPION_PARAMS = {
     "w_commodity": 0.50,
     "w_fx": 0.20,
     "w_bond": 0.30,
-    "vol_target": 0.08,
+    "vt_low": 0.10,
+    "vt_mid": 0.08,
+    "vt_high": 0.05,
+    "regime_low": 0.35,
+    "regime_high": 0.75,
     "base_pct": 0.90,
     "tilt_pct": 0.10,
     "signal_scale": 1.0,
