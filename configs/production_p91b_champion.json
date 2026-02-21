@@ -75,7 +75,7 @@
     "_validated": "P129 LOYO 3/5 wins avg \u0394=+0.232; P156 fine-tune: scale 0.50\u21920.40 + boost 0.20\u21920.15, LOYO 4/5 OBJ=2.1448; P171 retune LOYO 3/5 \u0394=+0.0005",
     "enabled": true,
     "window_bars": 168,
-    "threshold": 0.5,
+    "threshold": 0.53,
     "scale_factor": 0.4,
     "f144_boost": 0.0,
     "signal": "btc_rolling_price_vol",
@@ -345,7 +345,7 @@
       "HIGH": 0.5
     }
   },
-  "version": "v2.49.0",
+  "version": "v2.49.1",
   "v1_per_regime_weights": {
     "LOW": {
       "w_carry": 0.1,
