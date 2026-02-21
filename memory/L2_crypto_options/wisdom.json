@@ -1,8 +1,8 @@
 {
   "_project": "crypto_options",
-  "_version": "33.0.0",
+  "_version": "34.0.0",
   "_updated": "2026-02-21",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). 93 research studies (R1-R93). Multi-asset production system (BTC 70% + ETH 30%). MAKER FILLS ESSENTIAL (R92). Historical replay 5/5 GREEN (R93). BF edge CONFIRMED STRUCTURAL. 10x STATIC > DYNAMIC.",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). 96 research studies (R1-R96). 11x STATIC > DYNAMIC. MAKER FILLS ESSENTIAL (R92). Config v3 (sens=5.0) dominates but ETH kill-switch blocks → KEEP v2. Per-asset sensitivity is optimal future path.",
   "_status": "PRODUCTION READY — GREEN. Multi-asset runner (R88: BTC 70%/ETH 30%). ETH kill-switch widened to 2.0% (R89). Early warnings for MONITORING ONLY (R90: 10th static>dynamic). Portfolio health 0.66 STRONG. All systems GO.",
 
   "CRITICAL_DATA_AUTHENTICITY_WARNING": {
@@ -641,7 +641,10 @@
     "★ 10th STATIC>DYNAMIC (R90): Warning-based position sizing tested (5 methods). ALL hurt Sharpe (BTC -0.19 to -0.56, ETH -0.26 to -0.67). Walk-forward avg delta: BTC -0.49, ETH -0.60. Paradox: high-warning days have BETTER returns (elevated IV = more carry). Warnings for MONITORING ONLY. 10th confirmation: never use dynamic sizing/timing/filtering.",
     "Deribit execution guide (R91): 880 BTC options across 12 expiries. BF maps to 3-leg butterfly (sell 25d wings, buy 2× ATM). ATM $69K, wings $62K/$75K. Quarterly rolls (4×/yr, DTE<7 trigger). Capital: 0.3-1.0 BTC. Daily playbook at 00:15 UTC.",
     "★★ MAKER FILLS ESSENTIAL (R92): Live order book spreads 17.5-20 bps per BF trade (R76 estimated 3-8 bps for spread only). TAKER execution DESTROYS edge (Sharpe → -0.66, cost > return). MAKER-only: Sharpe 2.65 (29% cost drag). Book depth excellent (300+ contracts/level). RULE: limit orders ONLY, 1-4h fill patience.",
-    "★ HISTORICAL REPLAY 5/5 GREEN (R93): 12-month replay (Feb 2025 → Feb 2026). BTC: Sharpe 2.74, 6 trades, MaxDD -0.21%. ETH: Sharpe 1.23, 4 trades, MaxDD -0.53%. Portfolio 70/30: Sharpe 2.71, +0.47%, MaxDD -0.16%. All 8/8 consistency checks pass. CRITICAL: BTC breaks even with 8bps maker costs in this low-return period. ETH survives costs better (+0.15% net)."
+    "★ HISTORICAL REPLAY 5/5 GREEN (R93): 12-month replay (Feb 2025 → Feb 2026). BTC: Sharpe 2.74, 6 trades, MaxDD -0.21%. ETH: Sharpe 1.23, 4 trades, MaxDD -0.53%. Portfolio 70/30: Sharpe 2.71, +0.47%, MaxDD -0.16%. All 8/8 consistency checks pass. CRITICAL: BTC breaks even with 8bps maker costs in this low-return period. ETH survives costs better (+0.15% net).",
+    "Execution cost optimization (R94): Sensitivity=5.0 is best anti-cost lever: BTC Sharpe 1.93 (vs 1.26 at sens=2.5) with 8bps. BTC breakeven at 10bps, ETH at 6bps. Maker fills + combo orders recommended.",
+    "★ 11th STATIC>DYNAMIC (R95): 24 entry filters tested (skew confirm, IV level, term structure, BF momentum, IV momentum, combos). BTC: 1/12 marginal. ETH: 0/12. BF standalone remains optimal.",
+    "★ CONFIG v3 ANALYSIS (R96): sens=5.0 dominates v2 on WF (BTC avg 2.38 vs 1.24) and LOYO (2.11 vs 1.13). BUT ETH MaxDD 2.21-3.16% > 2.0% kill-switch → BLOCKED. KEEP v2. Per-asset sensitivity (BTC=5.0, ETH=2.5) is the optimal future path."
   ],
 
   "failed_hypotheses": [
@@ -672,7 +675,8 @@
     "iv_atm MR complement (R74) — BF-IV PnL correlation -0.033 (ideal). In-sample +0.14 but WF delta -0.04 (wins 2/7). LOYO 3/6. Marginal — doesn't survive OOS.",
     "Regime-adaptive BF (R75) — ALL 5 adaptive configs worse than static. Best: low→lb=180 high→lb=60 (+0.032 marginal). Worst: low→z_in=1.0 high→z_in=2.0 (-0.451). BF doesn't need regime adaptation.",
     "BF sensitivity adaptation (R79) — 6 inverse-variance configs, 4 IV-scaled configs, 4 step-function configs. ALL worse than static sens=2.5 on WF and LOYO. Best adaptive WF avg 4.92 vs static 2.5 WF avg 5.72. Sensitivity is leverage, not signal quality. 9th static>dynamic confirmation.",
-    "Early warning position sizing (R90) — 3 indicators (IV elevation, z-volatility, BF std ratio), composite warning score, 5 sizing rules (half/zero/graduated/inverse). ALL hurt Sharpe on BOTH BTC (-0.19 to -0.56) and ETH (-0.26 to -0.67). Walk-forward 1/5 positive. Paradox: high-warning days have better avg P&L. 10th static>dynamic confirmation."
+    "Early warning position sizing (R90) — 3 indicators (IV elevation, z-volatility, BF std ratio), composite warning score, 5 sizing rules (half/zero/graduated/inverse). ALL hurt Sharpe on BOTH BTC (-0.19 to -0.56) and ETH (-0.26 to -0.67). Walk-forward 1/5 positive. Paradox: high-warning days have better avg P&L. 10th static>dynamic confirmation.",
+    "BF entry filters (R95) — 12 filters (skew confirm, IV level, term spread neutral, BF momentum, IV momentum, combo). BTC 1/12 marginal (+0.02), ETH 0/12. No signal enhancement survives. 11th static>dynamic confirmation."
   ],
 
   "REAL_DATA_VALIDATION": {
@@ -708,12 +712,14 @@
 
   "next_research": [
     "★ PRIORITY 1: Live paper trading — system is GREEN, run cron 30 days before real capital",
-    "★ PRIORITY 2: Reduce execution costs — combo orders, Deribit RFQ, or lower-cost entry signals",
+    "★ PRIORITY 2: Per-asset sensitivity implementation (BTC=5.0, ETH=2.5) — R96 shows 46% Sharpe gain",
     "PRIORITY 3: Alternative data — Tardis.dev or Laevitas for deeper option chain analytics",
     "PRIORITY 4: Cross-exchange BF — OKX/Bybit (R86 structural → likely works)",
     "PRIORITY 5: Intraday BF analysis — higher frequency signal",
-    "COMPLETED: Execution guide + order book (R91-R92 — maker fills ESSENTIAL, 17.5-20 bps spread)",
-    "COMPLETED: Historical replay (R93 — 12mo validation, 5/5 GREEN, 8/8 consistency)",
+    "COMPLETED: Execution optimization (R94 — sensitivity is key lever, breakeven BTC 10bps ETH 6bps)",
+    "COMPLETED: Signal enhancement (R95 — 11th static>dynamic, 0/24 filters help)",
+    "COMPLETED: Config v3 analysis (R96 — sens=5.0 dominates but ETH KS blocks)",
+    "COMPLETED: R91-R93 (exec guide, order book, replay 5/5 GREEN)",
     "COMPLETED: R88-R90 (multi-asset, DD anatomy, 10th static>dynamic)",
     "COMPLETED: R85-R87 (dashboard, ETH validation, MC stress)",
     "COMPLETED: R80-R84 (production infrastructure)",
