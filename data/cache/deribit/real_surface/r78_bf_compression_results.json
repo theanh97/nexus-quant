@@ -1,0 +1,12 @@
+{
+  "research_id": "R78",
+  "title": "BF Structural Compression Analysis",
+  "full_sample_sharpe": 2.644,
+  "std_decline_significant": true,
+  "std_decline_t_stat": -7.5912831154956075,
+  "corr_bf_std_iv": 0.6447888392904212,
+  "corr_std_sharpe": -0.08772195687283267,
+  "recent_bf_std": 0.005082633433071084,
+  "risk_level": "MODERATE",
+  "verdict": "CAUTION \u2014 BF compression is real but NOT yet affecting Sharpe"
+}
