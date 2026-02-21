@@ -1,19 +1,19 @@
 """
 Strategy: Sector-Balanced Risk-Parity + Momentum Tilt + DD Deleveraging
 ========================================================================
-Phase 146 Champion — regime-adaptive sector RP on 14-div universe.
+Phase 148 Champion — regime-adaptive sector RP with long DD lookback.
 
 Architecture:
   1. Sector-balanced risk parity (50/20/30 comm/fx/bond, inv-vol within)
   2. TSMOM 6m/12m momentum tilt (90/10 base/tilt)
   3. Cross-sectional momentum rank tilt (5%)
   4. Regime-adaptive vol targeting (10%/8%/5% by vol regime)
-  5. Drawdown deleveraging (tight: 5%→15% ramp)
+  5. Drawdown deleveraging (180-bar lookback, 5%→15% ramp)
   6. Vol regime ceiling
 
-Best config (Phase 146):
-  FULL=+0.640  IS=+0.233  OOS1=+0.835  OOS2=+0.767
-  MDD=39.7%  CAGR=8.3%  OOS_MIN=+0.767
+Best config (Phase 148):
+  FULL=+0.647  IS=+0.223  OOS1=+0.835  OOS2=+0.823
+  MDD=35.0%  CAGR=7.8%  OOS_MIN=+0.823
   Universe: 8 commodities + 4 FX + 2 bonds = 14 instruments
 """
 from __future__ import annotations
@@ -73,6 +73,7 @@ class RPMomDDStrategy(Strategy):
         self.dd_threshold: float = float(p.get("dd_threshold", 0.05))
         self.dd_max: float = float(p.get("dd_max", 0.15))
         self.dd_min_alloc: float = float(p.get("dd_min_alloc", 0.10))
+        self.dd_lookback: int = int(p.get("dd_lookback", 180))
 
         # Timing
         self.warmup: int = int(p.get("warmup", 270))
@@ -197,7 +198,7 @@ class RPMomDDStrategy(Strategy):
 
     def _dd_factor(self, dataset: MarketDataset, idx: int) -> float:
         """Compute drawdown deleveraging factor from recent cross-instrument returns."""
-        lookback = min(60, idx)
+        lookback = min(self.dd_lookback, idx)
         if lookback < 5:
             return 1.0
 
@@ -251,6 +252,7 @@ CHAMPION_PARAMS = {
     "dd_threshold": 0.05,
     "dd_max": 0.15,
     "dd_min_alloc": 0.10,
+    "dd_lookback": 180,
     "warmup": 270,
     "rebalance_freq": 42,
 }
