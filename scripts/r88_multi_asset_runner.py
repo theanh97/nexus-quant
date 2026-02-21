@@ -36,8 +36,8 @@ BRIEF_MODE = "--brief" in sys.argv
 # ═══════════════════════════════════════════════════════════════
 
 ASSETS = {
-    "BTC": {"weight": 0.70},
-    "ETH": {"weight": 0.30},
+    "BTC": {"weight": 0.70, "max_dd_pct": 1.4},   # 3× BTC historical MaxDD (0.47%)
+    "ETH": {"weight": 0.30, "max_dd_pct": 2.0},   # R89: ETH MaxDD 1.58%, needs wider threshold
 }
 
 # Per-asset BF config (same params — R86 confirmed)
