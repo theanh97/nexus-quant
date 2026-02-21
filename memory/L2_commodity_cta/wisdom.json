@@ -4,7 +4,7 @@
     "layer": "L2",
     "version": "1.0.0",
     "created": "2026-02-20",
-    "status": "Phase 1 complete — data + features + strategies implemented"
+    "status": "KILLED — 9/9 approaches fail OOS. All negative Sharpe with Yahoo data."
   },
 
   "architecture": {
@@ -65,36 +65,43 @@
     }
   },
 
-  "next_steps": [
-    "Run phase1 validation script to confirm data downloads correctly",
-    "Walk-forward validation: train 2005-2015, test 2016-2020, OOS 2021-2026",
-    "Robustness: ±20% parameter perturbation on lookbacks",
-    "Correlation analysis with crypto_perps returns",
-    "If vol_mom_z overlay helps here → promote to L0 universal memory",
-    "CME DataMine data for actual roll yield when budget allows"
-  ],
+  "kill_report": {
+    "kill_date": "2026-02-21",
+    "approaches_tested": 9,
+    "results": {
+      "EMA_trend_8comm": {"full": -0.032, "oos_min": -0.184},
+      "Carry_8comm": {"full": -0.498, "oos_min": -0.608},
+      "MomValue_8comm": {"full": 0.035, "oos_min": -0.332},
+      "Ensemble_v1": {"full": -0.298, "oos_min": -0.383},
+      "TSMOM_v1": {"full": -0.187, "oos_min": -0.884},
+      "Donchian_v1": {"full": -0.344, "oos_min": -0.975},
+      "Ensemble_v2": {"full": -0.187, "oos_min": -0.365},
+      "Trend_14sym": {"full": 0.061, "oos_min": -0.220},
+      "Diversified_14sym": {"full": -0.451, "oos_min": -0.742}
+    },
+    "root_causes": [
+      "Yahoo continuous futures have roll artifacts that corrupt trend signals",
+      "13 commodities too concentrated (SG CTA uses 50+ markets for diversification)",
+      "Carry proxy (zscore) fundamentally broken without CME term structure",
+      "2016-2020 commodity bear market kills all approaches"
+    ],
+    "could_revive_if": "CME institutional data with roll-adjusted prices and real term structure"
+  },
+
+  "next_steps": ["PROJECT KILLED — no further work unless CME data becomes available"],
 
   "phase_history": [
     {
       "phase": 1,
       "date": "2026-02-20",
       "description": "Initial implementation: Yahoo data provider + features + 4 strategies",
-      "status": "complete",
-      "files_created": [
-        "nexus_quant/projects/commodity_cta/__init__.py",
-        "nexus_quant/projects/commodity_cta/project.yaml",
-        "nexus_quant/projects/commodity_cta/providers/yahoo_futures.py",
-        "nexus_quant/projects/commodity_cta/features.py",
-        "nexus_quant/projects/commodity_cta/costs/futures_fees.py",
-        "nexus_quant/projects/commodity_cta/strategies/trend_following.py",
-        "nexus_quant/projects/commodity_cta/strategies/carry_roll.py",
-        "nexus_quant/projects/commodity_cta/strategies/momentum_value.py",
-        "nexus_quant/projects/commodity_cta/strategies/cta_ensemble.py",
-        "configs/cta_trend.json",
-        "configs/cta_carry.json",
-        "configs/cta_mom_value.json",
-        "configs/cta_ensemble.json"
-      ]
+      "status": "complete"
+    },
+    {
+      "phase": "139-141",
+      "date": "2026-02-21",
+      "description": "Walk-forward validation + diagnostics + v2 fixes. 9/9 approaches fail OOS.",
+      "status": "KILLED"
     }
   ]
 }

@@ -151,6 +151,14 @@ class NexusSignalAggregator:
         else:
             self.portfolio_weights = self._optimize_weights()
 
+        # Correlation estimator for real-time cross-project correlation tracking
+        from .correlation_estimator import CorrelationEstimator
+        self._corr_estimator = CorrelationEstimator(
+            projects=list(self.signal_logs.keys()),
+            half_life=20,
+            rolling_window=60,
+        )
+
         # Risk overlay (optional but recommended)
         self._risk_overlay = None
         if risk_overlay:
@@ -307,12 +315,29 @@ class NexusSignalAggregator:
             sum(yr_sharpe.values()) / len(yr_sharpe) if yr_sharpe else 0.0
         )
 
-        # 5. Apply risk overlay (can only reduce positions)
+        # 5. Update correlation estimator with latest project returns
+        #    Extract gross_leverage as a proxy for activity/return magnitude
+        project_returns = {}
+        for project in active_projects:
+            sig = signals[project]
+            # Use net weight as return proxy for correlation tracking
+            net_weight = sum(sig.target_weights.values())
+            project_returns[project] = net_weight
+
+        real_time_corr = None
+        if len(project_returns) >= 2:
+            real_time_corr = self._corr_estimator.update_pair(project_returns)
+            self._corr_estimator.log_observation()
+            logger.info("Correlation updated: EWMA=%.4f, spiking=%s",
+                        real_time_corr, self._corr_estimator.is_spiking())
+
+        # 6. Apply risk overlay (can only reduce positions)
         risk_reasons: List[str] = []
         if self._risk_overlay is not None:
             risk_decision = self._risk_overlay.apply(
                 venue_targets=venue_targets,
                 current_equity=None,  # equity updated externally
+                real_time_correlation=real_time_corr,
             )
             if risk_decision.scale_factor < 1.0:
                 venue_targets = risk_decision.venue_targets
@@ -339,7 +364,7 @@ class NexusSignalAggregator:
             correlation_assumption=self.correlation,
         )
 
-        # 6. Log
+        # 7. Log
         self._log_allocation(allocation)
 
         return allocation
@@ -405,6 +430,17 @@ class NexusSignalAggregator:
         lines.append(f"  Avg Sharpe: {avg_sh:.3f}  Min Sharpe: {min_sh:.3f}")
         lines.append(f"  Annual Vol: {port_vol:.1f}%  Annual Return: {avg_ret:.1f}%")
         lines.append(f"  Per-year: {yr_str}")
+        lines.append("")
+
+        # Correlation estimator status
+        lines.append("Real-Time Correlation:")
+        ewma_corr = self._corr_estimator.current_correlation()
+        roll_corr = self._corr_estimator.rolling_correlation()
+        lines.append(f"  EWMA correlation:    {ewma_corr:+.4f}")
+        if roll_corr is not None:
+            lines.append(f"  Rolling correlation: {roll_corr:+.4f}")
+        lines.append(f"  Spiking (>0.50):     {self._corr_estimator.is_spiking()}")
+        lines.append(f"  Updates:             {self._corr_estimator.state.n_updates}")
         lines.append("")
         lines.append("=" * 70)
 
