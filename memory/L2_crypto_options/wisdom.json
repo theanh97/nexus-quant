@@ -249,13 +249,22 @@
       "status": "PROMISING on synthetic data — needs real data validation before production",
       "why_different_from_R21": "R21 (regime filtering) removes you from market → lost carry time. IV sizing keeps you ALWAYS in market but scales proportionally to carry richness. No time-out-of-market penalty.",
       "key_insight": "Sizing UP when IV is high is correct because IV directly determines VRP magnitude: PnL = 0.5 * (IV² - RV²) * dt. Higher IV = quadratically more theta income. Step function is best because it avoids excessive exposure in extreme tails.",
-      "configs": {
+      "configs_vrp_only": {
         "step_lb180": {"avg": 2.210, "min": 1.546, "delta": "+0.258"},
         "step_lb90": {"avg": 2.197, "min": 1.537, "delta": "+0.245"},
         "step_lb120": {"avg": 2.127, "min": 1.502, "delta": "+0.175"},
         "aggressive_lb120": {"avg": 2.102, "min": 1.413, "delta": "+0.150"},
         "inverse_lb30": {"avg": 1.392, "min": 0.759, "delta": "-0.560"}
-      }
+      },
+      "configs_ensemble": {
+        "both_lb180": {"avg": 2.535, "min": 2.068, "delta": "+0.276", "note": "BEST — scales both VRP+Skew"},
+        "vrp_only_lb180": {"avg": 2.499, "min": 2.030, "delta": "+0.240"},
+        "both_lb90": {"avg": 2.524, "min": 2.098, "delta": "+0.265"},
+        "both_lb120": {"avg": 2.417, "min": 2.025, "delta": "+0.158"},
+        "both_lb60": {"avg": 2.453, "min": 1.899, "delta": "+0.194"},
+        "baseline_ensemble": {"avg": 2.259, "min": 1.701}
+      },
+      "ensemble_finding": "IV sizing on full ensemble is even better than VRP-only. Both VRP and Skew benefit from IV-percentile scaling because high-IV periods have both more carry AND more extreme skew z-scores. All 5 lookbacks improve ensemble. Min Sharpe breaks 2.0 barrier (1.701→2.068)."
     }
   },
 
@@ -278,7 +287,8 @@
     "correlation_estimator_7_tests": "ALL PASS. Convergence, regime shift, uncorrelated, perfect correlation, crash decorrelation, spike detection, persistence.",
     "multi_expiry_vrp_75_configs": "Best: 14d:30%+30d:70% (avg=2.115, Δ=+0.051 vs 30d baseline 2.064). Marginal improvement. 4 single tenors + 7 ladders + 54 2-tenor + ~12 3-tenor combos. Gross Sharpe: 7d=2.934, 14d=2.829, 30d=2.604, 60d=2.289 (zero-cost). Rolling costs dominate short-DTE.",
     "tail_hedged_vrp_23_configs": "ALL WORSE than naked VRP. 5 put deltas (5d-25d) × 4 hedge ratios + 3 iron condors. Baseline avg=2.604, best hedged=-0.026. Put theta cost vastly exceeds payoff on synthetic data.",
-    "iv_percentile_sizing_25_configs": "15/25 BETTER than baseline. Step function dominates (avg Δ=+0.193). Best: step_lb180 avg=2.210 (Δ=+0.258) with min=1.546 (+0.343). Inverse sizing worst (Δ=-0.409). Longer lookbacks (90-180d) > shorter (30-60d). Key: sizing ≠ filtering. Always in market, just scale with carry richness."
+    "iv_percentile_sizing_25_configs": "15/25 BETTER than baseline. Step function dominates (avg Δ=+0.193). Best: step_lb180 avg=2.210 (Δ=+0.258) with min=1.546 (+0.343). Inverse sizing worst (Δ=-0.409). Longer lookbacks (90-180d) > shorter (30-60d). Key: sizing ≠ filtering. Always in market, just scale with carry richness.",
+    "iv_percentile_ensemble_10_configs": "ALL improve over baseline. Best: both_lb180 avg=2.535 min=2.068 (Δ=+0.276). VRP-only sizing: avg=2.499 (Δ=+0.240). Scaling both VRP+Skew slightly better. All 5 lookbacks (60-240d) improve ensemble. Min Sharpe breaks 2.0 barrier."
   },
 
   "NEXUS_PORTFOLIO_INTEGRATION": {
