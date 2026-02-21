@@ -1,0 +1,13 @@
+{
+  "research_id": "R79",
+  "title": "BF Sensitivity Adaptation",
+  "static_2.5_sharpe": 5.271,
+  "static_5.0_sharpe": 3.966,
+  "best_adaptive_sharpe": 5.713,
+  "best_adaptive_config": "iv_scale_iv_scale_2.5_lin",
+  "wf_static_2.5_avg": 5.722428571428572,
+  "wf_static_5.0_avg": 4.8301428571428575,
+  "wf_adaptive_avg": 4.922285714285715,
+  "verdict": "NO IMPROVEMENT \u2014 current sens=2.5 is fine",
+  "recommendation": "Keep current production config (sens=2.5)"
+}
