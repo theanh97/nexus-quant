@@ -1,0 +1,25 @@
+{
+  "research_id": "R65",
+  "title": "2025-2026 Degradation Deep-Dive",
+  "iv_decline": {
+    "early_avg": 0.7005,
+    "late_avg": 0.5153,
+    "pct_change": -26.44
+  },
+  "vrp_decline": {
+    "early_avg": 0.1598,
+    "late_avg": 0.0432
+  },
+  "sharpe_decline": {
+    "early": 3.6629,
+    "late": 1.5852
+  },
+  "structural_factors": [
+    "IV structurally lower (-26%) \u2014 market maturation"
+  ],
+  "cyclical_factors": [
+    "VRP still positive (4.32%) \u2014 edge persists",
+    "Recent Sharpe still above 1.0 \u2014 profitable"
+  ],
+  "verdict": "MIXED \u2014 some structural elements, but edge persists"
+}
