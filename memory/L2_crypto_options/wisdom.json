@@ -1,9 +1,9 @@
 {
   "_project": "crypto_options",
-  "_version": "8.0.0",
+  "_version": "9.0.0",
   "_updated": "2026-02-21",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). Exhaustive R&D: 5000+ configs across 11 strategy types + 3 dynamic allocation + hourly frequency analysis. Delta hedging costs quantified. Tail events stress-tested. Cross-project portfolio integration complete.",
-  "_status": "PRODUCTION-READY: Mixed-freq ensemble Sharpe 2.723. Delta hedge drag -6.6% (optimal config). Tail stress: 3/3 PASS. Cross-project portfolio (25% perps + 75% options) Sharpe 3.103.",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). Exhaustive R&D: 5000+ configs across 11 strategy types + 3 dynamic allocation + hourly frequency analysis + regime filter research. Delta hedging costs quantified. Tail events stress-tested. Cross-project portfolio integration complete. DeribitExecutor fully implemented.",
+  "_status": "PRODUCTION-READY: Mixed-freq ensemble Sharpe 2.723. Delta hedge drag -6.6% (optimal config). Tail stress: 3/3 PASS. Cross-project portfolio (25% perps + 75% options) Sharpe 3.103. Regime filters rejected (R21).",
 
   "ENSEMBLE_CHAMPION": {
     "type": "mixed_frequency",
@@ -213,6 +213,23 @@
       "rule": "VRP+Skew ensemble provides 60% MDD improvement over VRP alone. Correlation DROPS during stress (0.01 vs 0.04). Zero >1% loss days across 5 years.",
       "detail": "Ensemble profitable during LUNA crash, FTX collapse, full 2022 bear. Recovery 9-19 days vs VRP 16-49 days. Calmar 2.74 vs 1.81.",
       "status": "VALIDATED via 6-test suite"
+    },
+    "R21_regime_filters_destroy_vrp": {
+      "rule": "NEVER add regime filters to VRP. Tested 18 filter configs (term structure, skew z-score, IV level) + 4 combined — ALL worse than unfiltered baseline.",
+      "detail": "Baseline VRP avg Sharpe 2.556. Best filter (term_spread < -0.05): avg=2.495 (Δ=-0.060). Combined filters: avg=1.477 (Δ=-1.079). Filtering reduces time-in-market without improving risk-adjusted returns. VRP is always-on structural carry — any time out of market loses theta income.",
+      "status": "VALIDATED via 22-config sweep",
+      "configs_tested": {
+        "term_structure_5": "thresholds [-0.05, -0.02, 0.00, 0.02, 0.05]. Best Δ=-0.060.",
+        "skew_zscore_5": "thresholds [1.5, 2.0, 2.5] × scale [0%, 50%]. Best Δ=-0.297.",
+        "iv_level_4": "ranges [30-120, 40-100, 30-150, 50-120]. Best Δ=-0.130.",
+        "combined_4": "term+skew, term+iv, skew+iv, all_three. All worse.",
+        "key_finding": "Reinforces R7 (overlays destroy carry) and R4 (always short vol). Regime timing does not help carry trades."
+      }
+    },
+    "R22_real_time_correlation": {
+      "rule": "EWMA correlation estimator (half_life=20) converges within 0.20 of true correlation after 100 observations. Reacts to regime shifts within 2x half-life (40 steps).",
+      "detail": "Tested: convergence to rho=0.60, regime shift 0.10→0.80, uncorrelated, perfect correlation, crash decorrelation, spike detection, persistence. 7/7 tests PASS.",
+      "status": "VALIDATED and INTEGRATED into NexusSignalAggregator → PortfolioRiskOverlay pipeline"
     }
   },
 
@@ -230,7 +247,9 @@
     "mixed_freq_ensemble_21_combo": "Best: VRP_h=40% Skew_d=60% avg=2.723. Alt: 30/70 avg=2.620, min=2.311.",
     "delta_hedge_tolerance_8_combo": "Sweep 5%-40%. Optimal: 40% tol + maker fees → Sharpe 1.951 (-6.6% vs perfect). 25% tol taker: 1.41.",
     "delta_hedge_funding_5_combo": "v1 always-cost: 0.375. v2 bidirectional: 0.792. v2+optimal: 1.951. Bidirectional funding is critical.",
-    "tail_stress_6_tests": "ALL PASS. Historical crashes, VaR/CVaR, drawdown, correlation, tail protection. Ensemble MDD -1.51%."
+    "tail_stress_6_tests": "ALL PASS. Historical crashes, VaR/CVaR, drawdown, correlation, tail protection. Ensemble MDD -1.51%.",
+    "vrp_regime_filter_22_configs": "ALL WORSE than baseline (avg=2.556). Term structure (5 thresholds), skew z-score (5 configs), IV level (4 ranges), combined (4 combos). Best single filter: term_-0.05 (Δ=-0.060). Worst combined: all_three (Δ=-1.079). Confirms R7+R21: overlays/filters destroy carry.",
+    "correlation_estimator_7_tests": "ALL PASS. Convergence, regime shift, uncorrelated, perfect correlation, crash decorrelation, spike detection, persistence."
   },
 
   "NEXUS_PORTFOLIO_INTEGRATION": {
@@ -265,7 +284,7 @@
     "components_built": [
       "PortfolioOptimizer (updated strategy profiles, efficient frontier)",
       "NexusSignalAggregator (reads signals from both projects, applies weights)",
-      "DeribitExecutor (stub — dry_run mode, OAuth2 skeleton, order reconciliation)",
+      "DeribitExecutor (FULL: OAuth2, InstrumentSelector, delta hedging, position rolling, Greeks limits)",
       "Integration test (5/5 pass — full pipeline verified)"
     ],
     "execution_venues": {
@@ -393,6 +412,8 @@
     "Hourly VRP is +75% better than daily VRP — intraday gamma cost reduction",
     "Mixed-frequency ensemble (hourly VRP + daily Skew) further improves Sharpe",
     "Carry trades (VRP) benefit from higher frequency; Signal trades (Skew MR) do NOT",
+    "Regime filters (term structure, skew z-score, IV level) ALL destroy VRP Sharpe — carry is always-on",
+    "EWMA correlation estimator converges to true rho within 0.20, reacts to regime shifts in ~40 steps",
     "AR(1) frequency scaling: ar1_h = ar1_d^(1/bars_per_day) preserves half-life",
     "Cross-project diversification: 25/75 perps/options gives Sharpe 3.103 (+14% vs best standalone)",
     "Options-heavy allocation is robust across correlation assumptions (0.0-0.5)",
@@ -413,16 +434,16 @@
     "Skew spread improves ensemble — marginal, fails conservative costs",
     "Hourly Skew MR — ALL 72 configs NEGATIVE. Signal too noisy at hourly freq",
     "Dynamic ensemble allocation — ALL worse than static OOS",
-    "SOL universe expansion — API data unavailable"
+    "SOL universe expansion — API data unavailable",
+    "VRP regime filters (term structure, skew z-score, IV level) — ALL 22 configs worse than unfiltered baseline"
   ],
 
   "next_research": [
     "Real Deribit data validation when 60 days collected (~April 2026)",
-    "Full DeribitExecutor implementation: OAuth2, instrument selection, delta hedging, rolling",
+    "Multi-expiry VRP: diversify DTE (7d, 14d, 30d, 60d) to reduce rollover gamma exposure",
     "Implement optimal delta hedge in production: 25-30% tolerance, maker orders, bidirectional funding tracking",
-    "Funding rate as VRP filter — perp funding rate may predict vol regime shifts (need real data)",
     "Expand universe: SOL, DOGE options when API data becomes available",
-    "Real-time correlation estimation for dynamic portfolio rebalancing",
-    "Monte Carlo stress test with synthetic vol shocks (IV doubles, triples)"
+    "Intraday vol pattern exploitation: hourly vol seasonality (Asia/EU/US sessions)",
+    "VRP position sizing by IV percentile — higher IV = larger position (not timing, just sizing)"
   ]
 }
