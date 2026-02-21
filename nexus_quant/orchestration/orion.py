@@ -77,6 +77,8 @@ class Orion:
         self.task_store.create(kind="wisdom", payload={"artifacts": str(self.cfg.artifacts_dir)})
         self.task_store.create(kind="reflect", payload={"config": str(self.cfg.config_path), "artifacts": str(self.cfg.artifacts_dir)})
         self.task_store.create(kind="critique", payload={"config": str(self.cfg.config_path), "artifacts": str(self.cfg.artifacts_dir)})
+        # Agent run — AI decision network (ATLAS+CIPHER→ECHO→FLUX→Synthesis)
+        self.task_store.create(kind="agent_run", payload={"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir)})
         # Self-audit LAST — consolidate knowledge after all other tasks
         self.task_store.create(kind="self_audit", payload={"artifacts": str(self.cfg.artifacts_dir)})
 
@@ -970,6 +972,7 @@ class Orion:
         # ── Phase 3: DECIDE (FLUX sees everything) ──
         echo_parsed = echo_result.parsed if echo_result else {}
         context.phase1_results["echo"] = echo_parsed
+        flux_result = None
         try:
             flux_result = _run_and_log(FluxAgent, context)
             results["flux"] = flux_result.to_dict()
@@ -979,11 +982,12 @@ class Orion:
         # ── Synthesis gate ──
         try:
             from ..agents.synthesis import run_decision_gate
+            flux_parsed = flux_result.parsed if flux_result else {}
             gate = run_decision_gate(
                 atlas_output=phase1.get("atlas", {}),
                 cipher_output=phase1.get("cipher", {}),
                 echo_output=echo_parsed,
-                flux_output=flux_result.parsed if flux_result else {},
+                flux_output=flux_parsed,
             )
             results["gate_decision"] = gate.to_dict()
         except Exception as e:

@@ -111,6 +111,7 @@ Based on the above, propose 2-4 strategy improvements with concrete config_overr
             model=self.model,
             max_tokens=1024,
             fallback_result=fallback_parsed,
+            smart_task_type=self._smart_task_type,
         )
 
         if fallback_used:

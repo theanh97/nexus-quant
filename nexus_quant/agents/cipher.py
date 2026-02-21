@@ -101,6 +101,7 @@ Review the above and identify risk concerns. Recommend position limits if any me
             model=self.model,
             max_tokens=1024,
             fallback_result=_FALLBACK,
+            smart_task_type=self._smart_task_type,
         )
 
         if fallback_used:

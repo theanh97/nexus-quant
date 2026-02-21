@@ -66,31 +66,59 @@ def call_llm(
     return str(message.content[0].text)
 
 
+def _smart_task_type_for_model(model: Optional[str] = None):
+    """Map agent default_model hint to SmartRouter TaskType."""
+    from .smart_router import TaskType
+    # Agents set _smart_task_type on their class; here we use a simple heuristic
+    return TaskType.QA_CHAT  # default; overridden by callers when possible
+
+
 def safe_call_llm(
     system_prompt: str,
     user_prompt: str,
     model: Optional[str] = None,
     max_tokens: int = 1024,
     fallback_result: Optional[Dict[str, Any]] = None,
+    smart_task_type: Optional[str] = None,
 ) -> Tuple[str, bool, Optional[str]]:
     """
     Call LLM safely, returning (response_text, fallback_used, error).
-    If no API key or exception, returns fallback_result as JSON string.
+
+    Priority:
+    1. Anthropic SDK (if ZAI/ANTHROPIC key available)
+    2. SmartRouter (Gemini Flash always works)
+    3. Deterministic fallback
     """
     fallback_json = json.dumps(fallback_result or {})
+
+    # Try 1: Anthropic SDK (original path)
     api_key = _get_api_key()
-    if not api_key:
-        return fallback_json, True, "No API key configured"
+    if api_key:
+        try:
+            text = call_llm(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                model=model,
+                max_tokens=max_tokens,
+            )
+            return text, False, None
+        except Exception:
+            pass  # Fall through to SmartRouter
+
+    # Try 2: SmartRouter (Gemini Flash always available)
     try:
-        text = call_llm(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            model=model,
-            max_tokens=max_tokens,
-        )
-        return text, False, None
+        from .smart_router import SmartRouter, TaskType
+        router = SmartRouter()
+        tt = TaskType.QA_CHAT
+        if smart_task_type:
+            tt = TaskType(smart_task_type)
+        text = router.call(task_type=tt, system=system_prompt, user=user_prompt, max_tokens=max_tokens)
+        if text and text.strip():
+            return text, False, None
     except Exception as e:
-        return fallback_json, True, str(e)
+        pass  # Fall through to deterministic fallback
+
+    return fallback_json, True, "All LLM paths failed (anthropic SDK + SmartRouter)"
 
 
 def call_llm_dual(
@@ -106,7 +134,7 @@ def call_llm_dual(
 
     Used for critical cross-validation (e.g. ECHO QA agent).
     Returns (primary_text, secondary_text, any_fallback, error).
-    If a model fails, its text is set to the JSON-encoded fallback_result.
+    Priority: anthropic SDK → SmartRouter → fallback.
     """
     fallback_json = json.dumps(fallback_result or {})
     primary_text = fallback_json
@@ -114,32 +142,41 @@ def call_llm_dual(
     any_fallback = False
     errors: list = []
 
-    # Primary model call
+    # Primary model call: try anthropic SDK first, then SmartRouter
     api_key = _get_api_key()
     if api_key:
         try:
             primary_text = call_llm(system_prompt, user_prompt, model=primary_model, max_tokens=max_tokens)
         except Exception as e:
+            errors.append(f"primary_anthropic({primary_model}): {e}")
+    if primary_text == fallback_json:
+        # Fallback to SmartRouter for primary
+        try:
+            from .smart_router import SmartRouter, TaskType
+            router = SmartRouter()
+            primary_text = router.call(task_type=TaskType.DATA_ANALYSIS, system=system_prompt, user=user_prompt, max_tokens=max_tokens)
+            if not primary_text or not primary_text.strip():
+                primary_text = fallback_json
+                any_fallback = True
+        except Exception as e:
             any_fallback = True
-            errors.append(f"primary({primary_model}): {e}")
-    else:
-        any_fallback = True
-        errors.append("No API key for primary")
+            errors.append(f"primary_smart({primary_model}): {e}")
 
-    # Secondary model call (via SmartRouter for Gemini/other providers)
+    # Secondary model call via SmartRouter (always use Flash for cross-validation)
     if secondary_model:
         try:
-            from .smart_router import SmartRouter, GOOGLE_GEMINI_PRO
+            from .smart_router import SmartRouter, GOOGLE_GEMINI_FLASH
             router = SmartRouter()
             secondary_text = router._call_with_spec(
-                GOOGLE_GEMINI_PRO,
+                GOOGLE_GEMINI_FLASH,
                 task_type=None,
                 system=system_prompt,
                 user=user_prompt,
                 max_tokens=max_tokens,
             )
+            if not secondary_text or not secondary_text.strip():
+                secondary_text = primary_text
         except Exception as e:
-            # Secondary failure is non-critical; use primary result
             secondary_text = primary_text
             errors.append(f"secondary({secondary_model}): {e}")
     else:

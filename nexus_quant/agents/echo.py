@@ -146,6 +146,7 @@ specific hard questions. Your job is to PREVENT bad experiments from running.
             model=self.model,
             max_tokens=1536,
             fallback_result=_FALLBACK,
+            smart_task_type=self._smart_task_type,
         )
 
         parsed = self._parse_response(raw, fallback_used)
@@ -166,7 +167,7 @@ specific hard questions. Your job is to PREVENT bad experiments from running.
             system_prompt=_SYSTEM_PROMPT,
             user_prompt=user_prompt,
             primary_model=self.model,
-            secondary_model="gemini-2.5-pro",
+            secondary_model="gemini-3-flash-preview",
             max_tokens=1536,
             fallback_result=_FALLBACK,
         )
@@ -176,12 +177,12 @@ specific hard questions. Your job is to PREVENT bad experiments from running.
 
         # Merge verdicts: most conservative wins
         merged = self._merge_dual_verdicts(primary_parsed, secondary_parsed)
-        models_used = f"{self.model}+gemini-2.5-pro"
+        models_used = f"{self.model}+gemini-3-flash-preview"
 
         return AgentResult(
             agent_name=self.name,
             model_used=models_used,
-            raw_response=f"--- PRIMARY ({self.model}) ---\n{primary_text}\n\n--- SECONDARY (gemini-2.5-pro) ---\n{secondary_text}",
+            raw_response=f"--- PRIMARY ({self.model}) ---\n{primary_text}\n\n--- SECONDARY (gemini-3-flash-preview) ---\n{secondary_text}",
             parsed=merged,
             fallback_used=any_fallback,
             error=error,

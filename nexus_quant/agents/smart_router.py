@@ -179,41 +179,47 @@ FALLBACK_CHAINS: Dict[TaskType, List[ModelSpec]] = {
         GOOGLE_GEMINI_PRO,        # 1st: Gemini 3 Pro [FREE]
         ZAI_CLAUDE_SONNET_46,     # 2nd: Claude Sonnet [PAID]
         GOOGLE_GEMINI_25_PRO,     # 3rd: Gemini 2.5 stable [FREE]
-        ZAI_GLM5,                 # 4th: GLM-5 [low cost]
+        GOOGLE_GEMINI_FLASH,      # 4th: Gemini 3 Flash [FREE, always-on fallback]
+        ZAI_GLM5,                 # 5th: GLM-5 [low cost]
     ],
     # Phase 1: CIPHER — risk precision, Claude first
     TaskType.RISK_ANALYSIS: [
         ZAI_CLAUDE_SONNET_46,     # 1st: Claude Sonnet [PAID] — cannot afford mistakes
         GOOGLE_GEMINI_PRO,        # 2nd: Gemini 3 Pro [FREE]
         GOOGLE_GEMINI_25_PRO,     # 3rd: Gemini 2.5 stable [FREE]
-        ZAI_GLM5,                 # 4th: GLM-5 [low cost]
+        GOOGLE_GEMINI_FLASH,      # 4th: Gemini 3 Flash [FREE, always-on fallback]
+        ZAI_GLM5,                 # 5th: GLM-5 [low cost]
     ],
     # Phase 2: ECHO primary — overfitting detection, most critical
     TaskType.DATA_ANALYSIS: [
         ZAI_CLAUDE_SONNET_46,     # 1st: Claude Sonnet [PAID] — strongest reasoning
         GOOGLE_GEMINI_PRO,        # 2nd: Gemini 3 Pro [FREE]
         GOOGLE_GEMINI_25_PRO,     # 3rd: Gemini 2.5 stable [FREE]
-        ZAI_GLM5,                 # 4th: GLM-5 [low cost]
+        GOOGLE_GEMINI_FLASH,      # 4th: Gemini 3 Flash [FREE, always-on fallback]
+        ZAI_GLM5,                 # 5th: GLM-5 [low cost]
     ],
     # Phase 3: FLUX — decision gate, structured input
     TaskType.EXPERIMENT_DESIGN: [
         GOOGLE_GEMINI_PRO,        # 1st: Gemini 3 Pro [FREE]
         ZAI_CLAUDE_SONNET_46,     # 2nd: Claude Sonnet [PAID]
         GOOGLE_GEMINI_25_PRO,     # 3rd: Gemini 2.5 stable [FREE]
-        ZAI_GLM5,                 # 4th: GLM-5 [low cost]
+        GOOGLE_GEMINI_FLASH,      # 4th: Gemini 3 Flash [FREE, always-on fallback]
+        ZAI_GLM5,                 # 5th: GLM-5 [low cost]
     ],
     # Code generation
     TaskType.CODE_GENERATION: [
         OPENAI_GPT53_CODEX,       # 1st: GPT-5.3 Codex [PAID]
         GOOGLE_GEMINI_PRO,        # 2nd: Gemini 3 Pro [FREE]
         ZAI_CLAUDE_SONNET_46,     # 3rd: Claude Sonnet [PAID]
-        ZAI_GLM5,                 # 4th: GLM-5 [low cost]
+        GOOGLE_GEMINI_FLASH,      # 4th: Gemini 3 Flash [FREE, always-on fallback]
+        ZAI_GLM5,                 # 5th: GLM-5 [low cost]
     ],
     # Non-agent tasks
     TaskType.CODE_REVIEW: [
         GOOGLE_GEMINI_PRO,        # 1st: Gemini 3 Pro [FREE]
         GOOGLE_GEMINI_25_PRO,     # 2nd: Gemini 2.5 stable [FREE]
-        ZAI_GLM5,                 # 3rd: GLM-5 [low cost]
+        GOOGLE_GEMINI_FLASH,      # 3rd: Gemini 3 Flash [FREE, always-on fallback]
+        ZAI_GLM5,                 # 4th: GLM-5 [low cost]
     ],
     TaskType.QA_CHAT: [
         GOOGLE_GEMINI_FLASH,      # 1st: Gemini Flash [FREE]
@@ -237,8 +243,8 @@ ROUTING_TABLE: Dict[TaskType, ModelSpec] = {
     tt: chain[0] for tt, chain in FALLBACK_CHAINS.items()
 }
 
-# ECHO uses dual-model cross-validation: Claude (primary) + Gemini 3 Pro (secondary)
-ECHO_SECONDARY_MODEL: ModelSpec = GOOGLE_GEMINI_PRO
+# ECHO uses dual-model cross-validation: Claude (primary) + Gemini Flash (secondary, always available)
+ECHO_SECONDARY_MODEL: ModelSpec = GOOGLE_GEMINI_FLASH
 
 
 def _gemini_api_key() -> Optional[str]:
