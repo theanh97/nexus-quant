@@ -286,6 +286,9 @@ def supervisor_main(
     backoff_seconds = int(base_backoff_seconds)
     last_reason = "startup"
     shutdown = {"requested": False, "signal": ""}
+    # Time-based constitution audit — fires every 6 hours regardless of run count or pause state
+    _CONSTITUTION_AUDIT_INTERVAL_SECONDS = 6 * 3600
+    _last_constitution_audit_ts: int = 0
 
     def _request_shutdown(sig: int, _frame: Any) -> None:
         try:
@@ -313,6 +316,32 @@ def supervisor_main(
                 return 0
 
             now = _now_ts()
+
+            # ── TIME-BASED CONSTITUTION AUDIT (every 6 hours, fires even when paused/idle) ──
+            if now - _last_constitution_audit_ts >= _CONSTITUTION_AUDIT_INTERVAL_SECONDS:
+                _last_constitution_audit_ts = now
+                try:
+                    from .orchestration.constitution import check_compliance
+                    compliance = check_compliance(artifacts_dir)
+                    violations = compliance.get("violations", [])
+                    audit_result = {
+                        "ts": _utc_iso(),
+                        "summary": compliance.get("summary", {}),
+                        "violations": violations,
+                        "violation_count": len(violations),
+                        "critical": [v for v in violations if v.get("severity") == "critical"],
+                        "warnings": [v for v in violations if v.get("severity") != "critical"],
+                        "status": "CLEAN" if not violations else ("CRITICAL" if any(v.get("severity") == "critical" for v in violations) else "WARN"),
+                    }
+                    _write_json(artifacts_dir / "state" / "constitution_audit.json", audit_result)
+                    if violations:
+                        print(f"[CONSTITUTION] {audit_result['status']} — {len(violations)} violation(s): "
+                              + ", ".join(f"Rule {v.get('rule')}:{v.get('severity')}" for v in violations[:5]))
+                    else:
+                        print(f"[CONSTITUTION] CLEAN — all rules compliant at {_utc_iso()}")
+                except Exception as _ce:
+                    print(f"[CONSTITUTION] Audit error (non-fatal): {_ce}")
+
             restart_timestamps = [ts for ts in restart_timestamps if (now - ts) <= restart_window_seconds]
             control = _read_json(control_path)
             control_mode = str(control.get("mode") or "").strip().upper()

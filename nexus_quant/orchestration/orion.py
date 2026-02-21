@@ -79,6 +79,8 @@ class Orion:
         self.task_store.create(kind="critique", payload={"config": str(self.cfg.config_path), "artifacts": str(self.cfg.artifacts_dir)})
         # Agent run — AI decision network (ATLAS+CIPHER→ECHO→FLUX→Synthesis)
         self.task_store.create(kind="agent_run", payload={"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir)})
+        # Rules reminder — inject Constitution context before self-audit (guards against "forgetting" over long runs)
+        self.task_store.create(kind="rules_reminder", payload={"artifacts": str(self.cfg.artifacts_dir), "gate": "bootstrap"})
         # Self-audit LAST — consolidate knowledge after all other tasks
         self.task_store.create(kind="self_audit", payload={"artifacts": str(self.cfg.artifacts_dir)})
 
