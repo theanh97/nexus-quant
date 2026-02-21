@@ -1,0 +1,2 @@
+{"timestamp": "2026-02-21 18:06 UTC", "level": "WARNING", "category": "data", "message": "Data 3 days old (last: 2026-02-18)", "value": 3, "threshold": 2, "action": "Check data pipeline"}
+{"timestamp": "2026-02-21 18:06 UTC", "level": "INFO", "category": "summary", "message": "BF=HOLD z=0.254 health=0.62 sharpe90=3.65", "action": "No action needed"}
