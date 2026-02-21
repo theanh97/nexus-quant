@@ -2629,6 +2629,7 @@
     <div class="tab" data-mode="ops" onclick="go('signals')">📡 <span data-i18n="tab.signals">Tín hiệu</span></div>
     <div class="tab live" data-mode="ops" onclick="go('live-engine')">🔴 <span data-i18n="tab.live_engine">Live Trading</span></div>
     <div class="tab" data-mode="ops" onclick="go('track-record')">🏆 Track Record</div>
+    <div class="tab" data-mode="ops" onclick="go('spx-pcs')">📊 SPX PCS</div>
     <div class="tab" data-mode="ops" onclick="go('console')">⚙️ <span data-i18n="tab.console">Console</span></div>
 
     <!-- Hidden Internal Tabs (Kept for compatibility, but hidden from UI) -->
@@ -4312,6 +4313,60 @@
   </div>
   <!-- ── END TRACK RECORD ──────────────────────────────────────────── -->
 
+  <!-- ── SPX PCS PAGE ───────────────────────────────────────────────── -->
+  <div class="page" id="page-spx-pcs">
+    <div class="section-wrap">
+      <div class="section-header">
+        <span class="section-title">📊 SPX PCS — Project 4</span>
+        <span class="section-sub">SPX Put Credit Spread · algoxpert engine · Status: development</span>
+        <button onclick="loadSPXStatus()" style="float:right;padding:4px 10px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:12px">↻ Refresh</button>
+      </div>
+
+      <!-- Status banner -->
+      <div id="spx-status-banner" class="card" style="margin-bottom:14px;background:var(--info-bg,#EFF6FF);border:1px solid #BFDBFE">
+        <div style="font-size:13px;color:var(--fg-muted)">Loading SPX PCS status…</div>
+      </div>
+
+      <!-- Engine info -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="ctitle" style="margin-bottom:10px">Engine Status</div>
+        <div id="spx-engine-info" style="font-size:13px;color:var(--fg-muted)">—</div>
+      </div>
+
+      <!-- Latest backtest -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="ctitle" style="margin-bottom:10px">
+          Latest Backtest Results
+          <span id="spx-bt-period" style="font-size:11px;color:var(--fg-muted);margin-left:8px"></span>
+        </div>
+        <div id="spx-backtest-table" style="font-size:13px"><div class="text-muted text-sm">Loading…</div></div>
+      </div>
+
+      <!-- Optimization history -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="ctitle" style="margin-bottom:10px">Optimization Runs</div>
+        <div id="spx-optim-list" style="font-size:13px;color:var(--fg-muted)">—</div>
+      </div>
+
+      <!-- R&D Notes -->
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:8px">R&D Status & Next Steps</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--fg-muted)">
+          <ul style="margin:0;padding-left:18px">
+            <li><strong>Strategy</strong>: SPX 0DTE Put Credit Spread. VIX gate &gt;30 skip. Delta 0.15-0.20. TP=50% credit, SL=2x.</li>
+            <li><strong>Engine</strong>: Python + Rust (maturin). Data: 41GB SPXW 1-min parquet (2020-2025) + VIX 1-min.</li>
+            <li><strong>Baseline</strong>: Sharpe -6.7 (default params, Jan 2024). Need full IS optimization 2021-2024.</li>
+            <li><strong>Best IS (4-day)</strong>: Sharpe 19.47, delta=0.20, win_rate=95% — OVERFIT, statistically invalid.</li>
+            <li><strong>Target</strong>: Sharpe &gt; 0.8 on 2021-2024 IS walk-forward + 2025 OOS validation.</li>
+            <li><strong>Setup</strong>: Run <code>./scripts/setup_spx_pcs.sh</code> to configure ALGOXPERT_DIR.</li>
+            <li><strong>Potential edge</strong>: Low correlation vs crypto (equity options, different vol regime drivers).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ── END SPX PCS ─────────────────────────────────────────────────── -->
+
   <div id="cmdk-backdrop" class="cmdk-backdrop" onclick="closeCommandPalette()"></div>
   <div id="cmdk" class="cmdk" role="dialog" aria-modal="true" aria-label="Quick command">
     <div class="cmdk-head">
@@ -4818,7 +4873,7 @@
     }
 
     // ─── Tab system ───
-    const TABS = ['home', 'performance-sc', 'how-it-works', 'live-demo', 'about', 'chat', 'research', 'tasks', 'files', 'signals', 'live-engine', 'logs', 'console', 'overview', 'benchmark', 'performance', 'risk', 'market', 'pitch'];
+    const TABS = ['home', 'performance-sc', 'how-it-works', 'live-demo', 'about', 'chat', 'research', 'tasks', 'files', 'signals', 'live-engine', 'track-record', 'spx-pcs', 'logs', 'console', 'overview', 'benchmark', 'performance', 'risk', 'market', 'pitch'];
 
     function buildShowcasePages() {
       if (window.showcaseBuilt) return;
@@ -7084,6 +7139,7 @@
       signals: loadSignals,
       'live-engine': refreshLiveStatus,
       'track-record': loadTrackRecord,
+      'spx-pcs': loadSPXStatus,
       logs: () => { loadLogs({ replace: true, skipStats: false }); startAnalysisLogRealtime(false); },
       console: () => refreshConsole({ includeLogs: true, forceLogRefresh: true, forceStream: true })
     };
@@ -7911,6 +7967,87 @@
 
       }).catch(e => {
         html('portfolio-summary', `<span style="color:#ef4444">Load failed: ${esc(String(e))}</span>`);
+      });
+    }
+
+    // ─── SPX PCS ──────────────────────────────────────────────────────────────
+    function loadSPXStatus() {
+      _withLoaderCtx('spx-pcs', () => {
+        jx('/api/spx_pcs/status').then(d => {
+          // Engine status banner
+          const eng = d.engine_status || {};
+          const avail = eng.available;
+          const years = (eng.data_years || []).join(', ') || 'none';
+          const rust = eng.rust_built ? '✅ built' : '⚠️ not built';
+          html('spx-engine-info',
+            `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>Available: <strong>${avail ? '✅ yes' : '❌ no'}</strong></div>
+              <div>Rust: <strong>${rust}</strong></div>
+              <div>Data years: <strong>${years}</strong></div>
+              <div>Path: <code style="font-size:11px">${esc(eng.algoxpert_dir || '—')}</code></div>
+            </div>`
+          );
+
+          // Status banner
+          const st = d.latest_backtest || {};
+          if (st.status === 'no_results' || st.status === 'not_configured') {
+            html('spx-status-banner',
+              `<div style="font-size:13px;color:#92400E">
+                ⚠️ ${esc(st.message || 'No results yet.')}
+                <br><code style="font-size:11px">./scripts/setup_spx_pcs.sh</code>
+              </div>`);
+            html('spx-backtest-table', '<div class="text-muted text-sm">Run a backtest first.</div>');
+          } else {
+            const p = st.performance || {};
+            const period = st.period || {};
+            html('spx-bt-period', `${period.start || ''} → ${period.end || ''} (${period.days || '?'} days)`);
+            const sh = p.sharpe_annual != null ? (+p.sharpe_annual).toFixed(3) : '—';
+            const shClr = p.sharpe_annual != null && +p.sharpe_annual >= 0.8 ? 'pos' : 'neg';
+            html('spx-status-banner',
+              `<div style="font-size:13px">
+                Sharpe: <strong class="${shClr}">${sh}</strong> &nbsp;|&nbsp;
+                Win rate: <strong>${n2(p.win_rate_pct, 1)}%</strong> &nbsp;|&nbsp;
+                Max DD: <strong class="neg">${n2(p.max_drawdown_pct, 2)}%</strong> &nbsp;|&nbsp;
+                Trades: <strong>${(d.trade_stats || {}).total_trades || '—'}</strong>
+                <span style="float:right;font-size:11px;color:var(--fg-muted)">Engine: algoxpert (Python+Rust)</span>
+              </div>`);
+            html('spx-backtest-table',
+              `<table style="width:100%;font-size:12px;border-collapse:collapse">
+                <tr style="border-bottom:1px solid var(--border)">
+                  <th style="text-align:left;padding:4px 8px">Metric</th>
+                  <th style="text-align:right;padding:4px 8px">Value</th>
+                </tr>
+                ${[
+                  ['Sharpe (annual)', sh, shClr],
+                  ['Sortino (annual)', n2(p.sortino_annual, 3), ''],
+                  ['CAGR (annual %)', n2(p.cagr_annual_pct, 2) + '%', p.cagr_annual_pct >= 0 ? 'pos' : 'neg'],
+                  ['Max Drawdown', n2(p.max_drawdown_pct, 2) + '%', 'neg'],
+                  ['Win Rate', n2(p.win_rate_pct, 1) + '%', ''],
+                  ['Profit Factor', n2(p.profit_factor, 3), ''],
+                  ['Total Return', n2(p.total_return_pct, 2) + '%', ''],
+                ].map(([k, v, c]) =>
+                  `<tr style="border-bottom:1px solid var(--border)">
+                    <td style="padding:4px 8px;color:var(--fg-muted)">${k}</td>
+                    <td style="text-align:right;padding:4px 8px" class="${c}">${v}</td>
+                  </tr>`
+                ).join('')}
+              </table>`);
+          }
+
+          // Optimization runs
+          const opts = d.optimization_runs || [];
+          if (opts.length === 0) {
+            html('spx-optim-list', '<span class="text-muted">No optimization runs yet.</span>');
+          } else {
+            html('spx-optim-list', opts.slice(-5).reverse().map(o =>
+              `<div style="padding:3px 0;border-bottom:1px solid var(--border-light)">
+                📄 ${esc(o.filename)} <span style="color:var(--fg-muted);font-size:11px">${esc(o.modified || '')}</span>
+              </div>`
+            ).join(''));
+          }
+        }).catch(e => {
+          html('spx-status-banner', `<div style="color:#991B1B;font-size:13px">❌ Error: ${esc(String(e))}</div>`);
+        });
       });
     }
 

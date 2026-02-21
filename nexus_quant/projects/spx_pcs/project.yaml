@@ -1,0 +1,48 @@
+name: spx_pcs
+market: equity
+asset_class: put_credit_spread
+description: >
+  SPX 0DTE Put Credit Spread — custom Python+Rust backtest engine (algoxpert).
+  Chiến lược bán put spread trên SPX index options, sử dụng VIX gate,
+  delta selection và TP/SL exit logic.
+universe:
+  - SPX
+
+data_provider: algoxpert_parquet
+default_config: configs/spx_pcs_v1.json
+cost_model: cboe_options
+
+features:
+  - vix_gate
+  - delta_selection
+  - wing_gap
+  - tp_sl_exit
+  - mean_reversion_bounce
+  - rsi_oversold
+  - bollinger_oversold
+
+strategies:
+  - spx_pcs_baseline
+  - spx_pcs_mr_bounce
+  - spx_pcs_combo_2of3
+  - spx_pcs_rsi_oversold
+  - spx_pcs_trend_retake
+
+brain_interval: 3600
+enabled: true
+
+# External engine configuration — algoxpert runs independently
+external_engine: true
+external_engine_path: "${ALGOXPERT_DIR}"
+external_engine_cmd: "python scripts/run_backtest.py"
+
+# Status tracking
+status: development
+target_sharpe: 0.8
+inception_date: "2021-01-01"
+notes: >
+  Project 4 — SPX equity options. Engine: Python + Rust (maturin).
+  Data: SPXW 1-min parquet (41GB, 2020-2025) + VIX 1-min.
+  Integration: bridge adapter, NEXUS reads algoxpert artifacts.
+  WF validation pending — baseline Sharpe -6.7 (default params, Jan 2024).
+  Optimization target: Sharpe > 0.8 over 2021-2024 IS + 2025 OOS.

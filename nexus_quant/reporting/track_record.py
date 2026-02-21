@@ -146,6 +146,7 @@ class NexusTrackRecord:
         tr._add_crypto_options()
         tr._add_commodity_cta()
         tr._add_fx_majors()
+        tr._add_spx_pcs()
         tr._add_benchmarks()
         return tr
 
@@ -343,6 +344,40 @@ class NexusTrackRecord:
         )
         pr.compute_aggregates()
         self.projects["fx_majors"] = pr
+
+    def _add_spx_pcs(self) -> None:
+        """
+        spx_pcs: Project 4 — SPX Put Credit Spread (algoxpert bridge engine).
+        Status: development. WF validation pending.
+        Engine: Python + Rust (maturin). Data: SPXW 1-min parquet 2020-2025.
+        """
+        pr = ProjectRecord(
+            name="spx_pcs",
+            market="equity",
+            asset_class="put_credit_spread",
+            description=(
+                "SPX 0DTE Put Credit Spread — custom Python+Rust backtest engine (algoxpert). "
+                "Sells put credit spreads on SPX index options with VIX gate (>30 skip), "
+                "delta selection (0.15-0.20), TP at 50% credit, SL at 2x credit. "
+                "Fill model: bid/ask. Fee: $0.65/contract."
+            ),
+            champion_config="configs/spx_pcs_v1.json",
+            target_sharpe=0.8,
+            status="development",
+            inception_date="2021-01-01",
+            notes=(
+                "Project 4 integrated 2026-02-21. Bridge adapter to algoxpert engine. "
+                "Baseline Sharpe -6.7 (default params, Jan 2024 only — not representative). "
+                "Best 4-day optimization: Sharpe 19.47, delta=0.20, win_rate=95% (OVERFIT). "
+                "Next: full 2021-2024 IS grid optimization + 2025 OOS walk-forward validation. "
+                "Data: ALGOXPERT_DIR env var → Custom_Backtest_Framework/data/ (41GB). "
+                "Estimated corr vs crypto: low (equity options, different regime drivers)."
+            ),
+        )
+        # No validated year metrics yet — awaiting full WF backtest
+        # Will populate after optimization: target Sharpe > 0.8 on 2021-2024 IS
+        pr.compute_aggregates()
+        self.projects["spx_pcs"] = pr
 
     def _add_benchmarks(self) -> None:
         """Add standard market benchmarks for comparison."""

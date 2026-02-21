@@ -14,6 +14,7 @@ projects:
   - commodity_cta
   - crypto_options
   - fx_majors
+  - spx_pcs
 
 # ── Model Configuration ──────────────────────────────────────────
 # Default models for the agent pipeline (overridable per-project)
@@ -43,6 +44,12 @@ scheduler:
     enabled: false
     brain_interval: 3600
     max_concurrent_runs: 1
+  spx_pcs:
+    enabled: true
+    brain_interval: 3600
+    max_concurrent_runs: 1
+    external_engine: true
+    engine_path: "${ALGOXPERT_DIR:-../algoxpert-3rd-alpha-spx}"
 
 # ── Memory ───────────────────────────────────────────────────────
 # Hierarchical memory root directory

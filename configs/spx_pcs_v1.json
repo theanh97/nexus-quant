@@ -1,0 +1,66 @@
+{
+  "_comment": "SPX PCS Project 4 — Bridge Config v1.0.0",
+  "_version": "1.0.0",
+  "_status": "development",
+  "_notes": "Baseline config. WF validation pending. Sharpe target > 0.8.",
+  "run_name": "spx_pcs_v1",
+  "seed": 42,
+
+  "venue": {
+    "name": "cboe",
+    "kind": "equity_options",
+    "fee_per_contract_usd": 0.65,
+    "contract_multiplier": 100,
+    "fill_model": "bid_ask",
+    "slippage_points": 0.0
+  },
+
+  "data": {
+    "provider": "algoxpert_parquet",
+    "symbols": ["SPX"],
+    "bar_interval": "1m",
+    "data_dir_env": "ALGOXPERT_DIR",
+    "data_dir_default": "../algoxpert-3rd-alpha-spx/Custom_Backtest_Framework/data",
+    "note": "41GB SPXW parquet (2020-2025) + VIX 1-min. Not copied into NEXUS."
+  },
+
+  "strategy": {
+    "name": "spx_pcs_baseline",
+    "preset": "baseline",
+    "params": {
+      "target_delta": 0.20,
+      "tp_mult": 0.50,
+      "sl_mult": 2.0,
+      "vix_gate": 30.0,
+      "wing_gap_target": 10,
+      "wing_gap_min": 5,
+      "wing_gap_max": 25,
+      "max_entries_per_day": 5,
+      "entry_interval_minutes": 60,
+      "entry_time": "09:45:00",
+      "last_entry_time": "13:30:00",
+      "max_holding_minutes": 180,
+      "sizing_mode": "risk",
+      "risk_per_trade_pct": 0.75,
+      "init_cash": 100000.0,
+      "use_minute_by_minute": true,
+      "use_triggers": false,
+      "verbose": false,
+      "write_artifacts": true
+    }
+  },
+
+  "optimization": {
+    "grid_config": "configs/optimize_config.json",
+    "target_metric": "sharpe_annual",
+    "target_value": 0.8,
+    "note": "Run full optimization over 2021-2024 IS period. 2025 = OOS."
+  },
+
+  "integration": {
+    "engine": "algoxpert-3rd-alpha-spx",
+    "engine_cmd": "python scripts/run_backtest.py backtest",
+    "artifacts_dir": "Custom_Backtest_Framework/artifacts/runtime",
+    "nexus_adapter": "nexus_quant.projects.spx_pcs.adapter.SPXArtifactReader"
+  }
+}

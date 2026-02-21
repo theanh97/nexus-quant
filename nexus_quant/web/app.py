@@ -2802,4 +2802,48 @@ def serve(artifacts_dir: Path, port: int = 8080, host: str = "127.0.0.1") -> Non
         from ..orchestration.terminal_state import read_all_states
         return JSONResponse({"sessions": read_all_states()})
 
+    # ── Project 4: SPX PCS endpoints ─────────────────────────────────────────
+
+    @app.get("/api/spx_pcs/status")
+    async def api_spx_pcs_status() -> JSONResponse:
+        """
+        SPX PCS latest backtest status from algoxpert artifacts.
+        Reads pcs_summary_*.json from ALGOXPERT_DIR without copying data.
+        """
+        try:
+            from ..projects.spx_pcs.adapter import SPXArtifactReader
+            reader = SPXArtifactReader()
+            return JSONResponse({
+                "engine_status": reader.get_engine_status(),
+                "latest_backtest": reader.get_latest_summary(),
+                "optimization_runs": reader.get_optimization_results(),
+                "year_metrics": reader.get_year_metrics(),
+            })
+        except FileNotFoundError as e:
+            return JSONResponse({
+                "status": "not_configured",
+                "message": str(e),
+                "fix": "Run: ./scripts/setup_spx_pcs.sh",
+            }, status_code=200)
+        except Exception as e:
+            import traceback
+            return JSONResponse({"error": str(e), "traceback": traceback.format_exc()}, status_code=500)
+
+    @app.post("/api/spx_pcs/run_backtest")
+    async def api_spx_pcs_run_backtest(
+        start: str = "20240101",
+        end: str = "20241231",
+        strategy: str = "baseline",
+    ) -> JSONResponse:
+        """Trigger algoxpert backtest and return result. Runs synchronously (may take 30-120s)."""
+        try:
+            from ..projects.spx_pcs.runner import SPXRunner
+            runner = SPXRunner()
+            result = runner.run_backtest(start, end, strategy=strategy)
+            return JSONResponse(result)
+        except FileNotFoundError as e:
+            return JSONResponse({"status": "not_configured", "message": str(e)}, status_code=200)
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
     uvicorn.run(app, host=host, port=port, log_level="warning")
