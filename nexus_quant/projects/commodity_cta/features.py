@@ -106,6 +106,48 @@ def compute_features(
     # Cross-commodity: sector momentum (equal-weight avg of mom_120d within sector)
     sector_momentum = _compute_sector_momentum(mom_120d, symbols)
 
+    # ── Phase 141: TSMOM + Donchian features ─────────────────────────────
+    # TSMOM signals: risk-adjusted return = ret_N / vol_N (Moskowitz 2012)
+    tsmom_21d: Dict[str, List[float]] = {}
+    tsmom_63d: Dict[str, List[float]] = {}
+    tsmom_126d: Dict[str, List[float]] = {}
+    tsmom_252d: Dict[str, List[float]] = {}
+    # Donchian channels: highest high / lowest low over N days
+    donchian_20_high: Dict[str, List[float]] = {}
+    donchian_20_low: Dict[str, List[float]] = {}
+    donchian_55_high: Dict[str, List[float]] = {}
+    donchian_55_low: Dict[str, List[float]] = {}
+    donchian_120_high: Dict[str, List[float]] = {}
+    donchian_120_low: Dict[str, List[float]] = {}
+    # Realised vol at matching lookbacks for TSMOM scaling
+    rv_63d: Dict[str, List[float]] = {}
+    rv_126d: Dict[str, List[float]] = {}
+    rv_252d: Dict[str, List[float]] = {}
+
+    for sym in symbols:
+        cl = aligned[sym]["close"]
+        hi = aligned[sym]["high"]
+        lo = aligned[sym]["low"]
+
+        # TSMOM = momentum / realized_vol (annualised Sharpe-like signal)
+        tsmom_21d[sym] = _compute_tsmom(cl, lookback=21)
+        tsmom_63d[sym] = _compute_tsmom(cl, lookback=63)
+        tsmom_126d[sym] = _compute_tsmom(cl, lookback=126)
+        tsmom_252d[sym] = _compute_tsmom(cl, lookback=252)
+
+        # Donchian channels
+        donchian_20_high[sym] = _compute_rolling_max(hi, window=20)
+        donchian_20_low[sym] = _compute_rolling_min(lo, window=20)
+        donchian_55_high[sym] = _compute_rolling_max(hi, window=55)
+        donchian_55_low[sym] = _compute_rolling_min(lo, window=55)
+        donchian_120_high[sym] = _compute_rolling_max(hi, window=120)
+        donchian_120_low[sym] = _compute_rolling_min(lo, window=120)
+
+        # Realised vol at longer lookbacks
+        rv_63d[sym] = _compute_rv(cl, window=63, annualise=True)
+        rv_126d[sym] = _compute_rv(cl, window=126, annualise=True)
+        rv_252d[sym] = _compute_rv(cl, window=252, annualise=True)
+
     return {
         # OHLCV
         "volume": volume_feat,
@@ -120,6 +162,9 @@ def compute_features(
         # Volatility
         "atr_14": atr_14,
         "rv_20d": rv_20d,
+        "rv_63d": rv_63d,
+        "rv_126d": rv_126d,
+        "rv_252d": rv_252d,
         "vol_regime": vol_regime,
         "vol_mom_z": vol_mom_z,
         # Value / mean-reversion
@@ -128,6 +173,18 @@ def compute_features(
         "zscore_252d": zscore_252d,
         # Cross-commodity
         "sector_momentum": sector_momentum,
+        # TSMOM (Moskowitz 2012) — risk-adjusted momentum
+        "tsmom_21d": tsmom_21d,
+        "tsmom_63d": tsmom_63d,
+        "tsmom_126d": tsmom_126d,
+        "tsmom_252d": tsmom_252d,
+        # Donchian channels
+        "donchian_20_high": donchian_20_high,
+        "donchian_20_low": donchian_20_low,
+        "donchian_55_high": donchian_55_high,
+        "donchian_55_low": donchian_55_low,
+        "donchian_120_high": donchian_120_high,
+        "donchian_120_low": donchian_120_low,
     }
 
 
@@ -362,6 +419,91 @@ def _compute_zscore(close: List[float], window: int = 60) -> List[float]:
             std = math.sqrt(max(var, 0.0))
             result[i] = (v - mn) / (std + eps)
 
+    return result
+
+
+def _compute_tsmom(
+    close: List[float],
+    lookback: int,
+) -> List[float]:
+    """
+    Time-Series Momentum (Moskowitz, Ooi, Pedersen 2012).
+    TSMOM = return_over_lookback / realised_vol_over_lookback
+    This is a risk-adjusted momentum signal (essentially a t-stat).
+    Positive = uptrend, negative = downtrend.
+    """
+    n = len(close)
+    result = [0.0] * n
+    eps = 1e-10
+
+    if n < lookback + 1:
+        return result
+
+    # Pre-compute log returns
+    log_rets = [0.0] * n
+    for i in range(1, n):
+        c0 = _safe(close[i - 1])
+        c1 = _safe(close[i])
+        log_rets[i] = math.log(c1 / c0) if c0 > 0 and c1 > 0 else 0.0
+
+    for i in range(lookback, n):
+        # Return over lookback
+        c0 = _safe(close[i - lookback])
+        c1 = _safe(close[i])
+        if c0 <= 0 or c1 <= 0:
+            continue
+        ret = math.log(c1 / c0)
+
+        # Realised vol over lookback (annualised)
+        chunk = log_rets[i - lookback + 1 : i + 1]
+        if len(chunk) < 2:
+            continue
+        mn = sum(chunk) / len(chunk)
+        var = sum((r - mn) ** 2 for r in chunk) / len(chunk)
+        vol = math.sqrt(max(var, 0.0)) * math.sqrt(252)
+
+        # TSMOM signal = annualised return / annualised vol
+        ann_ret = ret * (252.0 / lookback)
+        result[i] = ann_ret / (vol + eps)
+
+    return result
+
+
+def _compute_rolling_max(
+    series: List[float],
+    window: int,
+) -> List[float]:
+    """Rolling maximum over window. Used for Donchian channel upper band."""
+    n = len(series)
+    result = [0.0] * n
+    buf: Deque[float] = deque()
+    for i in range(n):
+        v = _safe(series[i])
+        buf.append(v)
+        if len(buf) > window:
+            buf.popleft()
+        if len(buf) >= window:
+            result[i] = max(buf)
+    return result
+
+
+def _compute_rolling_min(
+    series: List[float],
+    window: int,
+) -> List[float]:
+    """Rolling minimum over window. Used for Donchian channel lower band."""
+    n = len(series)
+    result = [float("inf")] * n
+    buf: Deque[float] = deque()
+    for i in range(n):
+        v = _safe(series[i])
+        buf.append(v)
+        if len(buf) > window:
+            buf.popleft()
+        if len(buf) >= window:
+            result[i] = min(buf)
+        else:
+            result[i] = 0.0
     return result
 
 

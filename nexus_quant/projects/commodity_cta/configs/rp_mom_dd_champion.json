@@ -1,0 +1,38 @@
+{
+  "strategy": "rp_mom_dd",
+  "version": "2.0.0",
+  "phase": "142",
+  "title": "Risk-Parity + Momentum Tilt + DD Deleveraging (14-div Champion)",
+  "universe": [
+    "CL=F", "NG=F", "GC=F", "SI=F", "HG=F", "ZW=F", "ZC=F", "ZS=F",
+    "EURUSD=X", "GBPUSD=X", "AUDUSD=X", "JPY=X",
+    "TLT", "IEF"
+  ],
+  "params": {
+    "vol_target": 0.12,
+    "base_pct": 0.80,
+    "tilt_pct": 0.20,
+    "signal_scale": 2.0,
+    "dd_threshold": 0.10,
+    "dd_max": 0.25,
+    "dd_min_alloc": 0.20,
+    "warmup": 270,
+    "rebalance_freq": 21
+  },
+  "cost_model": {
+    "slippage_bps": 5.0,
+    "commission_bps": 1.0,
+    "spread_bps": 1.0
+  },
+  "walk_forward": {
+    "IS":   ["2007-01-01", "2015-12-31"],
+    "OOS1": ["2016-01-01", "2020-12-31"],
+    "OOS2": ["2021-01-01", "2026-02-20"]
+  },
+  "results": {
+    "FULL":  {"sharpe": 0.482, "cagr": 0.060, "max_drawdown": 0.355},
+    "IS":    {"sharpe": 0.234, "cagr": 0.025, "max_drawdown": 0.354},
+    "OOS1":  {"sharpe": 0.824, "cagr": 0.080, "max_drawdown": 0.216},
+    "OOS2":  {"sharpe": 0.468, "cagr": 0.055, "max_drawdown": 0.296}
+  }
+}
