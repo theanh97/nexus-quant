@@ -48,7 +48,7 @@ SIGNALS_LOG = Path("artifacts/crypto_options/signals_log.jsonl")
 
 SYMBOLS = ["BTC", "ETH"]
 
-# Validated ensemble weights (wisdom v6.0.0)
+# Validated ensemble weights (wisdom v10.0.0)
 ENSEMBLE_WEIGHTS = {"VRP": 0.40, "Skew_MR": 0.60}
 
 # VRP strategy params (hourly-validated, adapted for daily monitoring)
@@ -72,6 +72,15 @@ SKEW_PARAMS = {
 MIN_DATA_DAYS_VRP = 21             # need at least 21 days for VRP
 MIN_DATA_DAYS_SKEW = 45            # need at least 45 days for Skew MR
 MIN_DATA_DAYS_FULL_CONFIDENCE = 60 # full confidence after 60 days
+
+# IV-percentile position sizing (R25, validated on synthetic + delta hedging)
+# Step function: <25th pct → 0.5x, 25-75th → 1.0x, >75th → 1.5x
+IV_SIZING_ENABLED = True
+IV_SIZING_LOOKBACK = 180           # 180-day lookback for percentile calculation
+IV_SIZING_PCT_LOW = 0.25           # below this → scale down
+IV_SIZING_PCT_HIGH = 0.75          # above this → scale up
+IV_SIZING_SCALE_LOW = 0.50         # scale factor when IV is low
+IV_SIZING_SCALE_HIGH = 1.50        # scale factor when IV is high
 
 
 class OptionsSignalGenerator:
@@ -138,6 +147,17 @@ class OptionsSignalGenerator:
         # 6. Generate Skew MR signal
         skew_weights = self._skew_signal(daily, data_days)
 
+        # 6.5 Apply IV-percentile position sizing (R25)
+        iv_scales = {}
+        if IV_SIZING_ENABLED and data_days >= IV_SIZING_LOOKBACK:
+            for sym in SYMBOLS:
+                pct = self._iv_percentile(daily, sym)
+                if pct is not None:
+                    scale = self._iv_sizing_scale(pct)
+                    iv_scales[sym] = scale
+                    vrp_weights[sym] = vrp_weights.get(sym, 0.0) * scale
+                    skew_weights[sym] = skew_weights.get(sym, 0.0) * scale
+
         # 7. Combine ensemble
         target_weights = {}
         rationale_parts = []
@@ -159,6 +179,8 @@ class OptionsSignalGenerator:
                 parts.append(f"VRP_z={vrp_z:+.2f}")
             if skew_z is not None:
                 parts.append(f"Skew_z={skew_z:+.2f}")
+            if sym in iv_scales:
+                parts.append(f"IV_scale={iv_scales[sym]:.1f}")
             parts.append(f"VRP_w={vrp_weights.get(sym, 0):.2f}")
             parts.append(f"Skew_w={skew_weights.get(sym, 0):.2f}")
             parts.append(f"net={target_weights[sym]:.4f}")
@@ -282,6 +304,36 @@ class OptionsSignalGenerator:
         if std < 1e-6:
             return 0.0
         return (current - mean) / std
+
+    # ── IV Percentile Sizing (R25) ───────────────────────────────────────────
+
+    def _iv_percentile(self, daily: List[Dict], sym: str) -> Optional[float]:
+        """Compute IV percentile rank over lookback window."""
+        lookback = IV_SIZING_LOOKBACK
+        if len(daily) < lookback:
+            return None
+
+        window = []
+        for d in daily[-lookback:]:
+            iv = d.get(f"{sym}_iv_atm")
+            if iv is not None:
+                window.append(iv)
+
+        if len(window) < 30:
+            return None
+
+        current = window[-1]
+        below = sum(1 for v in window[:-1] if v < current)
+        return below / (len(window) - 1)
+
+    @staticmethod
+    def _iv_sizing_scale(pct: float) -> float:
+        """Step function sizing: <25th→0.5x, 25-75th→1.0x, >75th→1.5x."""
+        if pct < IV_SIZING_PCT_LOW:
+            return IV_SIZING_SCALE_LOW
+        elif pct > IV_SIZING_PCT_HIGH:
+            return IV_SIZING_SCALE_HIGH
+        return 1.0
 
     # ── Data Loading ──────────────────────────────────────────────────────────
 
