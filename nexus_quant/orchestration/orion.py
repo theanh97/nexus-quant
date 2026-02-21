@@ -162,18 +162,20 @@ class Orion:
             orion_ov = (ov.get("orion") or {}) if isinstance(ov, dict) else {}
 
             if task.kind == "run":
-                run_one(Path(task.payload["config"]), out_dir=Path(task.payload["out"]), cfg_override=cfg_override)
-                self.task_store.mark_done(task.id, {"ok": True})
-                return {"ok": True, "task": task.kind}
+                run_id = run_one(Path(task.payload["config"]), out_dir=Path(task.payload["out"]), cfg_override=cfg_override)
+                self.task_store.mark_done(task.id, {"ok": True, "run_id": run_id})
+                self._store_run_metrics(Path(task.payload["out"]), run_id)
+                return {"ok": True, "task": task.kind, "run_id": run_id}
             if task.kind == "research_ingest":
                 out = self._research_ingest(Path(task.payload["artifacts"]))
                 self.task_store.mark_done(task.id, out)
                 return {"ok": True, "task": task.kind, "research": out}
             if task.kind == "improve":
                 trials = int(orion_ov.get("trials") or task.payload.get("trials") or 30)
-                improve_one(Path(task.payload["config"]), out_dir=Path(task.payload["out"]), trials=trials, cfg_override=cfg_override)
-                self.task_store.mark_done(task.id, {"ok": True})
-                return {"ok": True, "task": task.kind}
+                run_id = improve_one(Path(task.payload["config"]), out_dir=Path(task.payload["out"]), trials=trials, cfg_override=cfg_override)
+                self.task_store.mark_done(task.id, {"ok": True, "run_id": run_id})
+                self._store_run_metrics(Path(task.payload["out"]), run_id)
+                return {"ok": True, "task": task.kind, "run_id": run_id}
             if task.kind == "handoff":
                 out = self._write_handoff(Path(task.payload["artifacts"]))
                 self.task_store.mark_done(task.id, out)
@@ -208,6 +210,7 @@ class Orion:
                     cfg_override=task.payload.get("config_overrides") or {},
                 )
                 self.task_store.mark_done(task.id, {"ok": True, "run_id": run_id})
+                self._store_run_metrics(Path(task.payload["out"]), run_id, experiment_id=task.payload.get("experiment_id"), why=task.payload.get("why"))
                 return {"ok": True, "task": task.kind, "run_id": run_id, "why": task.payload.get("why"), "experiment_id": task.payload.get("experiment_id")}
             if task.kind == "agent_run":
                 out = self.run_agents()
@@ -377,6 +380,65 @@ class Orion:
             ids.append(exp_id)
 
         return {"created": created, "ids": ids, "total_hypotheses": len(hypotheses)}
+
+    def _store_run_metrics(self, artifacts_dir: Path, run_id: Optional[str] = None, *, experiment_id: Optional[str] = None, why: Optional[str] = None) -> None:
+        """Store run/experiment metrics to memory for long-term learning.
+
+        Reads the latest ledger entry and extracts key metrics (sharpe, objective,
+        drawdown, etc.) into the memory store. This is how round 300 sees the
+        results from round 1.
+        """
+        try:
+            ledger_path = artifacts_dir / "ledger" / "ledger.jsonl"
+            if not ledger_path.exists():
+                return
+            lines = ledger_path.read_text("utf-8").splitlines()
+            if not lines:
+                return
+            event = json.loads(lines[-1])
+            payload = event.get("payload", {})
+            metrics = payload.get("metrics", {})
+
+            # Extract key metrics
+            sharpe = metrics.get("sharpe", payload.get("bias_check", {}).get("sharpe_tstat"))
+            obj = metrics.get("objective_value")
+            config_name = payload.get("config_path", "")
+            verdict = payload.get("bias_check", {}).get("verdict", "")
+
+            content_parts = [f"Run {event.get('run_name', run_id or 'unknown')}"]
+            if sharpe is not None:
+                content_parts.append(f"Sharpe={sharpe:.3f}" if isinstance(sharpe, float) else f"Sharpe={sharpe}")
+            if obj is not None:
+                content_parts.append(f"OBJ={obj:.4f}" if isinstance(obj, float) else f"OBJ={obj}")
+            if verdict:
+                content_parts.append(f"verdict={verdict}")
+            if why:
+                content_parts.append(f"why={why}")
+
+            content = " | ".join(content_parts)
+
+            kind = "experiment_result" if experiment_id else "run_result"
+            tags = ["run", event.get("kind", "run")]
+            if experiment_id:
+                tags.append("experiment")
+
+            self.memory.add(
+                created_at=_utc_iso(),
+                kind=kind,
+                tags=tags,
+                content=content,
+                meta={
+                    "run_id": run_id or event.get("run_id"),
+                    "experiment_id": experiment_id,
+                    "sharpe": sharpe,
+                    "objective": obj,
+                    "verdict": verdict,
+                    "config": config_name,
+                },
+                run_id=run_id,
+            )
+        except Exception:
+            pass  # Best-effort — don't break task execution
 
     def _research_ingest(self, artifacts_dir: Path) -> Dict[str, Any]:
         """
