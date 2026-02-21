@@ -1,6 +1,6 @@
 {
   "_comment": "PRODUCTION CONFIG — P91b Champion + Vol Tilt + Vol Regime Overlay (Phase 129)",
-  "_version": "2.49.14",
+  "_version": "2.49.15",
   "_created": "2026-02-21",
   "_validated": "Phases 91-129: walk-forward stable, OOS validated; breadth regime switching v2.2.0; dispersion v2.3.0; TS overlay v2.4.0; TS fine-tune v2.5.0; F168 v2.6.0; vol fine-tune v2.7.0; breadth lb=192 LOYO 5/5 v2.8.0 OBJ=2.2095; TS short=12h long=96h LOYO 4/5 WF 2/2 v2.9.0 OBJ=2.2423; TS thresh re-sweep P168 rt=0.60 rs=0.40 bs=1.25 LOYO 4/5 v2.10.0 OBJ=2.3510 (Δ=+0.1087); boost fine-tune P169 bt=0.25 bs=1.50 LOYO 3/5 v2.11.0 OBJ=2.3599 (Δ=+0.0089); disp fine-tune P170 scale=1.05 thr=0.60 pct=240 LOYO 4/5 v2.12.0 OBJ=2.4148 (Δ=+0.0549); Vol overlay re-tune (P171): scale=0.4/boost=0.1/thr=0.5 LOYO 3/5 Δ=+0.0005 OBJ=2.4153 — PRODUCTION v2.13.0; I460 bw=120 P172 LOYO 4/5 v2.14.0 OBJ=2.4299 (Δ=+0.0146); Regime weight re-opt (P172): LOW_f168=0.3/MID_f168=0.3/HIGH_f168=0.15 LOYO 3/5 Δ=+0.0664 OBJ=2.4817 — PRODUCTION v2.14.0; I415 bw sweep P175: bw=216→144 LOYO 3/5 Δ=+0.0436 OBJ=2.5396 — PRODUCTION v2.15.0; Disp overlay P179: scale=1.05→1.0 thr=0.60 LOYO 4/5 Δ≈+0.009 — PRODUCTION v2.16.0; Breadth thr P181: PL=0.35→0.2 PH=0.65→0.6 LOYO 5/5 Δ=+0.0401 — PRODUCTION 2.17.0; Regime weight re-opt P182: LOW_f168=0.35 MID_f168=0.35 HIGH_f168=0.1 LOYO 5/5 Δ=+0.0461 — PRODUCTION 2.18.0; FTS boost re-tune (P176): bt=0.35/bs=1.6 LOYO 3/5 Δ=+0.0078 OBJ=2.4895 — PRODUCTION v2.15.0; V1 weights re-tune P185: wc=0.35 wm=0.4 wr=0.25 LOYO 4/5 Δ=+0.0256 OBJ=2.5945 — PRODUCTION 2.15.1; [META FIX] Version corrected to 2.19.0: accounts for P179(disp scale=1.0)+P181(breadth PL=0.20 PH=0.60)+P182(regime weights LOW/MID f168=0.35 HIGH f168=0.10)+P185(V1 wc=0.35 wm=0.40 wr=0.25 LOYO 4/5 OBJ=2.5945); V1 mr_lb re-sweep P187: 72→84 LOYO 4/5 Δ=+0.1158 OBJ=2.7103 — PRODUCTION 2.20.0; Regime V1 weight re-opt P189: LOW_v1=0.4000 MID_v1=0.3000 HIGH_v1=0.0600 LOYO 4/5 Δ=+0.1403 OBJ=2.8506 — PRODUCTION 2.21.0; V1 weight extend P190: LOW_v1=0.4800 MID_v1=0.3500 LOYO 4/5 Δ=+0.0154 OBJ=2.8660 — PRODUCTION 2.22.0; V1 vol_lb sweep P190: 168→192 LOYO 4/5 Δ=+0.0185 OBJ=2.8691 — PRODUCTION 2.23.0; I460 bw sweep P194: 120->168 LOYO 3/5 delta=+0.0106 OBJ=2.8797 — PRODUCTION 2.24.0; WF Validation P195: WF CONFIRMED v2.24.0 OBJ=2.8797 WF 3/3 avg_OOS_delta=+0.6524; FTS threshold re-tune P197: rt=0.60->0.65 rs=0.40->0.45 bt=0.35->0.25 bs=1.60->1.70 LOYO 3/5 delta=+0.0198 OBJ=2.8995 — PRODUCTION 2.26.0; Vol overlay retune P198: vol_scale=0.40->0.30 f168_boost=0.10->0.00 LOYO 3/5 delta=+0.0633 OBJ=2.9628 — PRODUCTION 2.27.0; FTS window retune P200: short=12->16 long=96->72 LOYO 3/5 delta=+0.0456 OBJ=3.0084 — PRODUCTION 2.28.0; WF Validation P201: WF CONFIRMED 2.28.0 OBJ=3.0243 WF 3/3 avg_OOS_delta=+0.7865; MID+LOW weight tune P202: MID_f168=0.68->0.70 LOW_v1=0.46->0.44 LOYO 4/5 delta=+0.0554 OBJ=3.0797 — PRODUCTION 2.31.0; HIGH regime weight P204: v1=0.06->0.04 f168=0.15->0.18 LOYO 3/5 delta=+0.0052 OBJ=3.0849 — PRODUCTION 2.32.0; Signal lev P213b: idio=0.30->0.20 f168=0.25->0.25 LOYO 5/5 delta=+0.0753 OBJ=3.1603 — PRODUCTION 2.34.0; FTS retune P215: rt=0.65->0.65 rs=0.45->0.30 bs=1.70->1.85 LOYO 3/5 delta=+0.0180 OBJ=3.2689 — PRODUCTION 2.35.0; MID+LOW P221: MID_f168=0.78->0.78 LOW_v1=0.46->0.40 LOYO 4/5 delta=+0.0077 OBJ=3.2766 — PRODUCTION 2.39.0 | v2.41.1 HIGH v1=0.06 idio=0.940 f168=0.0 OBJ=3.3151 LOYO=4/5",
   "run_name": "production_p91b",
@@ -152,7 +152,7 @@
       "daily_turnover_above_pct": 50.0
     },
     "expected_performance": {
-      "annual_sharpe_backtest": 5.3868,
+      "annual_sharpe_backtest": 5.4545,
       "annual_sharpe_realistic": 0.8,
       "annual_sharpe_conservative": 0.7,
       "max_drawdown_backtest_pct": 25.1,
@@ -278,9 +278,9 @@
     "ts_bt": 0.25,
     "ts_bs": 2.5,
     "per_regime_rs": {
-      "LOW": 0.02,
-      "MID": 0.02,
-      "HIGH": 0.02
+      "LOW": 0.01,
+      "MID": 0.01,
+      "HIGH": 0.01
     },
     "per_regime_bs": {
       "LOW": 3.5,
@@ -288,12 +288,12 @@
       "HIGH": 2.5
     },
     "per_regime_rt": {
-      "LOW": 0.8,
-      "MID": 0.6,
+      "LOW": 0.78,
+      "MID": 0.58,
       "HIGH": 0.55
     },
     "per_regime_bt": {
-      "LOW": 0.33,
+      "LOW": 0.3,
       "MID": 0.22,
       "HIGH": 0.22
     },
@@ -303,19 +303,19 @@
       "HIGH": 400
     },
     "LOW": {
-      "rs": 0.02,
-      "rt": 0.8,
+      "rs": 0.01,
+      "rt": 0.78,
       "bs": 3.5,
-      "bt": 0.33
+      "bt": 0.3
     },
     "MID": {
-      "rs": 0.02,
-      "rt": 0.6,
+      "rs": 0.01,
+      "rt": 0.58,
       "bs": 1.5,
       "bt": 0.22
     },
     "HIGH": {
-      "rs": 0.02,
+      "rs": 0.01,
       "rt": 0.55,
       "bs": 2.5,
       "bt": 0.22
@@ -345,7 +345,7 @@
       "HIGH": 0.4
     }
   },
-  "version": "v2.49.14",
+  "version": "v2.49.15",
   "v1_per_regime_weights": {
     "LOW": {
       "w_carry": 0.15,
@@ -363,5 +363,5 @@
       "w_mean_reversion": 0.1
     }
   },
-  "obj": 5.3868
+  "obj": 5.4545
 }
