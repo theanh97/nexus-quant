@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-R88: Multi-Asset Production Runner (BTC + ETH)
-=================================================
+R88: Multi-Asset Production Runner (BTC + ETH) — Config v3
+=============================================================
 
 Extends R81 (BTC-only) to run BF signals on both BTC and ETH,
 then combines with optimal 70/30 allocation (R86 discovery).
 
-Key findings from R86:
-  - BF edge is structural (confirmed on ETH, score 4.0/4.0)
-  - BTC-ETH BF correlation: 0.101 (nearly independent!)
-  - 70/30 BTC/ETH: Sharpe 4.09 (best risk-adjusted allocation)
+Config v3 (R97): Per-asset sensitivity
+  - BTC: sensitivity=5.0, MaxDD -0.94%, kill-switch 1.4%
+  - ETH: sensitivity=3.5, MaxDD -2.21%, kill-switch 2.5%
+  - Portfolio Sharpe: 1.65 (vs 1.15 with v2), +44% improvement
 
 Usage:
   python3 scripts/r88_multi_asset_runner.py              # Full report
@@ -36,16 +36,16 @@ BRIEF_MODE = "--brief" in sys.argv
 # ═══════════════════════════════════════════════════════════════
 
 ASSETS = {
-    "BTC": {"weight": 0.70, "max_dd_pct": 1.4},   # 3× BTC historical MaxDD (0.47%)
-    "ETH": {"weight": 0.30, "max_dd_pct": 2.0},   # R89: ETH MaxDD 1.58%, needs wider threshold
+    "BTC": {"weight": 0.70, "max_dd_pct": 1.4, "bf_sensitivity": 5.0},   # R97: sens=5.0, MaxDD -0.94%
+    "ETH": {"weight": 0.30, "max_dd_pct": 2.5, "bf_sensitivity": 3.5},   # R97: sens=3.5, MaxDD -2.21%, KS widened
 }
 
-# Per-asset BF config (same params — R86 confirmed)
+# Per-asset BF config (shared params — per-asset sensitivity in ASSETS)
 BF_CONFIG = {
     "bf_lookback": 120,
     "bf_z_entry": 1.5,
     "bf_z_exit": 0.0,
-    "bf_sensitivity": 2.5,
+    "bf_sensitivity": 2.5,  # default, overridden by per-asset ASSETS[x]["bf_sensitivity"]
 }
 
 VRP_CONFIG = {
@@ -258,7 +258,8 @@ def compute_asset_signal(currency, dvol_hist, price_hist, surface_hist):
         f_now = bf_vals.get(d)
         f_prev = bf_vals.get(dp)
         if f_now is not None and f_prev is not None and iv > 0 and position != 0:
-            day_pnl = position * (f_now - f_prev) * iv * math.sqrt(dt) * BF_CONFIG["bf_sensitivity"]
+            asset_sens = ASSETS.get(currency, {}).get("bf_sensitivity", BF_CONFIG["bf_sensitivity"])
+            day_pnl = position * (f_now - f_prev) * iv * math.sqrt(dt) * asset_sens
             pnl_series.append((d, day_pnl))
 
     health_score = None
@@ -420,7 +421,7 @@ def print_full(combined):
     alloc_str = " / ".join(f"{c} {w*100:.0f}%" for c, w in combined["allocation"].items())
     print(f"  Allocation: {alloc_str}")
     print(f"  BF Config:  lb={BF_CONFIG['bf_lookback']} z_in={BF_CONFIG['bf_z_entry']} "
-          f"z_out={BF_CONFIG['bf_z_exit']} sens={BF_CONFIG['bf_sensitivity']}")
+          f"z_out={BF_CONFIG['bf_z_exit']} sens=per-asset")
 
     for currency in ASSETS:
         sig = combined["assets"].get(currency, {})
