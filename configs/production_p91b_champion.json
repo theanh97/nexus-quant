@@ -95,8 +95,8 @@
         "strategy": "nexus_alpha_v1",
         "params": {
           "k_per_side": 2,
-          "w_carry": 0.25,
-          "w_mom": 0.45,
+          "w_carry": 0.15,
+          "w_mom": 0.55,
           "w_mean_reversion": 0.3,
           "momentum_lookback_bars": 312,
           "mean_reversion_lookback_bars": 84,
@@ -327,7 +327,7 @@
       "HIGH": 0.5
     }
   },
-  "version": "v2.42.7",
+  "version": "v2.42.8",
   "v1_per_regime_weights": {
     "LOW": {
       "w_carry": 0.1,
