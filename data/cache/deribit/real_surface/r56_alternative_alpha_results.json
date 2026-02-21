@@ -1,0 +1,26 @@
+{
+  "research_id": "R56",
+  "title": "Alternative Alpha Sources from Real IV Surface",
+  "vrp_sharpe": 2.896055938411776,
+  "best_skew": {
+    "name": "Skew_lb120_z1.5",
+    "sharpe": 1.020438556908998
+  },
+  "best_butterfly": {
+    "name": "BF_lb120_z1.5",
+    "sharpe": 1.8023267165874335
+  },
+  "best_term_spread": {
+    "name": "TS_lb120_z1.5",
+    "sharpe": 0.8079557583054803
+  },
+  "best_multi_factor": {
+    "sharpe": 3.24708674855988,
+    "weights": {
+      "VRP": 0.1,
+      "Skew": 0.1,
+      "Butterfly": 0.7,
+      "TermSpread": 0.1
+    }
+  }
+}
