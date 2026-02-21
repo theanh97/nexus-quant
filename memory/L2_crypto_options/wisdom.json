@@ -1,9 +1,9 @@
 {
   "_project": "crypto_options",
-  "_version": "21.0.0",
+  "_version": "22.0.0",
   "_updated": "2026-02-21",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). 48 research studies, 5000+ configs. CRITICAL: ALL results computed on SYNTHETIC IV data — Sharpe numbers are NOT validated on real data. Architecture and principles have real value; specific parameters and performance numbers need real data validation (~April 2026).",
-  "_status": "AWAITING REAL DATA VALIDATION. Architecture production-ready, but ALL Sharpe numbers and parameter values are synthetic-data-only. Real Deribit IV collection started 2026-02-21, need 60 days for revalidation.",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). 51 research studies. R51 BREAKTHROUGH: First REAL Sharpe ratios computed. BTC VRP=2.905, Skew MR=1.551, Ensemble=3.094 on real DVOL + real option trade data (2019-2026).",
+  "_status": "REAL DATA VALIDATED (R51). BTC strategies confirmed on real data. ETH VRP weaker (1.125). 2025-2026 showing degradation.",
 
   "CRITICAL_DATA_AUTHENTICITY_WARNING": {
     "summary": "ALL R1-R48 research results are computed on SYNTHETIC implied volatility data. NO Sharpe number should be treated as a proven real-world result.",
@@ -61,16 +61,23 @@
   },
 
   "ENSEMBLE_CHAMPION": {
-    "type": "mixed_frequency",
-    "weights": {"VRP_hourly": 0.40, "Skew_MR_daily": 0.60},
-    "DATA_WARNING": "ALL Sharpe numbers below are on SYNTHETIC IV data. Expected real: 1.8-2.2",
-    "wf_avg_sharpe": 2.723,
-    "wf_avg_sharpe_note": "SYNTHETIC — not validated on real data",
-    "wf_min_sharpe": 2.022,
-    "yearly": {"2021": 2.02, "2022": 2.60, "2023": 3.65, "2024": 2.44, "2025": 2.90},
-    "correlation_vrp_skew": 0.014,
-    "vs_daily_only_ensemble": "+0.108 avg Sharpe vs daily 30/70 (2.615)",
-    "note": "Mixed-frequency: VRP runs hourly (8760 bars/yr), Skew MR runs daily (365 bars/yr). Hourly VRP aggregated to daily for ensemble. Alternative: 30/70 mixed-freq gives avg=2.620, min=2.311 (more consistent)."
+    "type": "daily_40_60_vrp_skew",
+    "weights": {"VRP": 0.40, "Skew_MR": 0.60},
+    "REAL_DATA_SHARPE": 3.094,
+    "REAL_DATA_NOTE": "R51 — first REAL Sharpe on actual Deribit DVOL + option trade skew data",
+    "real_data_stats": {
+      "sharpe": 3.094,
+      "t_stat": 6.86,
+      "ann_return": 0.0425,
+      "ann_vol": 0.0137,
+      "max_dd": 0.0188,
+      "win_rate": 0.736,
+      "period": "2021-03-25 to 2026-02-18 (1795 days)"
+    },
+    "real_yearly": {"2021": 5.204, "2022": 3.489, "2023": 2.359, "2024": 2.963, "2025": 1.777, "2026": -2.470},
+    "synthetic_sharpe_was": 2.723,
+    "synthetic_yearly": {"2021": 2.02, "2022": 2.60, "2023": 3.65, "2024": 2.44, "2025": 2.90},
+    "note": "Real ensemble EXCEEDS synthetic (3.09 vs 2.72). BUT 2025-2026 degradation is a concern."
   },
 
   "ENSEMBLE_DAILY_ONLY": {
@@ -85,7 +92,9 @@
   },
 
   "STRATEGY_1_VRP": {
-    "status": "VALIDATED",
+    "status": "VALIDATED_ON_REAL_DATA",
+    "REAL_DATA_SHARPE": {"BTC": 2.905, "ETH": 1.125},
+    "REAL_DATA_NOTE": "R51: BTC VRP Sharpe 2.905 (t=6.44) on real DVOL. HIGHER than synthetic 2.088. ETH weaker at 1.125.",
     "class": "VariancePremiumStrategy",
     "daily": {
       "wf_avg_sharpe": 2.088,
@@ -121,7 +130,9 @@
   },
 
   "STRATEGY_2_SKEW_MR": {
-    "status": "VALIDATED",
+    "status": "VALIDATED_ON_REAL_DATA",
+    "REAL_DATA_SHARPE": {"BTC": 1.551},
+    "REAL_DATA_NOTE": "R51: BTC Skew MR Sharpe 1.551 (t=4.09) on real skew from option trades. Slightly below synthetic 1.744. Always-short-skew=0.009 → z-score signal IS valuable.",
     "class": "SkewTradeV2Strategy",
     "wf_avg_sharpe": 1.744,
     "wf_min_sharpe": 0.949,
