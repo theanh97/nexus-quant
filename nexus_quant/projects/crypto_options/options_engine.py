@@ -67,12 +67,14 @@ class OptionsBacktestEngine:
         use_options_pnl: bool = True,
         iv_smooth_bars: int = 3,
         skew_sensitivity_mult: float = 1.0,
+        delta_hedge_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.costs = costs
         self.bars_per_year = bars_per_year
         self.use_options_pnl = use_options_pnl
         self.iv_smooth_bars = iv_smooth_bars
         self.skew_sensitivity_mult = skew_sensitivity_mult
+        self.delta_hedge_config = delta_hedge_config
 
         # Build base config for the standard engine fallback
         self._base_cfg = BacktestConfig(costs=costs)
@@ -111,7 +113,14 @@ class OptionsBacktestEngine:
             return BacktestEngine(self._base_cfg).run(dataset, strategy, seed)
 
     def _run_vrp(self, dataset: MarketDataset, strategy: Strategy) -> BacktestResult:
-        """Run VRP strategy with proper options PnL (gamma/theta model)."""
+        """Run VRP strategy with proper options PnL (gamma/theta model).
+
+        Optionally includes delta hedge costs if delta_hedge_config is set:
+          - Tracks straddle delta drift using BS model
+          - Rebalances hedge when delta exceeds tolerance
+          - Deducts hedge trading costs (fees + slippage)
+          - Deducts/credits funding on hedge position (bidirectional)
+        """
         syms = dataset.symbols
         n = len(dataset.timeline)
         dt = 1.0 / self.bars_per_year
@@ -124,6 +133,26 @@ class OptionsBacktestEngine:
 
         options_pnl_total = 0.0
         cost_pnl_total = 0.0
+        hedge_cost_total = 0.0
+        funding_cost_total = 0.0
+
+        # Delta hedge state (per symbol)
+        dhc = self.delta_hedge_config
+        use_hedge = dhc is not None
+        if use_hedge:
+            from .greeks import bs_delta
+            delta_tol = dhc.get("delta_tolerance", 0.25)
+            h_fee = dhc.get("hedge_fee_bps", 2.0) / 10000.0
+            h_slip = dhc.get("hedge_slippage_bps", 1.0) / 10000.0
+            funding_annual = dhc.get("funding_rate_annual", 0.10)
+            bidirectional = dhc.get("bidirectional_funding", True)
+            funding_per_bar = funding_annual / self.bars_per_year
+
+            hedge_state = {s: {
+                "hedge_position": 0.0,
+                "last_strike": 0.0,
+                "tte": 30.0 / 365.0,
+            } for s in syms}
 
         for idx in range(1, n):
             prev_equity = equity
@@ -133,6 +162,8 @@ class OptionsBacktestEngine:
             for sym in syms:
                 w = weights.get(sym, 0.0)
                 if abs(w) < 1e-10:
+                    if use_hedge:
+                        hedge_state[sym]["hedge_position"] = 0.0
                     continue
 
                 # Realized vol for this single bar (annualized)
@@ -176,6 +207,43 @@ class OptionsBacktestEngine:
                 # Short vol = negative weight → (-w) > 0 → positive when IV > RV_bar
                 bar_pnl += (-w) * vrp_pnl
 
+                # ── Delta hedge costs (optional) ──
+                if use_hedge:
+                    hs = hedge_state[sym]
+                    S_now = closes[idx] if idx < len(closes) else 0
+                    S_prev = closes[idx - 1] if idx - 1 < len(closes) else 0
+                    K = hs["last_strike"] if hs["last_strike"] > 0 else S_prev
+                    tte = max(hs["tte"] - dt, 1.0 / 365)
+
+                    try:
+                        dc = bs_delta(S_now, K, tte, 0.0, iv, "call")
+                        dp_ = bs_delta(S_now, K, tte, 0.0, iv, "put")
+                        straddle_delta = dc + dp_
+                    except (ValueError, ZeroDivisionError):
+                        straddle_delta = 0.0
+
+                    position_delta = -straddle_delta * abs(w)
+                    net_delta = position_delta + hs["hedge_position"]
+
+                    if abs(net_delta) > delta_tol:
+                        trade_size = -net_delta
+                        notional = abs(trade_size) * S_now
+                        hcost = notional * (h_fee + h_slip)
+                        hcost_pct = hcost / (equity * S_prev) if equity > 0 and S_prev > 0 else 0
+                        bar_pnl -= hcost_pct
+                        hedge_cost_total += hcost_pct * equity
+                        hs["hedge_position"] += trade_size
+
+                    if abs(hs["hedge_position"]) > 0.001:
+                        if bidirectional:
+                            fpnl = hs["hedge_position"] * funding_per_bar
+                        else:
+                            fpnl = abs(hs["hedge_position"]) * funding_per_bar
+                        bar_pnl -= fpnl
+                        funding_cost_total += fpnl * equity
+
+                    hs["tte"] = tte
+
             dp = equity * bar_pnl
             equity += dp
             options_pnl_total += dp
@@ -205,6 +273,19 @@ class OptionsBacktestEngine:
                         **bd,
                     })
 
+                # Reset delta hedge state on rebalance
+                if use_hedge:
+                    for s in syms:
+                        new_w = float(target.get(s, 0))
+                        if abs(new_w) > 1e-10:
+                            cl = dataset.perp_close.get(s, [])
+                            if idx < len(cl) and cl[idx] > 0:
+                                hedge_state[s]["last_strike"] = cl[idx]
+                                hedge_state[s]["tte"] = 30.0 / 365.0
+                                hedge_state[s]["hedge_position"] = 0.0
+                        else:
+                            hedge_state[s]["hedge_position"] = 0.0
+
             equity_curve.append(equity)
             bar_ret = (equity / prev_equity) - 1.0 if prev_equity > 0 else 0.0
             returns_list.append(bar_ret)
@@ -218,12 +299,13 @@ class OptionsBacktestEngine:
             breakdown={
                 "options_pnl": options_pnl_total,
                 "cost_pnl": cost_pnl_total,
-                "funding_pnl": 0.0,
+                "funding_pnl": round(funding_cost_total, 6) if use_hedge else 0.0,
+                "hedge_cost": round(hedge_cost_total, 6) if use_hedge else 0.0,
                 "price_pnl": 0.0,
-                "model": "gamma_theta_vrp",
+                "model": "gamma_theta_vrp_with_hedge" if use_hedge else "gamma_theta_vrp",
             },
             data_fingerprint=dataset.fingerprint,
-            code_fingerprint="options_engine_v1",
+            code_fingerprint="options_engine_v2" if use_hedge else "options_engine_v1",
         )
 
     def _run_skew(self, dataset: MarketDataset, strategy: Strategy, feature_key: str = "skew_25d") -> BacktestResult:
