@@ -13,7 +13,11 @@ Per-asset: ETH VRP lookback 60d (R35+R36 validated)
 Signals:
     VRP: Always short vol unless VRP z-score < -3.0 (extreme vol spike).
          Monitored hourly, rebalanced weekly.
-    Skew MR: Fade extreme 25d skew when z > 2.0 (sell) or z < -2.0 (buy).
+    Skew MR: Asymmetric z-score thresholds (R42+R43 validated):
+             - Sell skew when z >= 1.0 (easier entry — crypto has dominant put premium)
+             - Buy skew when z <= -2.0 (standard threshold)
+             - Exit long when z >= 0.5 (tighter exit)
+             - Exit short when z <= 0.0 (standard exit)
              Monitored daily, rebalanced weekly.
 
 Output: Target weights per symbol + ensemble signal + metadata.
@@ -65,11 +69,13 @@ VRP_LOOKBACK_OVERRIDES = {
     "ETH": 60,  # R35: ETH VRP lb=60 robustly better than 30 (LOYO +0.199)
 }
 
-# Skew MR params (daily-validated champion)
+# Skew MR params (daily-validated champion, R42+R43 asymmetric z-scores)
 SKEW_PARAMS = {
     "lookback_days": 60,           # 60-day z-score window
-    "z_entry": 2.0,                # enter when |z| > 2.0
-    "z_exit": 0.0,                 # exit when z crosses 0
+    "z_entry_long": 2.0,           # enter long (buy skew) when z <= -2.0
+    "z_entry_short": 1.0,          # enter short (sell skew) when z >= 1.0 (R42: +0.501)
+    "z_exit_long": 0.5,            # exit long when z >= 0.5 (R42: +0.102)
+    "z_exit_short": 0.0,           # exit short when z <= 0.0
     "target_leverage": 1.0,
     "rebalance_days": 5,           # weekly rebalance
 }
@@ -253,7 +259,12 @@ class OptionsSignalGenerator:
     # ── Skew MR Signal ────────────────────────────────────────────────────────
 
     def _skew_signal(self, daily: List[Dict], data_days: int) -> Dict[str, float]:
-        """Skew MR signal: fade extreme skew z-scores."""
+        """Skew MR signal: fade extreme skew z-scores with asymmetric thresholds.
+
+        R42+R43 validated: crypto skew is naturally negatively biased, so selling
+        skew (fading put premium) at a lower z-threshold (1.0 vs 2.0) is more
+        profitable. LOYO: 4/5 years improve, 2022 only -0.029.
+        """
         if data_days < MIN_DATA_DAYS_SKEW:
             return {s: 0.0 for s in SYMBOLS}
 
@@ -269,23 +280,27 @@ class OptionsSignalGenerator:
                 self._skew_positions[sym] = 0.0
                 continue
 
-            # Entry/exit logic (same as SkewTradeV2Strategy)
+            # Asymmetric entry/exit (R42+R43 validated)
             if current_pos == 0.0:
-                if z >= SKEW_PARAMS["z_entry"]:
-                    weights[sym] = -per_sym  # sell skew
-                elif z <= -SKEW_PARAMS["z_entry"]:
+                if z >= SKEW_PARAMS["z_entry_short"]:
+                    weights[sym] = -per_sym  # sell skew (easier entry)
+                elif z <= -SKEW_PARAMS["z_entry_long"]:
                     weights[sym] = per_sym   # buy skew
                 else:
                     weights[sym] = 0.0
             else:
-                if abs(z) <= SKEW_PARAMS["z_exit"]:
-                    weights[sym] = 0.0       # exit
-                elif current_pos < 0 and z <= 0:
-                    weights[sym] = 0.0       # exit short skew
-                elif current_pos > 0 and z >= 0:
-                    weights[sym] = 0.0       # exit long skew
+                if current_pos > 0:
+                    # Long position: exit when z rises above exit threshold
+                    if z >= SKEW_PARAMS["z_exit_long"]:
+                        weights[sym] = 0.0
+                    else:
+                        weights[sym] = current_pos  # hold
                 else:
-                    weights[sym] = current_pos  # hold
+                    # Short position: exit when z drops below exit threshold
+                    if z <= -SKEW_PARAMS["z_exit_short"]:
+                        weights[sym] = 0.0
+                    else:
+                        weights[sym] = current_pos  # hold
 
             self._skew_positions[sym] = weights[sym]
 

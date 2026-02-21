@@ -1,9 +1,9 @@
 {
   "_project": "crypto_options",
-  "_version": "16.0.0",
+  "_version": "17.0.0",
   "_updated": "2026-02-21",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). Exhaustive R&D: 5000+ configs across 11 strategy types + 3 dynamic allocation + hourly frequency analysis + regime filter + IV sizing research (R25-R28). Delta hedging costs quantified. Tail events stress-tested. Cross-project portfolio integration complete. DeribitExecutor fully implemented. Paper state tracker active.",
-  "_status": "PRODUCTION-READY: Multi-asset IV-sized ensemble avg Sharpe 3.522 min 3.092 (R35+R40). BTC+ETH 50/50, ETH VRP lb=60d. IV sizing 0.5/1.7x. Cost-robust: survives 3x fees + 5bps impact (min Sharpe 2.639). Annual cost 0.18%. Awaiting real Deribit data validation (~April 2026).",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). Exhaustive R&D: 5000+ configs across 11 strategy types + 3 dynamic allocation + hourly frequency analysis + regime filter + IV sizing research (R25-R28) + asymmetric skew optimization (R42-R43). Delta hedging costs quantified. Tail events stress-tested. Cross-project portfolio integration complete. DeribitExecutor fully implemented. Paper state tracker active.",
+  "_status": "PRODUCTION-READY: Multi-asset IV-sized ensemble with asymmetric skew. R42+R43 validated: z_entry_short=1.0 adds +0.501 (LOYO 4/5 years, 2022 only -0.029). BTC+ETH 50/50, ETH VRP lb=60d. IV sizing 0.5/1.7x. Cost-robust: survives 3x fees + 5bps impact. Awaiting real Deribit data validation (~April 2026).",
 
   "ENSEMBLE_CHAMPION": {
     "type": "mixed_frequency",
@@ -297,7 +297,10 @@
     "tail_hedged_vrp_23_configs": "ALL WORSE than naked VRP. 5 put deltas (5d-25d) × 4 hedge ratios + 3 iron condors. Baseline avg=2.604, best hedged=-0.026. Put theta cost vastly exceeds payoff on synthetic data.",
     "iv_percentile_sizing_25_configs": "15/25 BETTER than baseline. Step function dominates (avg Δ=+0.193). Best: step_lb180 avg=2.210 (Δ=+0.258) with min=1.546 (+0.343). Inverse sizing worst (Δ=-0.409). Longer lookbacks (90-180d) > shorter (30-60d). Key: sizing ≠ filtering. Always in market, just scale with carry richness.",
     "iv_percentile_ensemble_10_configs": "ALL improve over baseline. Best: both_lb180 avg=2.535 min=2.068 (Δ=+0.276). VRP-only sizing: avg=2.499 (Δ=+0.240). Scaling both VRP+Skew slightly better. All 5 lookbacks (60-240d) improve ensemble. Min Sharpe breaks 2.0 barrier.",
-    "iv_sized_delta_hedge_6_configs": "IV sizing SURVIVES and STRENGTHENS with hedging. No hedge: Δ=+0.276. 25% tol hedge: Δ=+0.359 (STRONGER). 40% tol hedge: Δ=+0.310. Hedged+sized min Sharpe 1.111. Production-viable."
+    "iv_sized_delta_hedge_6_configs": "IV sizing SURVIVES and STRENGTHENS with hedging. No hedge: Δ=+0.276. 25% tol hedge: Δ=+0.359 (STRONGER). 40% tol hedge: Δ=+0.310. Hedged+sized min Sharpe 1.111. Production-viable.",
+    "asymmetric_skew_entry_11_configs": "R42: 11 entry combos (z_long × z_short). Best: z_long=2.0 z_short=1.0 avg=4.723 (Δ=+0.501). z_short=1.0 is the big win. Lowering z_long hurts.",
+    "asymmetric_skew_exit_9_configs": "R42: 9 exit combos (z_exit_long × z_exit_short). Best: z_exit_long=0.5 z_exit_short=0.0 avg=4.324 (Δ=+0.102). Tighter long exit helps; tighter short exit hurts.",
+    "r42_robustness_loyo_6_configs": "R43: 6 asymmetric configs × 5 years LOYO. R42 combined 4/5 years improve (2022 Δ=-0.029). Entry-only (z_short=1.0) 5/5 years improve. Parameter sensitivity plateau at z_short=0.75-1.0. VERDICT: partially robust — entry change is the robust component."
   },
 
   "NEXUS_PORTFOLIO_INTEGRATION": {
@@ -485,7 +488,8 @@
     "Cross-asset correlation stress dynamics (R39): BTC-ETH price returns highly correlated (r=0.82 full, 0.88 stress, 0.14 calm). But ensemble returns much less correlated (r=0.36) — VRP+Skew strategies add decorrelation layer. IV regimes correlated (r=0.77 level, 0.56 change) — both enter high-IV together. EWMA corr avg 0.84, >0.80 for 72% of time. Correlation-aware rebalancing MARGINAL (best +0.042). Key insight: strategies already diversify the underlying correlation — no additional overlay needed.",
     "Transaction cost sensitivity (R40): Cost drag only -0.284 Sharpe (7.5%). Annual cost 0.18% at baseline (67 trades/yr). Survives 5x fees (min Sharpe 2.096), 3x fees + 5bps impact (min 2.639), 2x fees + 2x turnover (min 2.393). Only fails at extreme 5x everything. Impact coefficient is least sensitive dimension. Portfolio optimizer updated with R35 Sharpe estimates (avg 3.522 vs old 2.722). Ensemble is COST-ROBUST.",
     "Signal decay/staleness (R41): Signal extremely persistent — min Sharpe >1.0 even at 60d gap. Peak at gap=5d (3.522), NOT gap=1d (2.758) because daily rebalancing costs exceed staleness benefit. Sweet spot 3-10d (all >3.3). Even 30d gap: avg=2.680 min=1.824. IV sizing helps at ALL gaps (+0.19 to +0.61). VRP carry accrues continuously without rebalancing — production can safely miss rebalancing for weeks.",
-    "Asymmetric skew z-scores (R42): Skew z-distribution is asymmetric (BTC skew=-0.342, z<-2 occurs 5.2% vs z>+2 only 2.4%). Very easy short entry (z_entry_short=1.0) adds +0.501 — selling skew at lower threshold is very profitable in crypto (dominant put premium). Tighter long exit (z_exit_long=0.5) adds +0.102. Combined: avg=4.816 min=3.973 (+0.594). Needs robustness validation before production integration."
+    "Asymmetric skew z-scores (R42): Skew z-distribution is asymmetric (BTC skew=-0.342, z<-2 occurs 5.2% vs z>+2 only 2.4%). Very easy short entry (z_entry_short=1.0) adds +0.501 — selling skew at lower threshold is very profitable in crypto (dominant put premium). Tighter long exit (z_exit_long=0.5) adds +0.102. Combined: avg=4.816 min=3.973 (+0.594).",
+    "R42 robustness validation (R43): LOYO PASSES — R42 entry-only (z_short=1.0) improves all 5 years individually (avg 4.723 vs 4.222). Combined config (z_short=1.0, z_exit_long=0.5) improves 4/5 years (2022 only -0.029, negligible). Parameter sensitivity shows PLATEAU at z_short=0.75-1.0 (both ~4.72-4.73), NOT a fragile peak — robust to exact parameter choice. Conservative config (z_short=1.5) only +0.080, moderate (z_short=1.25) gives +0.220. RECOMMENDATION: Integrate z_entry_short=1.0 (big win +0.501), z_exit_long=0.5 optional (+0.093 additional)."
   ],
 
   "failed_hypotheses": [
@@ -513,8 +517,8 @@
     "Multi-expiry VRP with REAL data: gross Sharpe scales with 1/sqrt(DTE), revisit when real term structure available",
     "Expand universe: SOL, DOGE options when API data becomes available",
     "Intraday vol pattern exploitation: hourly vol seasonality (Asia/EU/US sessions) — needs real data",
-    "Multi-asset correlation dynamics: how does BTC-ETH vol correlation affect ensemble during stress? Cross-asset hedging potential.",
     "Production signal generator: integrate freq=3 rebalancing if real data validates R32 finding",
-    "VRP gamma cost decomposition: understand hourly-vs-daily VRP mechanism with real intraday data"
+    "VRP gamma cost decomposition: understand hourly-vs-daily VRP mechanism with real intraday data",
+    "Integrate asymmetric skew z_entry_short=1.0 into production signal generator (R42+R43 validated)"
   ]
 }
