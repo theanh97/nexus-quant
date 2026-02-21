@@ -215,16 +215,18 @@ class LessonStore:
         }
 
     def get_active_lessons(self, category: Optional[str] = None) -> List[Lesson]:
-        """Get all active lessons, optionally filtered by category."""
+        """Get all active lessons, optionally filtered by category.
+        Sorted: supreme > critical > warning > info, then by miss_count DESC."""
+        severity_order = "CASE severity WHEN 'supreme' THEN 0 WHEN 'critical' THEN 1 WHEN 'warning' THEN 2 ELSE 3 END"
         cur = self._conn.cursor()
         if category:
             rows = cur.execute(
-                "SELECT * FROM operational_lessons WHERE active=1 AND category=? ORDER BY severity DESC, hit_count DESC",
+                f"SELECT * FROM operational_lessons WHERE active=1 AND category=? ORDER BY {severity_order}, miss_count DESC, hit_count DESC",
                 (category,),
             ).fetchall()
         else:
             rows = cur.execute(
-                "SELECT * FROM operational_lessons WHERE active=1 ORDER BY severity DESC, hit_count DESC"
+                f"SELECT * FROM operational_lessons WHERE active=1 ORDER BY {severity_order}, miss_count DESC, hit_count DESC"
             ).fetchall()
         return [self._row_to_lesson(r) for r in rows]
 
@@ -381,6 +383,134 @@ class LessonStore:
         except Exception:
             pass
 
+    def escalate_severity(self, lesson_id: int, new_severity: str, reason: str = "") -> bool:
+        """
+        Escalate a lesson's severity level.
+
+        Severity levels: info < warning < critical < supreme
+
+        'supreme' = user has repeated this issue multiple times.
+        Supreme lessons are ALWAYS shown first in preflight and agent context.
+        """
+        valid = {"info", "warning", "critical", "supreme"}
+        if new_severity not in valid:
+            return False
+        now = _utc_iso()
+        cur = self._conn.cursor()
+        cur.execute(
+            "UPDATE operational_lessons SET severity=? WHERE id=? AND active=1",
+            (new_severity, lesson_id),
+        )
+        self._conn.commit()
+        self._log_event("severity_escalation", {
+            "lesson_id": lesson_id,
+            "new_severity": new_severity,
+            "reason": reason,
+        })
+        return cur.rowcount > 0
+
+    def auto_escalate_repeated_issues(self) -> List[Dict[str, Any]]:
+        """
+        Auto-escalate lessons that keep getting missed.
+
+        Rule: If miss_count >= 3 and severity != 'supreme' → escalate to supreme.
+        Rule: If miss_count >= 2 and severity == 'warning' → escalate to critical.
+
+        This is the SYSTEM learning from repetition.
+        When the same issue recurs multiple times, it MUST be elevated.
+        """
+        escalated = []
+        cur = self._conn.cursor()
+        rows = cur.execute(
+            "SELECT * FROM operational_lessons WHERE active=1 AND miss_count >= 2"
+        ).fetchall()
+
+        for r in rows:
+            lesson = self._row_to_lesson(r)
+            new_severity = None
+            reason = ""
+
+            if lesson.miss_count >= 3 and lesson.severity != "supreme":
+                new_severity = "supreme"
+                reason = f"Issue recurred {lesson.miss_count} times — auto-escalated to supreme"
+            elif lesson.miss_count >= 2 and lesson.severity == "warning":
+                new_severity = "critical"
+                reason = f"Issue recurred {lesson.miss_count} times — escalated warning→critical"
+
+            if new_severity:
+                self.escalate_severity(lesson.id, new_severity, reason)
+                escalated.append({
+                    "lesson_id": lesson.id,
+                    "category": lesson.category,
+                    "old_severity": lesson.severity,
+                    "new_severity": new_severity,
+                    "miss_count": lesson.miss_count,
+                    "reason": reason,
+                })
+
+        return escalated
+
+    def record_user_feedback(self, topic: str, feedback: str) -> Dict[str, Any]:
+        """
+        Record user feedback and auto-create/escalate lessons.
+
+        When user repeats feedback on a topic → the system auto-escalates.
+        This is how the system LEARNS from the user without being told twice.
+        """
+        now = _utc_iso()
+
+        # Check if there's an existing lesson matching this topic
+        cur = self._conn.cursor()
+        topic_lower = topic.lower()
+        matched_lessons = []
+
+        rows = cur.execute("SELECT * FROM operational_lessons WHERE active=1").fetchall()
+        for r in rows:
+            lesson = self._row_to_lesson(r)
+            try:
+                if re.search(lesson.pattern, topic_lower, re.IGNORECASE):
+                    matched_lessons.append(lesson)
+            except re.error:
+                if lesson.pattern.lower() in topic_lower:
+                    matched_lessons.append(lesson)
+
+        actions_taken = []
+
+        if matched_lessons:
+            # User is repeating feedback on known issue → ESCALATE
+            for lesson in matched_lessons:
+                if lesson.severity != "supreme":
+                    self.escalate_severity(
+                        lesson.id, "supreme",
+                        f"User repeated feedback: {feedback[:100]}"
+                    )
+                    actions_taken.append(f"Escalated lesson {lesson.id} to supreme")
+                # Record as miss (user had to repeat = system failed to prevent)
+                self._record_miss(lesson.id)
+        else:
+            # New feedback → create lesson at critical level
+            pattern = re.escape(topic_lower[:80])
+            lid = self.add_lesson(
+                category="rule_violation",
+                pattern=pattern,
+                correction=feedback,
+                severity="critical",
+                source="user_feedback",
+            )
+            actions_taken.append(f"Created new lesson {lid} from user feedback")
+
+        self._log_event("user_feedback", {
+            "topic": topic[:200],
+            "feedback": feedback[:500],
+            "matched_lessons": [l.id for l in matched_lessons],
+            "actions": actions_taken,
+        })
+
+        return {
+            "matched_existing": len(matched_lessons),
+            "actions": actions_taken,
+        }
+
     def _init_schema(self) -> None:
         cur = self._conn.cursor()
         cur.execute("""
@@ -455,8 +585,13 @@ class OperationalLearner:
         return self.store.preflight(task_kind, context or {})
 
     def postmortem(self, task_kind: str, error: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Run after every failure. Extracts and stores lessons."""
-        return self.store.postmortem(task_kind, error, context or {})
+        """Run after every failure. Extracts lessons + auto-escalates repeated issues."""
+        result = self.store.postmortem(task_kind, error, context or {})
+        # Auto-escalate lessons that keep failing
+        escalated = self.store.auto_escalate_repeated_issues()
+        if escalated:
+            result["escalated"] = escalated
+        return result
 
     def get_agent_lessons(self, max_lessons: int = 15) -> List[Dict[str, str]]:
         """Get lessons formatted for injection into AgentContext."""
@@ -637,6 +772,43 @@ class OperationalLearner:
                 ),
                 "severity": "critical",
                 "source": "seed_v1",
+            },
+
+            # === AUTONOMY (highest priority — user repeated this) ===
+            {
+                "category": "stall",
+                "pattern": "should.*i|do.*you.*want|shall.*i|ask.*user|confirm.*with|wait.*for.*approval",
+                "correction": (
+                    "NEVER ASK — JUST ACT. NEXUS is autonomous. "
+                    "If something is good for the project, DO IT. "
+                    "Don't ask permission, don't suggest — execute. "
+                    "Log what you did for review later."
+                ),
+                "severity": "supreme",
+                "source": "user_feedback_v1",
+            },
+            {
+                "category": "stall",
+                "pattern": "you.*can.*install|pip.*install|you.*might.*want|consider.*installing",
+                "correction": (
+                    "DO NOT suggest installations to the user. "
+                    "Install dependencies yourself. If installation fails, "
+                    "find an alternative and deploy it. Never delegate to the user "
+                    "what the system can do itself."
+                ),
+                "severity": "supreme",
+                "source": "user_feedback_v1",
+            },
+            {
+                "category": "rule_violation",
+                "pattern": "repeated.*feedback|same.*issue|told.*before|already.*said",
+                "correction": (
+                    "If user repeats the same feedback, the system FAILED to learn. "
+                    "Auto-escalate to supreme severity. This issue must be addressed "
+                    "PERMANENTLY. Add it to seed lessons so it persists across all machines."
+                ),
+                "severity": "supreme",
+                "source": "user_feedback_v1",
             },
         ]
 
