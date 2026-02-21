@@ -1,23 +1,27 @@
 {
   "strategy": "rp_mom_dd",
-  "version": "2.0.0",
-  "phase": "142",
-  "title": "Risk-Parity + Momentum Tilt + DD Deleveraging (14-div Champion)",
+  "version": "3.0.0",
+  "phase": "145",
+  "title": "Sector-Balanced RP + Momentum Tilt + DD (14-div Champion v3)",
   "universe": [
     "CL=F", "NG=F", "GC=F", "SI=F", "HG=F", "ZW=F", "ZC=F", "ZS=F",
     "EURUSD=X", "GBPUSD=X", "AUDUSD=X", "JPY=X",
     "TLT", "IEF"
   ],
   "params": {
-    "vol_target": 0.12,
-    "base_pct": 0.80,
-    "tilt_pct": 0.20,
-    "signal_scale": 2.0,
-    "dd_threshold": 0.10,
-    "dd_max": 0.25,
-    "dd_min_alloc": 0.20,
+    "w_commodity": 0.50,
+    "w_fx": 0.20,
+    "w_bond": 0.30,
+    "vol_target": 0.08,
+    "base_pct": 0.90,
+    "tilt_pct": 0.10,
+    "signal_scale": 1.0,
+    "xsect_weight": 0.05,
+    "dd_threshold": 0.05,
+    "dd_max": 0.15,
+    "dd_min_alloc": 0.10,
     "warmup": 270,
-    "rebalance_freq": 21
+    "rebalance_freq": 42
   },
   "cost_model": {
     "slippage_bps": 5.0,
@@ -30,9 +34,9 @@
     "OOS2": ["2021-01-01", "2026-02-20"]
   },
   "results": {
-    "FULL":  {"sharpe": 0.482, "cagr": 0.060, "max_drawdown": 0.355},
-    "IS":    {"sharpe": 0.234, "cagr": 0.025, "max_drawdown": 0.354},
-    "OOS1":  {"sharpe": 0.824, "cagr": 0.080, "max_drawdown": 0.216},
-    "OOS2":  {"sharpe": 0.468, "cagr": 0.055, "max_drawdown": 0.296}
+    "FULL":  {"sharpe": 0.614, "cagr": 0.077, "max_drawdown": 0.385},
+    "IS":    {"sharpe": 0.195, "cagr": 0.017, "max_drawdown": 0.385},
+    "OOS1":  {"sharpe": 0.803, "cagr": 0.100, "max_drawdown": 0.243},
+    "OOS2":  {"sharpe": 0.749, "cagr": 0.091, "max_drawdown": 0.254}
   }
 }
