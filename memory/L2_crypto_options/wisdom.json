@@ -476,7 +476,8 @@
     "IV sizing parameter optimization (R28): 55 configs, best 0.3/2.0x (avg=2.677 Δ=+0.418). High-scale factor is primary driver (monotonic). Production-safe 0.5/1.7x (avg=2.593 Δ=+0.334). 25/75 thresholds and 180d lookback confirmed optimal.",
     "Ensemble weight re-optimization with IV sizing (R29): 15 weights × 2 sizing modes = 30 runs. Optimal shifts from 40/60 to 45/55 but difference is only +0.002. Surface is flat (35-50% VRP). 40/60 confirmed for stability. IV sizing improvement is uniform (+0.31-0.33) across all weights.",
     "IV-sized tail stress test (R30): ALL configs (0.5/1.5, 0.5/1.7, 0.3/2.0) have IDENTICAL MDD (-1.23%) and worst day (-1.05%) as unsized. VaR/CVaR improve. IV sizing is self-hedging: worst losses at LOW IV (sizing ≤1.0x). 5/5 PASS. Production approved.",
-    "ETH ensemble replication (R31): ETH ensemble avg=2.772 (better than BTC 2.259). IV sizing works on ETH (+0.182). Multi-asset 40/60 BTC/ETH gives avg=3.174 (+0.989 vs BTC-only). 50/50 gives best min=2.632. BTC-ETH returns inversely correlated by year — excellent diversification."
+    "ETH ensemble replication (R31): ETH ensemble avg=2.772 (better than BTC 2.259). IV sizing works on ETH (+0.182). Multi-asset 40/60 BTC/ETH gives avg=3.174 (+0.989 vs BTC-only). 50/50 gives best min=2.632. BTC-ETH returns inversely correlated by year — excellent diversification.",
+    "Rebalance frequency optimization (R32): freq=3 (every 3d) gives avg=2.714 (+0.121 vs freq=5 at 2.593). Faster rebalancing captures IV regime transitions. Asymmetric best: VRP=10/Skew=3 (2.649). Keep freq=5 for production until real data validates — more conservative."
   ],
 
   "failed_hypotheses": [
