@@ -1,0 +1,18 @@
+{
+  "research_id": "R67",
+  "title": "7-Day Straddle Optimization",
+  "best_config": {
+    "tte": 14,
+    "roll": 3,
+    "hedge_h": 1
+  },
+  "best_straddle_sharpe": 6.0906,
+  "best_blend": {
+    "strad_w": 0.3,
+    "bf_w": 0.7,
+    "sharpe": 8.3876
+  },
+  "r60_sharpe": 3.0135,
+  "delta_sharpe": 5.3742,
+  "verdict": "CONFIRMED \u2014 7d straddle sim significantly improves on R60"
+}
