@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 """
-R64: Production Signal Generator
-==================================
+R64: Production Signal Generator (R71 — updated to R69/R70 config)
+====================================================================
 
-Live signal generator using the validated R60 production config:
-  BTC VRP + Butterfly MR (50/50 or 70/30)
+Live signal generator using the validated R69 production config v2:
+  BTC VRP + Butterfly MR (10/90, z_exit=0.0)
+
+R69 upgrade (vs R60):
+  Sharpe: 3.76 vs 2.91 (+0.85)
+  MaxDD:  0.46% vs 1.59% (-71%)
+  Walk-forward: 100% positive (8/8)
+
+Sensitivity tiers (R70 — Sharpe ~scale-invariant):
+  Conservative: sens=2.5 → ~2% ann return, ~0.5% MaxDD
+  Moderate:     sens=5.0 → ~4% ann return, ~0.9% MaxDD
+  Aggressive:   sens=7.5 → ~6% ann return, ~1.4% MaxDD
 
 Fetches latest data from Deribit, computes signals, outputs:
   - Current VRP signal (short straddle recommendation)
@@ -33,16 +43,17 @@ BRIEF_MODE = "--brief" in sys.argv
 
 
 # ═══════════════════════════════════════════════════════════════
-# Configuration (R60 validated production config)
+# Configuration (R69/R70 validated production config v2)
 # ═══════════════════════════════════════════════════════════════
 
 CONFIG = {
-    "w_vrp": 0.50,           # VRP weight (alt: 0.70 for higher return)
-    "w_bf": 0.50,            # Butterfly MR weight (alt: 0.30)
+    "w_vrp": 0.10,           # VRP weight (R69: 10% — down from R60's 50%)
+    "w_bf": 0.90,            # Butterfly MR weight (R69: 90%)
     "vrp_leverage": 2.0,     # VRP leverage
     "bf_lookback": 120,      # Butterfly z-score lookback (days)
     "bf_z_entry": 1.5,       # Butterfly entry threshold
-    "bf_z_exit": 0.3,        # Butterfly exit threshold
+    "bf_z_exit": 0.0,        # Butterfly exit: 0.0 = hold until reversed (R68 discovery)
+    "bf_sensitivity": 2.5,   # BF PnL sensitivity (R70 tiers: 2.5/5.0/7.5)
     "asset": "BTC",          # BTC ONLY
 }
 
@@ -202,18 +213,18 @@ def compute_bf_signal(surface_history: Dict[str, dict], dates: List[str],
 
     z = (current_val - mean) / std
 
-    # Position logic
+    # Position logic (R68: z_exit=0.0 means hold until reversed — never go flat)
     if z > z_entry:
         position = -1.0
         signal = "SHORT_BUTTERFLY"
     elif z < -z_entry:
         position = 1.0
         signal = "LONG_BUTTERFLY"
-    elif abs(z) < z_exit:
+    elif z_exit > 0 and abs(z) < z_exit:
         position = 0.0
         signal = "FLAT"
     else:
-        position = None  # No change from previous
+        position = None  # No change from previous — hold until reversal
         signal = "HOLD"
 
     return {
@@ -277,7 +288,7 @@ def compute_backtest_equity(dvol_history, price_history, surface_history):
         iv = dvol_history.get(d)
         f_now, f_prev = bf_vals.get(d), bf_vals.get(dp)
         if f_now is not None and f_prev is not None and iv is not None and position != 0:
-            bf_pnl[d] = position * (f_now - f_prev) * iv * math.sqrt(dt) * 2.5
+            bf_pnl[d] = position * (f_now - f_prev) * iv * math.sqrt(dt) * CONFIG["bf_sensitivity"]
         else:
             bf_pnl[d] = 0.0
 
@@ -320,8 +331,9 @@ def main():
 
     if not BRIEF_MODE:
         print("=" * 70)
-        print("R64: PRODUCTION SIGNAL GENERATOR")
+        print("R64: PRODUCTION SIGNAL GENERATOR (R69/R70 config v2)")
         print(f"  {now.strftime('%Y-%m-%d %H:%M UTC')}")
+        print(f"  Config: {int(CONFIG['w_vrp']*100)}/{int(CONFIG['w_bf']*100)} VRP/BF | z_exit={CONFIG['bf_z_exit']} | sens={CONFIG['bf_sensitivity']}")
         print("=" * 70)
 
     # ─── Fetch live data ────────────────────────────────────────
