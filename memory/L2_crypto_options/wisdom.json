@@ -470,7 +470,8 @@
     "Ensemble survives all tail events: profitable during 2022 bear, LUNA crash, FTX collapse",
     "VRP-Skew correlation DECREASES during stress (0.01 vs 0.04) — ideal diversification",
     "Ensemble max drawdown -1.51% across 5 years — zero days with >1% loss",
-    "IV-percentile position sizing: step function (0.5x/1.0x/1.5x) with 180d lookback improves VRP avg +0.258 AND min +0.343 — sizing ≠ filtering"
+    "IV-percentile position sizing: step function (0.5x/1.0x/1.5x) with 180d lookback improves VRP avg +0.258 AND min +0.343 — sizing ≠ filtering",
+    "Equity-curve overlays (R26): 0/24 configs improve carry. DD threshold, MA envelope, time-HWM, graduated DD — ALL hurt. Carry earns most during recovery (high IV post-drawdown). Confirms: always fully invested."
   ],
 
   "failed_hypotheses": [
@@ -486,15 +487,16 @@
     "SOL universe expansion — API data unavailable",
     "VRP regime filters (term structure, skew z-score, IV level) — ALL 22 configs worse than unfiltered baseline",
     "Multi-expiry VRP — 75+ configs, best improvement +0.051 Sharpe (marginal, not worth complexity on synthetic data)",
-    "Tail-hedged VRP (OTM puts) — 23 configs, ALL worse. Put premium cost vastly exceeds payoff when VRP MDD is only -2.6%"
+    "Tail-hedged VRP (OTM puts) — 23 configs, ALL worse. Put premium cost vastly exceeds payoff when VRP MDD is only -2.6%",
+    "Equity-curve position scaling (R26) — 24 configs across 4 approaches (DD threshold, MA envelope, time-HWM, graduated DD), ALL 0/24 improve. Carry trades must be always fully invested. Portfolio-state overlays destroy carry same as market-signal overlays."
   ],
 
   "next_research": [
     "Real Deribit data validation when 60 days collected (~April 2026)",
     "IV-percentile sizing with REAL data: R25 promising on synthetic (+0.258), needs real IV dynamics validation",
     "Multi-expiry VRP with REAL data: gross Sharpe scales with 1/sqrt(DTE), revisit when real term structure available",
-    "IV-percentile sizing on ensemble (VRP+Skew combined): test if sizing the whole ensemble by IV percentile improves further",
     "Expand universe: SOL, DOGE options when API data becomes available",
-    "Intraday vol pattern exploitation: hourly vol seasonality (Asia/EU/US sessions) — needs real data"
+    "Intraday vol pattern exploitation: hourly vol seasonality (Asia/EU/US sessions) — needs real data",
+    "VRP carry Z-score sizing: scale position by VRP spread magnitude (direct carry richness proxy, different from IV-percentile proxy)"
   ]
 }
