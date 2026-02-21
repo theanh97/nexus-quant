@@ -345,7 +345,7 @@
       "HIGH": 0.5
     }
   },
-  "version": "v2.42.19",
+  "version": "v2.49.0",
   "v1_per_regime_weights": {
     "LOW": {
       "w_carry": 0.1,
@@ -362,5 +362,6 @@
       "w_mom": 0.5,
       "w_mean_reversion": 0.25
     }
-  }
+  },
+  "obj": 4.3173
 }
