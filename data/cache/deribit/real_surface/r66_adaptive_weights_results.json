@@ -1,0 +1,36 @@
+{
+  "research_id": "R66",
+  "title": "Adaptive VRP/BF Weighting",
+  "baseline_sharpe": 2.9066,
+  "baseline_maxdd": 0.015913,
+  "best_gate": {
+    "lb": 60,
+    "thr": 1.0,
+    "low_w": 0.2,
+    "sharpe": 2.897
+  },
+  "best_sign": {
+    "lb": 120,
+    "sharpe": 2.8241,
+    "pct_on": 90.2
+  },
+  "best_iv_cond": {
+    "iv_lb": 180,
+    "high_w": 0.6,
+    "low_w": 0.3,
+    "sharpe": 2.3662
+  },
+  "best_continuous": {
+    "lb": 120,
+    "base": 0.4,
+    "slope": 0.1,
+    "min_w": 0.0,
+    "sharpe": 2.7486
+  },
+  "oracle_sharpe": 3.5804,
+  "best_adaptive_method": "Static 50/50 (R60)",
+  "best_adaptive_sharpe": 2.9066,
+  "delta_vs_r60": 0.0,
+  "pct_to_oracle": 0.0,
+  "verdict": "NEGATIVE \u2014 adaptive weighting adds no value over static"
+}
