@@ -1,9 +1,9 @@
 {
   "_project": "crypto_options",
-  "_version": "9.0.0",
+  "_version": "10.0.0",
   "_updated": "2026-02-21",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). Exhaustive R&D: 5000+ configs across 11 strategy types + 3 dynamic allocation + hourly frequency analysis + regime filter research. Delta hedging costs quantified. Tail events stress-tested. Cross-project portfolio integration complete. DeribitExecutor fully implemented.",
-  "_status": "PRODUCTION-READY: Mixed-freq ensemble Sharpe 2.723. Delta hedge drag -6.6% (optimal config). Tail stress: 3/3 PASS. Cross-project portfolio (25% perps + 75% options) Sharpe 3.103. Regime filters rejected (R21).",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). Exhaustive R&D: 5000+ configs across 11 strategy types + 3 dynamic allocation + hourly frequency analysis + regime filter + IV sizing research. Delta hedging costs quantified. Tail events stress-tested. Cross-project portfolio integration complete. DeribitExecutor fully implemented. Paper state tracker active.",
+  "_status": "PRODUCTION-READY: Mixed-freq ensemble Sharpe 2.723. Delta hedge drag -6.6% (optimal config). Tail stress: 3/3 PASS. Cross-project portfolio (25% perps + 75% options) Sharpe 3.103. IV-percentile sizing promising (+0.258, R25). 11/11 production tests PASS.",
 
   "ENSEMBLE_CHAMPION": {
     "type": "mixed_frequency",
@@ -242,6 +242,20 @@
       "detail": "Tested 5 put deltas (5d-25d) × 4 hedge ratios (25%-100%) + 3 iron condor configs = 23 configs. ALL worse than naked VRP. Best: 5d put 100% → Sharpe -0.026 (from 2.604). Even 25% hedge ratio with cheapest put: Sharpe 1.109. Iron condors even worse (-5 to -15 Sharpe). On synthetic data, daily put theta decay is relentless while extreme crashes are too rare for payoff.",
       "status": "REJECTED on synthetic data. Revisit with real data (real crashes could change calculus).",
       "key_insight": "VRP tail risk is already well-managed by delta-neutral positioning + weekly rebalancing + z-score exit. Adding explicit tail hedges is not cost-effective when MDD < 3%."
+    },
+    "R25_iv_percentile_sizing": {
+      "rule": "Scale VRP position size by IV percentile rank. Step function with 180d lookback: <25th→0.5x, 25-75th→1.0x, >75th→1.5x gives +0.258 avg Sharpe AND +0.343 min Sharpe improvement.",
+      "detail": "Tested 5 sizing models × 5 lookbacks = 25 configs. 15/25 better than baseline (vs 0/22 for regime filters R21). Step model dominates (avg Δ=+0.193). Inverse sizing (contrarian: more when IV low) is worst (avg Δ=-0.409) — confirms directional causation. Longer lookbacks (90-180d) consistently better than short (30-60d). Best: step_lb180 avg=2.210 min=1.546 (baseline avg=1.952 min=1.203). Every single year improved.",
+      "status": "PROMISING on synthetic data — needs real data validation before production",
+      "why_different_from_R21": "R21 (regime filtering) removes you from market → lost carry time. IV sizing keeps you ALWAYS in market but scales proportionally to carry richness. No time-out-of-market penalty.",
+      "key_insight": "Sizing UP when IV is high is correct because IV directly determines VRP magnitude: PnL = 0.5 * (IV² - RV²) * dt. Higher IV = quadratically more theta income. Step function is best because it avoids excessive exposure in extreme tails.",
+      "configs": {
+        "step_lb180": {"avg": 2.210, "min": 1.546, "delta": "+0.258"},
+        "step_lb90": {"avg": 2.197, "min": 1.537, "delta": "+0.245"},
+        "step_lb120": {"avg": 2.127, "min": 1.502, "delta": "+0.175"},
+        "aggressive_lb120": {"avg": 2.102, "min": 1.413, "delta": "+0.150"},
+        "inverse_lb30": {"avg": 1.392, "min": 0.759, "delta": "-0.560"}
+      }
     }
   },
 
@@ -263,7 +277,8 @@
     "vrp_regime_filter_22_configs": "ALL WORSE than baseline (avg=2.556). Term structure (5 thresholds), skew z-score (5 configs), IV level (4 ranges), combined (4 combos). Best single filter: term_-0.05 (Δ=-0.060). Worst combined: all_three (Δ=-1.079). Confirms R7+R21: overlays/filters destroy carry.",
     "correlation_estimator_7_tests": "ALL PASS. Convergence, regime shift, uncorrelated, perfect correlation, crash decorrelation, spike detection, persistence.",
     "multi_expiry_vrp_75_configs": "Best: 14d:30%+30d:70% (avg=2.115, Δ=+0.051 vs 30d baseline 2.064). Marginal improvement. 4 single tenors + 7 ladders + 54 2-tenor + ~12 3-tenor combos. Gross Sharpe: 7d=2.934, 14d=2.829, 30d=2.604, 60d=2.289 (zero-cost). Rolling costs dominate short-DTE.",
-    "tail_hedged_vrp_23_configs": "ALL WORSE than naked VRP. 5 put deltas (5d-25d) × 4 hedge ratios + 3 iron condors. Baseline avg=2.604, best hedged=-0.026. Put theta cost vastly exceeds payoff on synthetic data."
+    "tail_hedged_vrp_23_configs": "ALL WORSE than naked VRP. 5 put deltas (5d-25d) × 4 hedge ratios + 3 iron condors. Baseline avg=2.604, best hedged=-0.026. Put theta cost vastly exceeds payoff on synthetic data.",
+    "iv_percentile_sizing_25_configs": "15/25 BETTER than baseline. Step function dominates (avg Δ=+0.193). Best: step_lb180 avg=2.210 (Δ=+0.258) with min=1.546 (+0.343). Inverse sizing worst (Δ=-0.409). Longer lookbacks (90-180d) > shorter (30-60d). Key: sizing ≠ filtering. Always in market, just scale with carry richness."
   },
 
   "NEXUS_PORTFOLIO_INTEGRATION": {
@@ -435,7 +450,8 @@
     "Funding cost model must be BIDIRECTIONAL — unidirectional model overestimates costs by 10x",
     "Ensemble survives all tail events: profitable during 2022 bear, LUNA crash, FTX collapse",
     "VRP-Skew correlation DECREASES during stress (0.01 vs 0.04) — ideal diversification",
-    "Ensemble max drawdown -1.51% across 5 years — zero days with >1% loss"
+    "Ensemble max drawdown -1.51% across 5 years — zero days with >1% loss",
+    "IV-percentile position sizing: step function (0.5x/1.0x/1.5x) with 180d lookback improves VRP avg +0.258 AND min +0.343 — sizing ≠ filtering"
   ],
 
   "failed_hypotheses": [
@@ -456,10 +472,10 @@
 
   "next_research": [
     "Real Deribit data validation when 60 days collected (~April 2026)",
+    "IV-percentile sizing with REAL data: R25 promising on synthetic (+0.258), needs real IV dynamics validation",
     "Multi-expiry VRP with REAL data: gross Sharpe scales with 1/sqrt(DTE), revisit when real term structure available",
-    "Implement optimal delta hedge in production: 25-30% tolerance, maker orders, bidirectional funding tracking",
+    "IV-percentile sizing on ensemble (VRP+Skew combined): test if sizing the whole ensemble by IV percentile improves further",
     "Expand universe: SOL, DOGE options when API data becomes available",
-    "Intraday vol pattern exploitation: hourly vol seasonality (Asia/EU/US sessions)",
-    "VRP position sizing by IV percentile — higher IV = larger position (not timing, just sizing)"
+    "Intraday vol pattern exploitation: hourly vol seasonality (Asia/EU/US sessions) — needs real data"
   ]
 }
