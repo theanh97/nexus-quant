@@ -43,16 +43,19 @@
     "class": "VariancePremiumStrategy",
     "params": {
       "base_leverage": 1.5,
-      "exit_z_threshold": -2.0,
-      "_exit_z_note": "Exit to flat only on extreme vol spikes (2-sigma below mean VRP). z=-1.5 causes overtrading.",
-      "vrp_lookback": 60,
+      "exit_z_threshold": -3.0,
+      "_exit_z_note": "Phase sweep: exit_z=-3.0 >> -2.0 >> -1.5. Pure carry = never exit. Overlays destroy Sharpe.",
+      "vrp_lookback": 30,
+      "_lookback_note": "Shorter lookback (30 vs 60) marginally better. Mostly irrelevant since exit never triggers.",
       "rebalance_freq": 5,
       "_rebalance_note": "Weekly rebalance for 1d bars. Daily rebalancing (freq=1) destroys Sharpe via costs.",
       "min_bars": 30
     },
-    "_validated": "2026-02-20",
-    "_wf_avg_sharpe": 1.520,
-    "_wf_min_sharpe": 1.273
+    "_validated": "2026-02-21",
+    "_wf_avg_sharpe": 2.088,
+    "_wf_min_sharpe": 1.378,
+    "_previous": {"exit_z": -2.0, "vrp_lookback": 60, "avg_sharpe": 1.520, "min_sharpe": 1.273},
+    "_sweep_insight": "320-combo sweep: exit_z=-3.0 always wins. VRP is pure carry — timing exits reduces carry income. Overlays (z-scaling, IV pct, vol regime) ALL destroy Sharpe."
   },
 
   "risk": {

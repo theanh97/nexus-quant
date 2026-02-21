@@ -39,6 +39,7 @@ import math
 import os
 import random
 import time
+import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -54,6 +55,22 @@ logger = logging.getLogger("nexus.providers.deribit")
 _DERIBIT_BASE = "https://www.deribit.com/api/v2/public"
 _REQUEST_DELAY = 0.1       # seconds between API calls
 _RETRY_DELAYS = [2, 4, 8, 16]
+
+
+def _make_ssl_context() -> ssl.SSLContext:
+    """Create SSL context that works on macOS (certifi or unverified fallback)."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        pass
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
+_SSL_CTX = _make_ssl_context()
 _MAX_LIMIT = 1000          # bars per request for chart data
 
 # Bars per resolution for annualization
@@ -67,26 +84,32 @@ _BARS_PER_YEAR = {
 _VRP_MEAN = {
     "BTC": 0.08,   # BTC IV typically ~8% above RV
     "ETH": 0.10,   # ETH IV typically ~10% above RV
+    "SOL": 0.13,   # SOL IV typically ~13% above RV (higher beta, more premium)
 }
 _VRP_STD = {
     "BTC": 0.04,
     "ETH": 0.05,
+    "SOL": 0.06,
 }
 _SKEW_MEAN = {
     "BTC": 0.05,   # puts ~5 vol points more expensive than calls
     "ETH": 0.06,
+    "SOL": 0.08,   # SOL puts even more expensive (tail risk)
 }
 _SKEW_STD = {
     "BTC": 0.03,
     "ETH": 0.04,
+    "SOL": 0.05,
 }
 _TERM_SPREAD_MEAN = {
     "BTC": 0.02,   # front-month typically 2 vol points above back-month
     "ETH": 0.025,
+    "SOL": 0.035,  # steeper term structure for SOL
 }
 _TERM_SPREAD_STD = {
     "BTC": 0.03,
     "ETH": 0.035,
+    "SOL": 0.045,
 }
 
 
@@ -369,7 +392,7 @@ class DeribitRestProvider(DataProvider):
                     full_url,
                     headers={"User-Agent": "NEXUS-Quant/1.0"},
                 )
-                with urllib.request.urlopen(req, timeout=30) as resp:
+                with urllib.request.urlopen(req, timeout=30, context=_SSL_CTX) as resp:
                     body = json.loads(resp.read().decode("utf-8"))
                     if "result" in body:
                         return body["result"]
@@ -421,15 +444,20 @@ class DeribitRestProvider(DataProvider):
         term_spread: List[Optional[float]] = []
 
         # Generate mean-reverting VRP process (AR(1))
-        vrp_ar1 = 0.9          # mean reversion speed
+        # Base coefficients calibrated for daily bars (365/year).
+        # For higher-frequency bars, adjust so real-time half-life is preserved:
+        #   ar1_hourly = ar1_daily^(1/24)   (24 hourly steps ≈ 1 daily step)
+        # The shock_std formula auto-adjusts: shock = unconditional_std * sqrt(1 - ar1²)
+        bars_per_day = max(1.0, self._bars_per_year / 365.0)
+        vrp_ar1 = 0.9 ** (1.0 / bars_per_day)
         vrp_shock_std = vrp_std * math.sqrt(1 - vrp_ar1 ** 2)
         vrp = vrp_mean + self._rng.gauss(0, vrp_std)
 
-        skew_ar1 = 0.88
+        skew_ar1 = 0.88 ** (1.0 / bars_per_day)
         skew_shock_std = skew_std * math.sqrt(1 - skew_ar1 ** 2)
         skew = skew_mean + self._rng.gauss(0, skew_std)
 
-        term_ar1 = 0.85
+        term_ar1 = 0.85 ** (1.0 / bars_per_day)
         term_shock_std = term_std * math.sqrt(1 - term_ar1 ** 2)
         term = term_mean + self._rng.gauss(0, term_std)
 

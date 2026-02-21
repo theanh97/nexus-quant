@@ -1,12 +1,13 @@
 {
-  "_comment": "Crypto Options — 25-Delta Skew Mean-Reversion Strategy Backtest",
-  "_version": "1.0.0",
+  "_comment": "Crypto Options — 25-Delta Skew Mean-Reversion v2 (Vega P&L Model)",
+  "_version": "2.0.0",
   "_created": "2026-02-20",
+  "_updated": "2026-02-21",
   "_project": "crypto_options",
-  "_strategy": "crypto_skew_mr",
-  "_description": "Fade extreme put/call skew: sell put protection when skew spikes, sell call premium when skew collapses.",
+  "_strategy": "crypto_skew_v2",
+  "_description": "Fade extreme put/call skew via risk reversal. P&L from vega exposure to skew changes (not directional).",
 
-  "run_name": "crypto_options_skew",
+  "run_name": "crypto_options_skew_v2",
   "seed": 42,
 
   "data": {
@@ -37,15 +38,29 @@
   },
 
   "strategy": {
-    "name": "crypto_skew_mr",
+    "name": "crypto_skew_v2",
+    "class": "SkewTradeV2Strategy",
     "params": {
-      "skew_lookback": 30,
-      "z_threshold": 1.5,
-      "target_gross_leverage": 1.2,
-      "rebalance_freq": 1,
+      "skew_lookback": 60,
+      "z_entry": 2.0,
+      "z_exit": 0.0,
+      "target_leverage": 1.0,
+      "rebalance_freq": 5,
       "min_bars": 60,
-      "use_butterfly": false
-    }
+      "use_vrp_filter": false,
+      "_z_entry_note": "z=2.0 gives best avg Sharpe across all sensitivity levels",
+      "_z_exit_note": "z_exit=0.0 means hold until full mean reversion (no early exit)"
+    },
+    "engine": {
+      "skew_sensitivity_mult": 2.5,
+      "_sensitivity_note": "Base formula iv*sqrt(dt)≈0.036 underestimates true risk reversal vega by ~2.5x. Real calibration: 25d RR vega ≈ 2*S*sqrt(T)*N'(d1)/S ≈ 0.09 per 1% skew."
+    },
+    "_validated": "2026-02-21",
+    "_wf_avg_sharpe": 1.744,
+    "_wf_min_sharpe": 0.949,
+    "_conservative_avg": 1.300,
+    "_conservative_min": 0.406,
+    "_v1_failure": "v1 used delta-equivalent proxy (directional P&L). avg=-2.892. Fixed by: (1) vega-based P&L model, (2) correct sign convention, (3) proper sensitivity calibration."
   },
 
   "risk": {

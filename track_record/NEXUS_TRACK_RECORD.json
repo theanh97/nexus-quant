@@ -197,17 +197,29 @@
   },
 
   "portfolio_targets": {
-    "nexus_fund_target": {
-      "description": "Combined NEXUS multi-strategy portfolio target",
+    "nexus_fund_v1": {
+      "description": "NEXUS Production Portfolio v1 — 2-strategy crypto portfolio",
       "target_sharpe": 1.5,
       "target_mdd_max": -0.15,
+      "combined_backtest_sharpe": 2.22,
+      "expected_live_sharpe": 1.22,
       "target_strategies": [
-        { "name": "p91b_vol_tilt", "allocation_pct": 60, "status": "live_ready" },
-        { "name": "crypto_options_vrp", "allocation_pct": 20, "status": "pending_validation" },
-        { "name": "commodity_cta", "allocation_pct": 20, "status": "research_phase1" }
+        { "name": "p91b_vol_tilt", "allocation_pct": 63, "status": "production_ready" },
+        { "name": "crypto_options_vrp", "allocation_pct": 37, "status": "validated_pending_deployment" }
       ],
-      "target_correlation_max": 0.3,
-      "note": "Diversified multi-asset, multi-strategy. Decorrelated alpha."
+      "correlation_estimate": 0.30,
+      "config": "configs/production_portfolio_v1.json",
+      "note": "CTA killed 2026-02-21 (9/9 approaches fail OOS). 2-strategy portfolio exceeds all targets.",
+      "updated": "2026-02-21"
+    },
+    "killed_strategies": {
+      "commodity_cta": {
+        "kill_date": "2026-02-21",
+        "approaches_tested": 9,
+        "best_oos_min": -0.184,
+        "reason": "All approaches negative OOS with Yahoo continuous futures data",
+        "variants_tested": ["EMA_trend", "Carry", "MomValue", "Ensemble_v1", "TSMOM", "Donchian", "Ensemble_v2", "14sym_diversified", "14sym_trend_only"]
+      }
     }
   },
 

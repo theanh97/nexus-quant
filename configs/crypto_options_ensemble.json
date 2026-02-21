@@ -1,12 +1,13 @@
 {
-  "_comment": "Crypto Options — Ensemble of All 3 Vol Strategies",
-  "_version": "1.0.0",
+  "_comment": "Crypto Options — VRP + Skew MR v2 Ensemble (Validated 2026-02-21)",
+  "_version": "2.0.0",
   "_created": "2026-02-20",
+  "_updated": "2026-02-21",
   "_project": "crypto_options",
-  "_strategy": "ensemble",
-  "_description": "Equal-weight ensemble of VRP + Skew MR + Term Structure. Target: Sharpe > 1.0, corr < 0.3 vs perps.",
+  "_strategy": "ensemble_vrp_skew",
+  "_description": "2-strategy ensemble: VRP (carry) + Skew MR v2 (mean-reversion). Near-zero correlation (r=0.014) provides true diversification.",
 
-  "run_name": "crypto_options_ensemble",
+  "run_name": "crypto_options_ensemble_v2",
   "seed": 42,
 
   "data": {
@@ -39,50 +40,54 @@
   "strategies": [
     {
       "name": "crypto_vrp",
-      "weight": 0.50,
-      "params": {
-        "vrp_threshold": 0.03,
-        "vrp_lookback": 60,
-        "target_gross_leverage": 1.0,
-        "rebalance_freq": 1,
-        "min_bars": 30,
-        "vol_scale": true
-      }
-    },
-    {
-      "name": "crypto_skew_mr",
+      "class": "VariancePremiumStrategy",
       "weight": 0.30,
       "params": {
-        "skew_lookback": 30,
-        "z_threshold": 1.5,
-        "target_gross_leverage": 1.0,
-        "rebalance_freq": 1,
-        "min_bars": 60,
-        "use_butterfly": false
-      }
+        "base_leverage": 1.5,
+        "exit_z_threshold": -3.0,
+        "vrp_lookback": 30,
+        "rebalance_freq": 5,
+        "min_bars": 30
+      },
+      "_standalone_sharpe": 2.088,
+      "_note": "Pure carry: always short vol, never exit. 320-combo sweep confirmed exit_z=-3.0 optimal."
     },
     {
-      "name": "crypto_term_structure",
-      "weight": 0.20,
+      "name": "crypto_skew_v2",
+      "class": "SkewTradeV2Strategy",
+      "weight": 0.70,
       "params": {
-        "term_lookback": 60,
-        "z_threshold": 1.2,
-        "target_gross_leverage": 1.0,
-        "rebalance_freq": 7,
-        "_rebalance_note": "rebalance_freq=7 means weekly for 1d bars",
-        "min_bars": 90,
-        "use_vrp_confirm": true
-      }
+        "skew_lookback": 60,
+        "z_entry": 2.0,
+        "z_exit": 0.0,
+        "target_leverage": 1.0,
+        "rebalance_freq": 5,
+        "min_bars": 60,
+        "use_vrp_filter": false
+      },
+      "engine": {
+        "skew_sensitivity_mult": 2.5
+      },
+      "_standalone_sharpe": 1.744,
+      "_note": "Vega-based skew MR. Fixed from v1 (Sharpe -2.9) via: (1) vega P&L model, (2) sign fix, (3) sensitivity calibration."
     }
   ],
 
-  "strategy": {
-    "name": "ensemble",
-    "params": {
-      "target_gross_leverage": 1.5,
-      "rebalance_freq": 1,
-      "min_bars": 90
-    }
+  "ensemble": {
+    "weights": {"crypto_vrp": 0.30, "crypto_skew_v2": 0.70},
+    "_weight_note": "VRP=30% Skew=70% maximizes Sharpe due to near-zero correlation (r=0.014). All weight combos pass validation.",
+    "_correlation": 0.014,
+    "_wf_avg_sharpe": 2.615,
+    "_wf_min_sharpe": 2.137,
+    "_conservative_avg": 2.275,
+    "_conservative_min": 1.853,
+    "_yearly": {"2021": 2.49, "2022": 2.72, "2023": 3.08, "2024": 2.66, "2025": 2.14}
+  },
+
+  "term_structure": {
+    "_status": "NOT_VALIDATED",
+    "_best_sharpe": 0.465,
+    "_note": "Term structure signal marginal (Sharpe < 0.5). Does not improve ensemble. Excluded."
   },
 
   "risk": {

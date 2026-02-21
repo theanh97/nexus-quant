@@ -5,39 +5,47 @@
 |-------|--------|-----|-------|
 | 91b | V1+I460bw168k4+I415bw216k4+F144 | ~2.01 | PROD BASE |
 | 200 | FTS short=16h long=72h | 3.0084 | First >3.0 |
-| 232 | Per-regime DISP | 3.7033 | MID AMPLIFY 1.5× |
-| **238** | Per-regime FTS pct_win | **3.7924** | **v2.42.0** |
-| **244** | Per-regime V1 weights (NumPy) | **3.9048** | **v2.43.0** |
-| **245** | Regime weight reopt8 (NumPy VEC) | **4.0145** | **v2.44.0 LOYO 4/5** |
+| 245 | Regime weight reopt8 (NumPy VEC) | 4.0145 | v2.44.0 LOYO 4/5 |
+| 271 | Regime weight reopt12 | 4.5951 | v2.49.1 LOYO 5/5 |
+| 279 | FTS resweep (rs→0.02 LOW/MID) | 4.2403* | v2.49.2 LOYO 3/5 |
+| **280** | **Per-regime V1 weights** | **4.7319*** | **v2.49.4 LOYO 5/5** |
+| **281** | **Vol+Disp overlay resweep** | **4.7726*** | **v2.49.4 LOYO 3/5** |
+| **282** | **Regime weight reopt14 (v1_HIGH fix)** | **4.8089*** | **v2.49.5 LOYO 5/5** |
+| **283** | **Breadth boundary (p_high 0.68→0.62)** | **4.8279*** | **v2.49.6 LOYO 4/5** |
+| **284** | **Regime weight reopt15** | **4.8412*** | **v2.49.7 LOYO 4/5** |
+| **285** | **FTS resweep (HIGH rs→0.02)** | **4.9181*** | **v2.49.8 LOYO 3/5** |
+| **286** | **Vol+Disp resweep** | **5.0336*** | **v2.49.9 LOYO 4/5 FIRST >5.0** |
+| **287** | **V1 weight resweep** | **5.3345*** | **v2.49.12 LOYO 4/5 D=+0.2168** |
+*OBJ is cumulative stored value (baseline + deltas)
 
-## Current Production State — TWO TRACKS
+## Current Production State — v2.49.12, OBJ=5.3345
 
-### NumPy Track: v2.44.0, OBJ=4.0145
-Regime weights (P245):
-- LOW: v1=0.35, i460=0.10, i415=0.15, f168=0.40
-- MID: v1=0.15, i460=0.00, i415=0.20, f168=0.65 *(overwritten by Engine P257)*
-- HIGH: v1=0.30, i460=0.70, i415=0.00, f168=0.00 *(overwritten by Engine P257)*
+### Regime Weights (P284):
+- LOW: v1=0.30, i460=0.05, i415=0.20, f168=0.45
+- MID: v1=0.05, i460=0.20, i415=0.05, f168=0.70
+- HIGH: v1=0.40, i460=0.60, i415=0.00, f168=0.00
+- p_low=0.30, p_high=0.62
 
-**Per-regime V1 weights (P244):**
-- LOW: wc=0.10, wm=0.45, wmr=0.45 | MID/HIGH: wc=0.25, wm=0.50, wmr=0.25
+### Per-regime V1 Weights (P287 — +0.22):
+- LOW: wc=0.15, wm=0.45, wmr=0.40 (more carry, less mom)
+- MID: wc=0.45, wm=0.45, wmr=0.10 (equal carry/mom blend)
+- HIGH: wc=0.50, wm=0.40, wmr=0.10 (MR enters, less pure carry)
+Key insight: After FTS reduce disabled, carry has more room to operate
 
-**Per-regime overlays (P229-P238):**
-- FTS LOW: rs=0.5/bs=3.0/rt=0.8/bt=0.3/pct_win=240h
-- FTS MID: rs=0.2/bs=3.0/rt=0.65/bt=0.25/pct_win=288h
-- FTS HIGH: rs=0.4/bs=2.0/rt=0.55/bt=0.25/pct_win=400h
-- VOL LOW=0.40/MID=0.15/HIGH=0.10 | DISP LOW=0.5/MID=1.5(AMP)/HIGH=0.5
+### FTS Overlay (P285):
+- LOW: rs=0.02 rt=0.80 bs=3.50 bt=0.33 pw=240
+- MID: rs=0.02 rt=0.60 bs=1.50 bt=0.22 pw=288
+- HIGH: rs=0.02 rt=0.55 bs=2.50 bt=0.22 pw=400
+Key: rs=0.02 ALL regimes (FTS reduce fully disabled)
 
-### Engine Track: v2.42.13, OBJ=2.9980
-Current config regime weights (v2.42.13):
-- LOW: v1=0.35, i460=0.10, i415=0.15, f168=0.40 (sum=1.0 ✅)
-- MID: v1=0.15, i460=0.00, i415=0.00, f168=0.85 (sum=1.0 ✅ — P257b constrained fix)
-- HIGH: v1=0.20, i460=0.18, i415=0.27, f168=0.35 (sum=1.0 ✅ — P257)
-- V1: wc=0.15, wm=0.55, wmr=0.30, mom_lb=312h (P255/P256)
-- p_high: 0.68 (P260 breadth threshold)
-- Vol scales: LOW=0.40, MID=0.50, HIGH=0.35 (P260 retune)
+### Vol Overlay (P281):
+- LOW: thr=0.53, scale=0.40 | MID: thr=0.50, scale=0.05 | HIGH: thr=0.58, scale=0.05
+### Disp Overlay (P281):
+- LOW: thr=0.40, scale=0.70 | MID: thr=0.70, scale=2.0 | HIGH: thr=0.30, scale=0.50
 
-## Running Processes
-- **P246 NumPy** (PID 83413): Per-regime V1 lookback sweep (170+/410 precompute)
+## Contamination History (P272-P278)
+Phases 272-278 REVERTED — parallel optimization runs overwrote shared config.
+Restored to P271 clean baseline at commit d4116ee. P279-P281 are clean sequential runs.
 
 ## API Notes (BacktestEngine)
 - `BacktestConfig(costs=cost_model)` — ONLY costs param
@@ -104,11 +112,17 @@ P260-VOL: per-regime vol scale VALIDATED LOYO 3/5 Δ=+0.1942 v2.42.13
 - **LOW regime**: v1=0.35, f168=0.40, balanced idio — both tracks agree
 - **V1 per-regime**: LOW is more mean-reversion heavy (wmr=0.45), MID/HIGH more momentum
 
-## Next Phase Candidates
-After P246 finishes:
-- If validated: P260 regime weight reopt with new V1 lookbacks (NumPy vectorized)
-- If not: P260 per-regime FTS retune (NumPy) with new ensemble weights from P245
-- Engine track: VOL retune with new v2.42.10 weights | LOW regime fine-tune
+## Next Phase Candidates (after P287)
+- P288: Regime weight reopt (after V1 internal weights changed)
+- P289: Vol/Disp overlay retune (after V1 + regime weight changes)
+- P290: FTS overlay retune
+- P291: Breadth boundary retune
+- Engine track validation: run P282-287 params through full Engine backtest
+- Delta trajectory: P282=+0.036, P283=+0.019, P284=+0.013, P285=+0.077, P286=+0.115, P287=+0.217
+
+## Bug Found & Fixed (P282)
+- P271 regime weight reopt had v1_HIGH mapped to v1_MID (line 247: `vk = "v1_LOW" if rname == "LOW" else "v1_MID"`)
+- Fixed in P282: each regime now uses its own V1 returns via V1_KEY dict
 
 ## Bug History (avoid repeating)
 - YEAR_RANGES: must use integer keys, ISO string values (not epoch)

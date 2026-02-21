@@ -66,11 +66,13 @@ class OptionsBacktestEngine:
         bars_per_year: int = 365,
         use_options_pnl: bool = True,
         iv_smooth_bars: int = 3,
+        skew_sensitivity_mult: float = 1.0,
     ) -> None:
         self.costs = costs
         self.bars_per_year = bars_per_year
         self.use_options_pnl = use_options_pnl
         self.iv_smooth_bars = iv_smooth_bars
+        self.skew_sensitivity_mult = skew_sensitivity_mult
 
         # Build base config for the standard engine fallback
         self._base_cfg = BacktestConfig(costs=costs)
@@ -81,13 +83,29 @@ class OptionsBacktestEngine:
         """Run options backtest.
 
         VRP strategy: gamma/theta model.
+        Skew strategy: vega/skew-change model.
         All other strategies: standard price PnL (delta proxy).
         """
         strategy_name = (strategy.name or "").lower()
         is_vrp = "vrp" in strategy_name or "variance" in strategy_name
+        is_skew = "skew" in strategy_name
+        is_term = "term" in strategy_name
+        is_butterfly = "butterfly" in strategy_name
+        is_iv_mr = "iv_mr" in strategy_name
+        is_pcr = "pcr" in strategy_name or "put_call" in strategy_name
 
         if self.use_options_pnl and is_vrp:
             return self._run_vrp(dataset, strategy)
+        elif self.use_options_pnl and is_skew:
+            return self._run_skew(dataset, strategy, feature_key="skew_25d")
+        elif self.use_options_pnl and is_term:
+            return self._run_skew(dataset, strategy, feature_key="term_spread")
+        elif self.use_options_pnl and is_butterfly:
+            return self._run_skew(dataset, strategy, feature_key="butterfly_25d")
+        elif self.use_options_pnl and is_iv_mr:
+            return self._run_skew(dataset, strategy, feature_key="iv_atm")
+        elif self.use_options_pnl and is_pcr:
+            return self._run_skew(dataset, strategy, feature_key="put_call_ratio")
         else:
             from nexus_quant.backtest.engine import BacktestEngine
             return BacktestEngine(self._base_cfg).run(dataset, strategy, seed)
@@ -208,6 +226,127 @@ class OptionsBacktestEngine:
             code_fingerprint="options_engine_v1",
         )
 
+    def _run_skew(self, dataset: MarketDataset, strategy: Strategy, feature_key: str = "skew_25d") -> BacktestResult:
+        """Run vega-based strategy with feature-change P&L model.
+
+        Works for skew_25d, term_spread, butterfly_25d, or any vega-like feature.
+
+        P&L for a 25-delta risk reversal (skew trade):
+            When "short skew" (sold puts, bought calls):
+                PnL = -weight × Δ(skew_25d) × vega_sensitivity × dt_scale
+                Positive when skew decreases (mean-reverts down)
+
+            When "long skew" (bought puts, sold calls):
+                PnL = weight × Δ(skew_25d) × vega_sensitivity × dt_scale
+                Positive when skew increases (mean-reverts up)
+
+        vega_sensitivity calibration:
+            A 25d risk reversal has vega exposure proportional to IV level.
+            Per unit notional, ~0.5 vega per 1% IV change.
+            Normalized to portfolio return: vega_sens ≈ IV_atm (rough scaling).
+        """
+        syms = dataset.symbols
+        n = len(dataset.timeline)
+        dt = 1.0 / self.bars_per_year
+
+        equity = 1.0
+        weights: Weights = {s: 0.0 for s in syms}
+        equity_curve: List[float] = [1.0]
+        returns_list: List[float] = []
+        trades: List[Dict[str, Any]] = []
+
+        skew_pnl_total = 0.0
+        cost_pnl_total = 0.0
+
+        for idx in range(1, n):
+            prev_equity = equity
+
+            # ── Step 1: Skew P&L for current bar ──────────────────────
+            bar_pnl = 0.0
+            for sym in syms:
+                w = weights.get(sym, 0.0)
+                if abs(w) < 1e-10:
+                    continue
+
+                # Feature change for this bar (skew, term spread, etc.)
+                skew_series = dataset.features.get(feature_key, {}).get(sym, [])
+                if idx >= len(skew_series) or idx - 1 >= len(skew_series):
+                    continue
+
+                skew_now = skew_series[idx]
+                skew_prev = skew_series[idx - 1]
+                if skew_now is None or skew_prev is None:
+                    continue
+
+                d_skew = float(skew_now) - float(skew_prev)
+
+                # Vega sensitivity: proportional to IV level
+                iv_series = dataset.features.get("iv_atm", {}).get(sym, [])
+                iv = self._get_smoothed_iv(iv_series, idx - 1)
+                if iv is None or iv <= 0:
+                    iv = 0.70  # default
+
+                # Risk reversal P&L model:
+                # PnL = weight × d_skew × sensitivity
+                # weight < 0 means "short skew" → profits when skew decreases (d_skew < 0)
+                # weight > 0 means "long skew" → profits when skew increases (d_skew > 0)
+                # w * d_skew naturally gives correct sign (both negative → positive)
+                # sensitivity = iv * sqrt(dt) — normalized to account for time scaling
+                sensitivity = iv * math.sqrt(dt) * self.skew_sensitivity_mult
+                skew_pnl = w * d_skew * sensitivity
+
+                bar_pnl += skew_pnl
+
+            dp = equity * bar_pnl
+            equity += dp
+            skew_pnl_total += dp
+
+            # ── Step 2: Rebalance ─────────────────────────────────────
+            if strategy.should_rebalance(dataset, idx):
+                target = strategy.target_weights(dataset, idx, weights)
+                for s in syms:
+                    target.setdefault(s, 0.0)
+
+                turnover = sum(
+                    abs(float(target.get(s, 0.0)) - float(weights.get(s, 0.0)))
+                    for s in syms
+                )
+                bd = self.costs.cost(equity=equity, turnover=turnover)
+                cost = float(bd.get("cost", 0.0))
+                equity -= cost
+                cost_pnl_total -= cost
+                equity = max(equity, 0.0)
+
+                weights = {s: float(target.get(s, 0.0)) for s in syms}
+                if turnover > 1e-6:
+                    trades.append({
+                        "idx": idx,
+                        "ts_epoch": dataset.timeline[idx],
+                        "turnover": turnover,
+                        **bd,
+                    })
+
+            equity_curve.append(equity)
+            bar_ret = (equity / prev_equity) - 1.0 if prev_equity > 0 else 0.0
+            returns_list.append(bar_ret)
+
+        return BacktestResult(
+            strategy=strategy.describe(),
+            timeline=list(dataset.timeline[:len(equity_curve)]),
+            equity_curve=equity_curve,
+            returns=returns_list,
+            trades=trades,
+            breakdown={
+                "skew_pnl": skew_pnl_total,
+                "cost_pnl": cost_pnl_total,
+                "funding_pnl": 0.0,
+                "price_pnl": 0.0,
+                "model": "vega_skew_change",
+            },
+            data_fingerprint=dataset.fingerprint,
+            code_fingerprint="options_engine_skew_v1",
+        )
+
     def _get_smoothed_iv(self, iv_series: List, idx: int) -> Optional[float]:
         """Rolling mean of IV to reduce noise."""
         if not iv_series or idx >= len(iv_series):
@@ -294,6 +433,7 @@ def run_yearly_wf(
     use_options_pnl: bool = True,
     bars_per_year: int = 365,
     seed: int = 42,
+    skew_sensitivity_mult: float = 1.0,
 ) -> Dict[str, Any]:
     """Run per-year walk-forward validation.
 
@@ -306,6 +446,7 @@ def run_yearly_wf(
         use_options_pnl: True = gamma/theta model
         bars_per_year: 365 for daily
         seed: random seed
+        skew_sensitivity_mult: multiplier for skew P&L sensitivity
 
     Returns:
         {"yearly": {...}, "summary": {...}}
@@ -316,6 +457,7 @@ def run_yearly_wf(
         costs=costs,
         bars_per_year=bars_per_year,
         use_options_pnl=use_options_pnl,
+        skew_sensitivity_mult=skew_sensitivity_mult,
     )
 
     yearly: Dict[str, Any] = {}

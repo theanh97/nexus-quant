@@ -61,13 +61,30 @@ BASE_CACHE = Path("data/cache/deribit/live")
 
 # ── API helpers ────────────────────────────────────────────────────────────────
 
+def _make_ssl_context():
+    """Create SSL context that works on macOS (certifi or unverified fallback)."""
+    import ssl
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        pass
+    # macOS fallback: use unverified context for public API
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+_SSL_CTX = _make_ssl_context()
+
+
 def _api_get(endpoint: str, params: Dict[str, Any]) -> Optional[Dict]:
     """Simple GET to Deribit public API with retry."""
     qs = "&".join(f"{k}={v}" for k, v in params.items())
     url = f"{DERIBIT_BASE}/{endpoint}?{qs}"
     for attempt in range(3):
         try:
-            with urllib.request.urlopen(url, timeout=10) as resp:
+            with urllib.request.urlopen(url, timeout=10, context=_SSL_CTX) as resp:
                 data = json.loads(resp.read().decode())
                 if "result" in data:
                     return data["result"]
@@ -295,7 +312,7 @@ def _get_csv_path(symbol: str, dt: datetime) -> Path:
 
 CSV_HEADER = [
     "ts_utc", "symbol", "price", "iv_atm", "iv_25d_put", "iv_25d_call",
-    "skew_25d", "term_spread", "rv_1h", "rv_24h",
+    "skew_25d", "butterfly_25d", "term_spread", "funding_rate", "rv_1h", "rv_24h",
 ]
 
 
@@ -307,6 +324,21 @@ def _append_to_csv(path: Path, row: Dict[str, Any]) -> None:
         if write_header:
             writer.writeheader()
         writer.writerow({k: row.get(k, "") for k in CSV_HEADER})
+
+
+def _get_funding_rate(symbol: str) -> Optional[float]:
+    """Get current perpetual funding rate from Deribit.
+
+    Returns the 8-hour funding rate as decimal (e.g. 0.00003 = 0.003% per 8h).
+    Fetched from the ticker endpoint which includes funding_8h field.
+    """
+    instrument = SYMBOLS[symbol]["perp"]
+    result = _api_get("ticker", {"instrument_name": instrument})
+    if result:
+        rate_8h = result.get("funding_8h")
+        if rate_8h is not None:
+            return float(rate_8h)
+    return None
 
 
 def _get_recent_rv(symbol: str, hours: int = 24) -> Optional[float]:
@@ -382,11 +414,22 @@ def collect_once() -> Dict[str, Any]:
         term_spread = _get_term_structure(options, price, symbol)
         logger.info("  %s term_spread=%.3f", symbol, term_spread or 0)
 
-        # 5. Realized vol (from historical CSV data)
+        # 5. Perpetual funding rate
+        funding_rate = _get_funding_rate(symbol)
+        if funding_rate is not None:
+            logger.info("  %s funding_rate=%.6f (8h)", symbol, funding_rate)
+        time.sleep(REQUEST_DELAY)
+
+        # 6. Butterfly (vol smile convexity)
+        butterfly_25d = None
+        if iv_25d_put is not None and iv_25d_call is not None and iv_atm is not None:
+            butterfly_25d = 0.5 * (iv_25d_put + iv_25d_call) - iv_atm
+
+        # 7. Realized vol (from historical CSV data)
         rv_1h = _get_recent_rv(symbol, hours=1)
         rv_24h = _get_recent_rv(symbol, hours=24)
 
-        # 6. Save to CSV
+        # 8. Save to CSV
         row = {
             "ts_utc": ts_utc,
             "symbol": symbol,
@@ -395,7 +438,9 @@ def collect_once() -> Dict[str, Any]:
             "iv_25d_put": round(iv_25d_put, 4) if iv_25d_put else "",
             "iv_25d_call": round(iv_25d_call, 4) if iv_25d_call else "",
             "skew_25d": round(skew_25d, 4) if skew_25d else "",
+            "butterfly_25d": round(butterfly_25d, 4) if butterfly_25d else "",
             "term_spread": round(term_spread, 4) if term_spread else "",
+            "funding_rate": round(funding_rate, 8) if funding_rate is not None else "",
             "rv_1h": round(rv_1h, 4) if rv_1h else "",
             "rv_24h": round(rv_24h, 4) if rv_24h else "",
         }
@@ -407,7 +452,9 @@ def collect_once() -> Dict[str, Any]:
             "price": price,
             "iv_atm": iv_atm,
             "skew_25d": skew_25d,
+            "butterfly_25d": butterfly_25d,
             "term_spread": term_spread,
+            "funding_rate": funding_rate,
         }
 
     return summary

@@ -133,7 +133,14 @@ class PortfolioOptimizer:
 
     @staticmethod
     def _default_strategies() -> List[StrategyProfile]:
-        """NEXUS strategies as of 2026-02-20."""
+        """NEXUS strategies as of 2026-02-21.
+
+        crypto_perps: P91b champion ensemble (V1+I460+I415+F144) on Binance perps.
+            Production since Jan 2026. WF avg Sharpe 2.006.
+        crypto_options: Mixed-frequency ensemble (hourly VRP 40% + daily Skew MR 60%)
+            on Deribit options. Validated on synthetic data, live collector running.
+            WF avg Sharpe 2.723. Awaiting 60d real data (~April 2026).
+        """
         return [
             StrategyProfile(
                 name="crypto_perps",
@@ -147,28 +154,35 @@ class PortfolioOptimizer:
                 status="production",
             ),
             StrategyProfile(
-                name="crypto_options_vrp",
+                name="crypto_options",
                 market="crypto_options",
                 year_sharpe={
-                    2021: 1.273, 2022: 1.446, 2023: 1.944, 2024: 1.344, 2025: 1.595
+                    # Mixed-freq ensemble: hourly VRP 40% + daily Skew MR 60%
+                    # From wisdom v6.0.0 ENSEMBLE_CHAMPION
+                    2021: 2.02, 2022: 2.60, 2023: 3.65, 2024: 2.44, 2025: 2.90
                 },
-                # Options VRP: CAGR ~3-7% per year, low daily vol (carry-like)
-                # Sharpe=1.5 × vol = return. If avg CAGR ~5%, vol = 3.3%
-                annual_vol_pct=3.5,
+                # Options ensemble: VRP carry + Skew MR signal.
+                # Low daily vol (carry-dominated). Estimated 4-6% annual vol.
+                annual_vol_pct=5.0,
                 status="validated",
             ),
         ]
 
     @staticmethod
     def _default_correlations() -> Dict[Tuple[str, str], float]:
-        """Estimated pairwise strategy correlations."""
-        # crypto_perps vs crypto_options_vrp:
-        # Both lose on crash days (gamma losses + momentum reversal) → positive correlation
-        # But perps profits from trends while VRP just collects theta → partially decorrelated
-        # Estimated: 0.2-0.35 based on economic reasoning
+        """Estimated pairwise strategy correlations.
+
+        crypto_perps vs crypto_options:
+        - Both lose on crash days: gamma losses (VRP) + momentum reversal (perps)
+        - But: perps profits from trends; VRP collects theta; Skew MR fades extremes
+        - VRP and Skew MR are essentially uncorrelated (r=0.014)
+        - Perps momentum may correlate with vol spikes that hurt VRP → 0.20-0.30
+        - Estimated: 0.20 (slightly lower than before since options ensemble is
+          diversified between VRP and Skew MR which have different drivers)
+        """
         return {
-            ("crypto_perps", "crypto_options_vrp"): 0.25,
-            ("crypto_options_vrp", "crypto_perps"): 0.25,
+            ("crypto_perps", "crypto_options"): 0.20,
+            ("crypto_options", "crypto_perps"): 0.20,
         }
 
     def _get_correlation(self, s1: str, s2: str) -> float:
@@ -414,8 +428,8 @@ class PortfolioOptimizer:
         lines.append("── Dynamic Allocation (vol-regime conditional) ──")
         dyn = self.dynamic_allocation()
         s1, s2 = self.strategies[0], self.strategies[1]
-        lines.append("  Low vol (BTC ann.vol < 0.60): 50% perps + 50% options → more theta")
-        lines.append("  High vol (BTC ann.vol ≥ 0.60): 75% perps + 25% options → more trend")
+        lines.append("  Low vol (BTC ann.vol < 0.60): 50% perps + 50% options -> more theta")
+        lines.append("  High vol (BTC ann.vol >= 0.60): 75% perps + 25% options -> more trend")
         lines.append("")
         yr_lines = []
         yr_sharpes = []

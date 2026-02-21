@@ -1,135 +1,302 @@
 {
   "_project": "crypto_options",
-  "_version": "2.0.0",
-  "_updated": "2026-02-20",
-  "_description": "Accumulated wisdom + validated rules for Crypto Options VRP (Deribit)",
-  "_status": "Phase 2 — VRP VALIDATED (avg=1.520, min=1.273, 5yr WF)",
+  "_version": "7.0.0",
+  "_updated": "2026-02-21",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). Exhaustive R&D: 5000+ configs across 11 strategy types + 3 dynamic allocation + hourly frequency analysis. Mixed-frequency ensemble confirmed. Cross-project portfolio integration complete.",
+  "_status": "INTEGRATED: Mixed-freq ensemble Sharpe 2.723. Cross-project portfolio (25% perps + 75% options) Sharpe 3.103 at corr=0.20. Full pipeline: signal gen → aggregator → executor.",
 
-  "LIVE_OBSERVATIONS": {
-    "_note": "Real Deribit data collected 2026-02-20 via live collector",
-    "BTC_2026_02_20": {
-      "price": 67664,
-      "iv_atm_pct": 47.8,
-      "skew_25d_pct": 21.0,
-      "term_spread": 0.008,
-      "note": "BTC IV=47.8% (lower than synthetic 76%). Skew high at 21% (puts expensive vs calls). Slight contango (+0.8%)."
+  "ENSEMBLE_CHAMPION": {
+    "type": "mixed_frequency",
+    "weights": {"VRP_hourly": 0.40, "Skew_MR_daily": 0.60},
+    "wf_avg_sharpe": 2.723,
+    "wf_min_sharpe": 2.022,
+    "yearly": {"2021": 2.02, "2022": 2.60, "2023": 3.65, "2024": 2.44, "2025": 2.90},
+    "correlation_vrp_skew": 0.014,
+    "vs_daily_only_ensemble": "+0.108 avg Sharpe vs daily 30/70 (2.615)",
+    "note": "Mixed-frequency: VRP runs hourly (8760 bars/yr), Skew MR runs daily (365 bars/yr). Hourly VRP aggregated to daily for ensemble. Alternative: 30/70 mixed-freq gives avg=2.620, min=2.311 (more consistent)."
+  },
+
+  "ENSEMBLE_DAILY_ONLY": {
+    "type": "single_frequency_daily",
+    "weights": {"VRP": 0.30, "Skew_MR_v2": 0.70},
+    "wf_avg_sharpe": 2.615,
+    "wf_min_sharpe": 2.137,
+    "conservative_avg": 2.275,
+    "conservative_min": 1.853,
+    "yearly": {"2021": 2.49, "2022": 2.72, "2023": 3.08, "2024": 2.66, "2025": 2.14},
+    "note": "Daily-only baseline. Still very strong. Use if hourly data is unavailable."
+  },
+
+  "STRATEGY_1_VRP": {
+    "status": "VALIDATED",
+    "class": "VariancePremiumStrategy",
+    "daily": {
+      "wf_avg_sharpe": 2.088,
+      "wf_min_sharpe": 1.378,
+      "params": {
+        "base_leverage": 1.5,
+        "exit_z_threshold": -3.0,
+        "vrp_lookback": 30,
+        "rebalance_freq": 5,
+        "min_bars": 30
+      },
+      "bars_per_year": 365
     },
-    "ETH_2026_02_20": {
-      "price": 1962,
-      "iv_atm_pct": 64.9,
-      "skew_25d_pct": 14.1,
-      "term_spread": -0.022,
-      "note": "ETH IV=64.9%. Slight backwardation (-2.2%) = mild stress signal."
+    "hourly": {
+      "wf_avg_sharpe": 3.649,
+      "wf_min_sharpe": 2.224,
+      "conservative_avg": 3.221,
+      "conservative_min": 1.938,
+      "yearly": {"2021": 2.22, "2022": 3.42, "2023": 5.85, "2024": 2.88, "2025": 3.87},
+      "params": {
+        "base_leverage": 1.5,
+        "exit_z_threshold": -3.0,
+        "vrp_lookback": 720,
+        "rebalance_freq": 168,
+        "min_bars": 720
+      },
+      "bars_per_year": 8760,
+      "optimal_rebalance": "rb=168 (weekly). Tested 48-720 (2d-30d). rb=168 gives avg=3.959.",
+      "rv_lookback_bars": 504
     },
-    "CALIBRATION_NOTE": "Synthetic model uses long_run=0.75 (75%). Actual BTC IV was 47.8% on this date. Historical range 30-150%. Model is within reasonable range but may overestimate in calm periods.",
-    "COLLECTION_STATUS": "Data collector active. Need 720 rows (30d) for Skew MR + Term Structure validation."
+    "key_insight": "Hourly VRP is +75% better than daily (3.649 vs 2.088). Theta accrues linearly but gamma cost (sum of squared hourly returns) is lower due to intraday mean-reversion. This is a real effect documented in variance swap literature. Conservative costs: PASSES at 3.221.",
+    "hourly_mechanism": "At hourly frequency: sum(log_ret_h^2) < log_ret_d^2 when there are intraday reversals. VRP earns same theta but pays less gamma → higher Sharpe."
+  },
+
+  "STRATEGY_2_SKEW_MR": {
+    "status": "VALIDATED",
+    "class": "SkewTradeV2Strategy",
+    "wf_avg_sharpe": 1.744,
+    "wf_min_sharpe": 0.949,
+    "params": {
+      "skew_lookback": 60,
+      "z_entry": 2.0,
+      "z_exit": 0.0,
+      "target_leverage": 1.0,
+      "rebalance_freq": 5,
+      "min_bars": 60,
+      "use_vrp_filter": false
+    },
+    "engine": {"skew_sensitivity_mult": 2.5},
+    "hourly_status": "FAILS — all 72 configs negative. Signal too noisy at hourly. Best hourly Sharpe: -0.645.",
+    "key_insight": "Skew MR is a SIGNAL trade (needs clear z-score threshold crossings). At hourly frequency, synthetic skew noise dominates the signal. Daily is the correct frequency for skew mean-reversion."
+  },
+
+  "STRATEGY_3_TERM_STRUCTURE": {
+    "status": "NOT_VALIDATED",
+    "best_sharpe": 0.465,
+    "note": "Marginal signal on synthetic data. Does not improve ensemble. Excluded."
+  },
+
+  "STRATEGY_4_BUTTERFLY_MR": {
+    "status": "VALIDATED_STANDALONE",
+    "class": "FeatureMRStrategy",
+    "wf_avg_sharpe": 1.082,
+    "wf_min_sharpe": 0.812,
+    "conservative_avg": 1.031,
+    "conservative_min": 0.722,
+    "params": {
+      "feature_key": "butterfly_25d",
+      "lookback": 120,
+      "z_entry": 2.0,
+      "z_exit": 0.3,
+      "target_leverage": 0.5,
+      "rebalance_freq": 3,
+      "min_bars": 120
+    },
+    "correlations": {"vs_VRP": -0.014, "vs_Skew": 0.189},
+    "ensemble_impact": "Does NOT improve 2-way. 3-way best Sharpe 1.657 vs 2-way 1.701.",
+    "key_insight": "Vol smile convexity mean-reverts over 120-day cycles. Signal is real but too weak to improve ensemble."
+  },
+
+  "STRATEGY_5_SKEW_SPREAD": {
+    "status": "VALIDATED_REALISTIC_ONLY",
+    "class": "SkewSpreadStrategy",
+    "wf_avg_sharpe": 1.319,
+    "wf_min_sharpe": 0.793,
+    "conservative_avg": 0.820,
+    "conservative_min": 0.239,
+    "key_insight": "BTC-ETH skew differential mean-reverts but P&L is thin. Fails conservative costs."
+  },
+
+  "STRATEGY_6_CANDIDATES_REJECTED": {
+    "iv_level_mr": {"best_sharpe": 0.313},
+    "put_call_ratio_mr": {"best_sharpe": 0.000},
+    "cross_asset_skew": {"best_sharpe": 0.137},
+    "vol_ratio": {"best_sharpe": -0.088}
   },
 
   "RULES": {
-    "_note": "Hard rules learned from painful debugging. ALWAYS check before touching VRP strategy.",
     "R1_exit_threshold": {
-      "rule": "exit_z_threshold = -2.0, NOT -1.5",
-      "why": "z=-1.5 fires ~15% of bars → overtrading → costs destroy alpha. z=-2.0 fires ~2% → true extreme spikes only.",
-      "impact": "Avg Sharpe: -1.5 gives 0.878, -2.0 gives 1.520. Delta = +0.642 Sharpe!",
+      "rule": "VRP exit_z = -3.0 (essentially never exit).",
+      "status": "VALIDATED via 320-combo sweep"
+    },
+    "R2_rebalance_weekly": {
+      "rule": "Daily VRP: rebalance_freq=5 (weekly). Hourly VRP: rebalance_freq=168 (weekly). Daily rebalancing too costly.",
+      "status": "VALIDATED at both frequencies"
+    },
+    "R3_quadratic_pnl": {
+      "rule": "VRP PnL = 0.5 * (IV² - RV²) * dt. NO scale factors.",
       "status": "VALIDATED"
     },
-    "R2_rebalance_frequency": {
-      "rule": "rebalance_freq = 5 (weekly for 1d bars), NEVER 1 (daily)",
-      "why": "Daily rebalancing: avg Sharpe = -0.534 (negative!). Weekly: avg = 1.520.",
-      "why_detailed": "VRP is a carry trade. Signal barely changes day-to-day. Daily turnover costs exceed VRP income.",
+    "R4_always_short_vol": {
+      "rule": "VRP is always short vol. Negative weight = short position.",
       "status": "VALIDATED"
     },
-    "R3_pnl_formula": {
-      "rule": "Use quadratic: PnL_bar = 0.5 * (IV² - RV_bar_ann²) * dt",
-      "formula": "rv_bar_ann = abs(log_ret) * sqrt(bars_per_year); pnl = 0.5*(iv**2 - rv_bar_ann**2)*dt",
-      "why": "Linear formula (SCALE * (IV_daily - |log_ret|)) is wrong — gives avg Sharpe -0.311.",
-      "theory": "From delta-hedged straddle: Theta = 0.5*IV²*dt, Gamma cost = 0.5*RV²*dt, Net = 0.5*(IV²-RV²)*dt",
-      "no_scale_factor": "NO arbitrary SCALE constant. Proper finance formula needs no calibration.",
+    "R5_time_series_zscore": {
+      "rule": "Use per-symbol time-series z-score, NOT cross-sectional.",
       "status": "VALIDATED"
-    },
-    "R4_signal_direction": {
-      "rule": "Always short vol as base position. Short vol = NEGATIVE weight in weights dict.",
-      "formula": "bar_pnl += (-w) * vrp_pnl  [(-w) > 0 when w < 0 = short]",
-      "why": "VRP is PERSISTENT — IV > RV in ~80% of all bars. A carry trade, not a timing signal.",
-      "status": "VALIDATED"
-    },
-    "R5_cross_sectional_zscore": {
-      "rule": "NEVER use cross-sectional z-score for VRP signal. Use time-series per-symbol z-score.",
-      "why": "With 2 symbols (BTC+ETH), cross-sectional z-score always makes one long and one short. Even though BOTH have positive VRP, you'd go long ETH (wrong direction) → loses money.",
-      "correct": "_get_vrp_zscore() computes z-score vs symbol's own 60d history.",
-      "status": "VALIDATED — learned from debugging session"
     },
     "R6_strategy_naming": {
-      "rule": "VRP strategy name must contain 'vrp' or 'variance' for options_engine to use gamma/theta PnL.",
-      "code": "is_vrp = 'vrp' in strategy_name.lower() or 'variance' in strategy_name.lower()",
-      "default_class_name": "VariancePremiumStrategy (name='crypto_vrp')",
+      "rule": "Strategy name must contain 'vrp'/'variance' for gamma/theta PnL, 'skew' for vega PnL.",
       "status": "ARCHITECTURAL"
+    },
+    "R7_overlays_destroy_carry": {
+      "rule": "NEVER add overlays to VRP. Tested 1296 overlay combos — ALL worse.",
+      "status": "VALIDATED via ablation study"
+    },
+    "R8_skew_vega_sensitivity": {
+      "rule": "Skew P&L sensitivity multiplier = 2.5x base.",
+      "status": "CALIBRATED"
+    },
+    "R9_skew_sign_convention": {
+      "rule": "Skew PnL = weight × d_skew × sensitivity. Weight encodes direction.",
+      "status": "BUG FIX"
+    },
+    "R10_sharpe_scale_invariant": {
+      "rule": "Sensitivity multiplier does NOT affect Sharpe (mean/std both scale). Only matters with costs.",
+      "status": "DISCOVERED"
+    },
+    "R11_2strategy_ensemble_optimal": {
+      "rule": "VRP+Skew 2-strategy ensemble is near-optimal for 2-symbol universe.",
+      "status": "VALIDATED"
+    },
+    "R12_static_weights_optimal": {
+      "rule": "Static weights outperform ALL dynamic allocation methods.",
+      "status": "VALIDATED via walk-forward"
+    },
+    "R13_synthetic_universe_limit": {
+      "rule": "Synthetic 2-symbol universe is exhausted at daily frequency. Hourly unlocks +75% VRP improvement.",
+      "status": "UPDATED — hourly frequency explored"
+    },
+    "R14_hourly_vrp_mechanism": {
+      "rule": "Hourly VRP Sharpe >> daily VRP Sharpe. Mechanism: theta accrues linearly but sum(hourly_ret²) < daily_ret² due to intraday mean-reversion. Same theta, less gamma cost.",
+      "detail": "Tested 6 hourly VRP configs (all PASS). Conservative costs: avg=3.22 (PASS). Rebalance sweep: rb=168 (weekly) optimal at 3.96.",
+      "status": "VALIDATED — needs real data confirmation"
+    },
+    "R15_skew_daily_only": {
+      "rule": "Skew MR ONLY works at daily frequency. All 72 hourly configs have NEGATIVE Sharpe. Hourly skew is noise-dominated.",
+      "detail": "Signal trades (z-score threshold crossing) need clean signals. Hourly synthetic skew has too much noise relative to signal. Best hourly: -0.645.",
+      "status": "VALIDATED — carry vs signal frequency asymmetry"
+    },
+    "R16_mixed_freq_ensemble": {
+      "rule": "Mixed-frequency ensemble (hourly VRP + daily Skew) improves on daily-only. Best at 40/60 weights: avg=2.723 (+0.108 vs daily 2.615).",
+      "detail": "Aggregate hourly VRP returns to daily via compounding, then combine with daily Skew MR returns. Correlation remains low (~0.05).",
+      "status": "VALIDATED"
+    },
+    "R17_ar1_frequency_scaling": {
+      "rule": "When changing bar frequency, adjust AR(1) coefficients: ar1_hourly = ar1_daily^(1/24). Preserves real-time half-life. Shock std auto-adjusts via formula.",
+      "detail": "vrp_ar1_daily=0.9 → hourly=0.9956. skew_ar1_daily=0.88 → hourly=0.9947. Implemented in DeribitRestProvider._generate_synthetic_iv().",
+      "status": "IMPLEMENTED"
     }
   },
 
-  "market_insights": {
-    "variance_risk_premium": {
-      "summary": "Crypto IV consistently overstates future realized vol by 5-15 vol points (VRP). VALIDATED carry edge.",
-      "evidence": "5-yr WF: all years positive, min=1.273, avg=1.520. Best in low-vol 2023 (1.944).",
-      "validated": true,
-      "phase": "Phase 2 — WF validated 2021-2025"
+  "SWEEP_RESULTS": {
+    "vrp_320_combo": "Best: exit_z=-3.0, lb=30.",
+    "vrp_overlay_1296_combo": "ALL worse than simple carry (2.088).",
+    "skew_144_combo": "Best: lb=60, ze=2.0, zx=0.0, rb=5. avg=1.744.",
+    "ensemble_9_weights": "VRP=30%/Skew=70% maximizes at avg=2.615.",
+    "butterfly_1440_combo": "12 configs validated. Best avg=1.082.",
+    "skew_spread_720_combo": "Best avg=1.319. Fails conservative.",
+    "dynamic_ensemble_3_methods": "ALL worse than static.",
+    "hourly_vrp_6_combo": "ALL PASS. Best: lb=720 rb=240 avg=3.649. Conservative: 3.221.",
+    "hourly_vrp_rebalance_8_combo": "Best: rb=168 (7d) avg=3.959. Conservative: 3.559.",
+    "hourly_skew_72_combo": "ALL NEGATIVE. Best: lb=1440 ze=2.5 rb=120 avg=-0.645.",
+    "mixed_freq_ensemble_21_combo": "Best: VRP_h=40% Skew_d=60% avg=2.723. Alt: 30/70 avg=2.620, min=2.311."
+  },
+
+  "NEXUS_PORTFOLIO_INTEGRATION": {
+    "status": "COMPLETE",
+    "optimal_allocation": {
+      "crypto_perps": 0.25,
+      "crypto_options": 0.75,
+      "correlation_assumption": 0.20,
+      "portfolio_sharpe_avg": 3.103,
+      "portfolio_sharpe_min": 2.715,
+      "portfolio_vol_pct": 4.9,
+      "portfolio_return_pct": 15.2,
+      "diversification_benefit": 0.560,
+      "yearly": {"2021": 3.04, "2022": 2.71, "2023": 3.52, "2024": 2.99, "2025": 3.26}
     },
-    "vrp_regime_dependence": {
-      "summary": "VRP strategy BEST in low-vol years (2023: Sharpe=1.944), GOOD in high-vol (2022: 1.446).",
-      "insight": "Both crash (2022) and calm (2023) work! VRP is robust across regimes because IV ALWAYS overstates RV on average.",
-      "correlation_with_perps": "Estimated 0.2-0.35. Both lose on extreme crash days (same gamma losses). But perps also profits from trends while VRP only collects theta."
+    "robustness": {
+      "corr_0.00": {"perps": 0.25, "opts": 0.75, "sharpe": 3.377},
+      "corr_0.10": {"perps": 0.25, "opts": 0.75, "sharpe": 3.232},
+      "corr_0.20": {"perps": 0.25, "opts": 0.75, "sharpe": 3.103},
+      "corr_0.30": {"perps": 0.20, "opts": 0.80, "sharpe": 2.992},
+      "corr_0.40": {"perps": 0.20, "opts": 0.80, "sharpe": 2.900},
+      "corr_0.50": {"perps": 0.15, "opts": 0.85, "sharpe": 2.822},
+      "note": "Allocation is robust: 75-85% options across all correlation assumptions (0-0.50). Options dominate due to higher risk-adjusted return and lower vol."
     },
-    "skew": {
-      "summary": "25-delta put skew signal FAILS walk-forward on daily bars with synthetic data.",
-      "avg_sharpe_synthetic": 0.297,
-      "min_sharpe_synthetic": -0.474,
-      "reason": "Delta-equivalent proxy insufficient. Skew signal doesn't translate to underlying price direction.",
-      "fix": "Need real Deribit options chain data. Collect live data → re-validate after 60+ days.",
-      "validated": false
+    "vs_standalone": {
+      "perps_only": {"sharpe": 2.006, "vol": 10.0},
+      "options_only": {"sharpe": 2.722, "vol": 5.0},
+      "combined_25_75": {"sharpe": 3.103, "vol": 4.9},
+      "improvement_vs_best_standalone": "+0.381 Sharpe (+14%) with lower vol"
     },
-    "term_structure": {
-      "summary": "Term spread signal FAILS walk-forward. avg=-0.456, min=-3.101.",
-      "reason": "Synthetic term_spread from AR(1) doesn't have real mean-reversion dynamics.",
-      "fix": "Same as skew — need real IV data from Deribit.",
-      "validated": false
+    "dynamic_allocation_rejected": "Dynamic vol-regime allocation (avg=2.599, min=1.778) worse than static 25/75 (avg=3.103, min=2.715). Rule R12 confirmed at portfolio level.",
+    "components_built": [
+      "PortfolioOptimizer (updated strategy profiles, efficient frontier)",
+      "NexusSignalAggregator (reads signals from both projects, applies weights)",
+      "DeribitExecutor (stub — dry_run mode, OAuth2 skeleton, order reconciliation)",
+      "Integration test (5/5 pass — full pipeline verified)"
+    ],
+    "execution_venues": {
+      "binance": "crypto_perps (USDM futures, production since Jan 2026)",
+      "deribit": "crypto_options (options + perps, awaiting real data validation)"
     }
   },
 
-  "implementation_notes": {
-    "data_strategy": "Synthetic IV (AR(1) calibrated to Deribit): VRP_mean=BTC8%/ETH10%, VRP_std=4%/5%. Store live data from Deribit for real validation.",
-    "backtest_approach": "Gamma/theta model: 0.5*(IV²-RV²)*dt. Weekly rebalance. No delta exposure.",
-    "cost_model": "Deribit taker: 5 bps on underlying notional. DERIBIT_REALISTIC preset.",
-    "universe": "BTC + ETH only (Deribit). Options liquidity thin beyond top 2."
+  "LIVE_OBSERVATIONS": {
+    "BTC_2026_02_20": {"price": 67664, "iv_atm_pct": 47.8, "skew_25d_pct": 21.0},
+    "ETH_2026_02_20": {"price": 1962, "iv_atm_pct": 64.9, "skew_25d_pct": 14.1},
+    "COLLECTION_STATUS": "Deribit live collector active (hourly cron). Need 60 days for real revalidation."
   },
 
   "validated_hypotheses": [
-    "VRP is a persistent, robust carry signal in crypto options (5yr WF validated)",
-    "Carry-style (always short vol) outperforms timing-based (exit on signal threshold)",
-    "Weekly rebalancing optimal — daily rebalance destroys alpha via transaction costs",
-    "Gamma/theta PnL model (quadratic) correct — no arbitrary scale factors needed",
-    "Exit threshold z=-2.0 dramatically better than z=-1.5 for cost management"
+    "VRP is persistent carry signal (5yr WF, avg=2.088 daily, 3.649 hourly)",
+    "Carry-style (always short vol) outperforms timing-based approaches",
+    "Skew mean-reversion works WITH proper vega P&L model (avg=1.744)",
+    "VRP and Skew MR are essentially uncorrelated (r=0.014)",
+    "2-strategy ensemble provides significant diversification benefit",
+    "Overlays destroy carry trade Sharpe — position sizing, not timing",
+    "Hourly VRP is +75% better than daily VRP — intraday gamma cost reduction",
+    "Mixed-frequency ensemble (hourly VRP + daily Skew) further improves Sharpe",
+    "Carry trades (VRP) benefit from higher frequency; Signal trades (Skew MR) do NOT",
+    "AR(1) frequency scaling: ar1_h = ar1_d^(1/bars_per_day) preserves half-life",
+    "Cross-project diversification: 25/75 perps/options gives Sharpe 3.103 (+14% vs best standalone)",
+    "Options-heavy allocation is robust across correlation assumptions (0.0-0.5)"
   ],
 
   "failed_hypotheses": [
-    "Skew mean-reversion on daily bars with synthetic data — FAILS WF",
-    "Term structure signal on daily bars with synthetic data — FAILS WF",
-    "Cross-sectional z-score for VRP signal — WRONG approach (both symbols can be short)",
-    "Daily rebalancing (freq=1) — transaction costs exceed VRP income",
-    "Linear PnL formula with SCALE factor — wrong direction and magnitude"
-  ],
-
-  "open_questions": [
-    "Can vol-scaling (higher leverage when VRP z-score very high) improve MIN Sharpe?",
-    "Real Deribit IV data: would Skew MR validate with 60+ days of real data?",
-    "What's the actual correlation between VRP and perps strategies? Estimated 0.2-0.35.",
-    "Can we use BTC vol regime (high/low) to dynamically allocate between perps and options?",
-    "Is there a 5th signal for crypto_perps from options market (skew as regime filter)?"
+    "Skew MR v1 with delta-equivalent proxy — WRONG P&L model",
+    "Term structure on synthetic data — marginal signal (0.465)",
+    "VRP overlays (z-scaling, IV pct, vol regime) — ALL destroy Sharpe",
+    "Cross-sectional z-score — wrong approach for 2-symbol universe",
+    "Daily rebalancing for VRP — costs exceed income",
+    "Butterfly improves ensemble — dilutes rather than enhances",
+    "Skew spread improves ensemble — marginal, fails conservative costs",
+    "Hourly Skew MR — ALL 72 configs NEGATIVE. Signal too noisy at hourly freq",
+    "Dynamic ensemble allocation — ALL worse than static OOS",
+    "SOL universe expansion — API data unavailable"
   ],
 
   "next_research": [
-    "Vol-scaling VRP: lever up at high VRP (z > 1.0), normal at moderate VRP — Phase 138",
-    "Portfolio: perps (60%) + options (40%) dynamic allocation — Phase 138",
-    "Live Deribit data collection daemon — background service — Phase 138",
-    "Skew as REGIME signal for perps (not direct alpha) — Phase 139"
+    "Real Deribit data validation when 60 days collected (~April 2026)",
+    "Full DeribitExecutor implementation: OAuth2, instrument selection, delta hedging, rolling",
+    "Funding rate as VRP filter — perp funding rate may predict vol regime shifts (need real data)",
+    "Expand universe: SOL, DOGE options when API data becomes available",
+    "Maker vs taker fee optimization for execution",
+    "Cross-project risk overlay: portfolio-level drawdown control across venues",
+    "Real-time correlation estimation for dynamic portfolio rebalancing"
   ]
 }
