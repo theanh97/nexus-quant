@@ -176,6 +176,19 @@ def _parse_args() -> argparse.Namespace:
     ol_p.add_argument("--correction", default=None, help="What to do instead")
     ol_p.add_argument("--list", action="store_true", dest="list_lessons", help="List all active lessons")
 
+    # ── Vector Store ─────────────────────────────────────────────────
+    vs_p = sub.add_parser("vectors", help="Vector store — semantic search over memory")
+    vs_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    vs_p.add_argument("--rebuild", action="store_true", help="Rebuild vector index from all memory items")
+    vs_p.add_argument("--search", default=None, help="Search query")
+    vs_p.add_argument("--top-k", type=int, default=5, help="Number of results (default: 5)")
+
+    # ── Development Changelog ────────────────────────────────────────
+    cl_p = sub.add_parser("changelog", help="Development changelog — track system evolution")
+    cl_p.add_argument("--artifacts", default="artifacts", help="Artifacts dir (default: artifacts)")
+    cl_p.add_argument("--recent", type=int, default=10, help="Show N recent changes (default: 10)")
+    cl_p.add_argument("--summary", action="store_true", help="Show changelog summary")
+
     # ── Multi-project commands ───────────────────────────────────────
     proj_p = sub.add_parser("projects", help="List all discovered projects and their status")
 
@@ -237,6 +250,69 @@ def main() -> int:
             print(f"Failures missed: {metrics.get('total_misses', 0)}")
         finally:
             learner.close()
+        return 0
+
+    if args.cmd == "vectors":
+        from .memory.vector_store import NexusVectorStore
+        vs = NexusVectorStore(Path(args.artifacts))
+        try:
+            if args.rebuild:
+                # Rebuild index from all memory items
+                from .memory.store import MemoryStore
+                mem = MemoryStore(Path(args.artifacts) / "memory" / "memory.db")
+                items = mem.recent(limit=200)
+                batch = []
+                for it in items:
+                    doc_id = f"memory:{it.id}"
+                    text = f"{it.kind} {' '.join(it.tags)} {it.content}"
+                    meta = {"kind": it.kind, "tags": it.tags, "created_at": it.created_at}
+                    batch.append((doc_id, text, meta))
+                mem.close()
+                count = vs.add_batch(batch)
+                stats = vs.stats()
+                print(f"Rebuilt vector index: {count} documents indexed")
+                print(f"Mode: {stats['embed_mode']} ({stats['embed_dim']}-dim)")
+                print(f"Semantic available: {stats['semantic_available']}")
+                return 0
+            if args.search:
+                results = vs.search(args.search, top_k=int(args.top_k))
+                if not results:
+                    print("No results found.")
+                    return 0
+                for r in results:
+                    meta = r.get("meta", {})
+                    kind = meta.get("kind", "")
+                    print(f"  [{r['score']:.3f}] ({kind}) {r['doc_id']}: {r['text'][:100]}...")
+                return 0
+            # Default: show stats
+            stats = vs.stats()
+            print(json.dumps(stats, indent=2))
+        finally:
+            vs.close()
+        return 0
+
+    if args.cmd == "changelog":
+        from .learning.changelog import ChangeLog
+        cl = ChangeLog(Path(args.artifacts))
+        try:
+            if args.summary:
+                s = cl.summary()
+                print(json.dumps(s, indent=2))
+                return 0
+            changes = cl.recent(limit=int(args.recent))
+            if not changes:
+                print("No changes recorded yet.")
+                return 0
+            for c in changes:
+                files = ", ".join(c.get("files", [])[:3])
+                print(f"  [{c['created_at'][:19]}] ({c['category']}) {c['description'][:80]}")
+                if files:
+                    print(f"    files: {files}")
+                impact = c.get("impact", [])
+                if impact:
+                    print(f"    impact: {', '.join(impact[:3])}")
+        finally:
+            cl.close()
         return 0
 
     # ── Multi-project commands (no config required) ──────────────────

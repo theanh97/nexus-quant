@@ -47,13 +47,22 @@ class Orion:
     def __init__(self, cfg: OrionConfig) -> None:
         self.cfg = cfg
         self.task_store = TaskStore(cfg.artifacts_dir / "state" / "tasks.db")
-        self.memory = MemoryStore(cfg.artifacts_dir / "memory" / "memory.db")
+        # Initialize vector store for semantic search
+        try:
+            from ..memory.vector_store import NexusVectorStore
+            self.vector_store = NexusVectorStore(cfg.artifacts_dir)
+        except Exception:
+            self.vector_store = None
+        # Memory store with vector store attached for auto-indexing
+        self.memory = MemoryStore(cfg.artifacts_dir / "memory" / "memory.db", vector_store=self.vector_store)
         self.learner = OperationalLearner(cfg.artifacts_dir)
 
     def close(self) -> None:
         self.task_store.close()
         self.memory.close()
         self.learner.close()
+        if self.vector_store:
+            self.vector_store.close()
 
     def bootstrap(self, *, include_improve: bool = True) -> None:
         self.task_store.create(kind="run", payload={"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir)})

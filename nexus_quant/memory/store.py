@@ -24,14 +24,16 @@ class MemoryStore:
 
     - Append-only semantics for core fields (we support updates, but prefer add-only).
     - Optional FTS (if available) for fast search.
+    - Auto-indexes into NexusVectorStore for semantic search (if vector store attached).
     """
 
-    def __init__(self, db_path: Path) -> None:
+    def __init__(self, db_path: Path, vector_store=None) -> None:
         self.db_path = db_path
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self.db_path))
         self._conn.row_factory = sqlite3.Row
         self._init_schema()
+        self._vector_store = vector_store  # Optional NexusVectorStore
 
     def close(self) -> None:
         try:
@@ -65,6 +67,21 @@ class MemoryStore:
                 (item_id, content),
             )
         self._conn.commit()
+
+        # Auto-index into vector store for semantic search
+        if self._vector_store is not None:
+            try:
+                doc_id = f"memory:{item_id}"
+                index_text = f"{kind} {' '.join(tags_list)} {content}"
+                self._vector_store.add(doc_id, index_text, {
+                    "kind": kind,
+                    "tags": tags_list,
+                    "created_at": created_at,
+                    "run_id": run_id,
+                })
+            except Exception:
+                pass  # Vector indexing is best-effort
+
         return item_id
 
     def recent(self, *, kind: Optional[str] = None, limit: int = 20) -> List[MemoryItem]:
