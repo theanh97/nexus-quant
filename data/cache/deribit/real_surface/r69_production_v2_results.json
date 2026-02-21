@@ -1,0 +1,26 @@
+{
+  "research_id": "R69",
+  "title": "Updated Production Config v2",
+  "r60_config": {
+    "vrp_w": 0.5,
+    "bf_w": 0.5,
+    "z_exit": 0.3
+  },
+  "r69_config": {
+    "vrp_w": 0.1,
+    "bf_w": 0.9,
+    "z_exit": 0.0
+  },
+  "r60_stats": {
+    "sharpe": 2.9066,
+    "ann_ret": 0.051581,
+    "max_dd": 0.015913
+  },
+  "r69_stats": {
+    "sharpe": 3.7607,
+    "ann_ret": 0.019866,
+    "max_dd": 0.004648
+  },
+  "delta_sharpe": 0.854,
+  "verdict": "UPGRADE \u2014 R69 config dominates R60 on both Sharpe and risk"
+}
