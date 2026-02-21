@@ -1,9 +1,9 @@
 {
   "_project": "crypto_options",
-  "_version": "24.0.0",
-  "_updated": "2026-02-21",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). 63 research studies (R1-R63). R60: PRODUCTION CONFIG FINALIZED. BTC VRP+BF 50/50: Sharpe 2.91, MaxDD 1.59%, 73% positive months. R61: Hourly VRP does NOT help (reversal #5). R62: Multi-expiry marginal. R63: Delta hedging sim CONFIRMS edge (simulated Sharpe 4.17 > theoretical 2.91).",
-  "_status": "PRODUCTION-READY + SIMULATION-VALIDATED (R63). Theoretical model is CONSERVATIVE. Short straddle simulation with real prices shows Sharpe 4.17 with daily delta hedging. Ready for live deployment.",
+  "_version": "25.0.0",
+  "_updated": "2026-02-22",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). 67 research studies (R1-R67). R60: PRODUCTION CONFIG. R65: VRP DEGRADATION CONFIRMED — Sharpe 3.66→1.59 (2021-23 vs 2024-26), IV declined 70%→51.5%. R66: Adaptive weighting NEGATIVE — static 50/50 wins. R67: 7d straddle confirms decay (9.5→-1.1 by 2025). BF is the ONLY surviving edge in current regime.",
+  "_status": "PRODUCTION CONFIG VALID but VRP edge is degrading. BF (Butterfly MR) is the stable anchor. 2025-2026 requires careful monitoring. VRP Sharpe from 4.15 (2024H1) to -1.62 (2026H1). BF Sharpe stable at 2.7-5.4.",
 
   "CRITICAL_DATA_AUTHENTICITY_WARNING": {
     "summary": "ALL R1-R48 research results are computed on SYNTHETIC implied volatility data. NO Sharpe number should be treated as a proven real-world result.",
@@ -84,7 +84,15 @@
     "yearly_vrp_bf_70_30": {"2021": 5.29, "2022": 4.01, "2023": 2.21, "2024": 2.70, "2025": 0.92, "2026": -2.10},
     "pnl_correlation_vrp_bf": 0.055,
     "previous_champion": "R51 VRP+Skew 40/60 (Sharpe 3.094) — Skew MR weak on real data, replaced by Butterfly MR",
-    "note": "Butterfly MR salvages weak VRP periods: 2025 Sharpe +0.04, 2026 +0.13 vs VRP-only"
+    "note": "Butterfly MR salvages weak VRP periods: 2025 Sharpe +0.04, 2026 +0.13 vs VRP-only",
+    "DEGRADATION_WARNING_R65": {
+      "vrp_sharpe_by_half": {"2024H1": 4.15, "2024H2": 1.47, "2025H1": 1.11, "2025H2": 0.60, "2026H1": -1.62},
+      "bf_sharpe_by_half": {"2024H1": 2.32, "2024H2": 1.73, "2025H1": 2.82, "2025H2": 1.72, "2026H1": 5.36},
+      "iv_decline": "70.0% (2021-23) → 51.5% (2024-26) = -26% structural",
+      "vrp_spread_decline": "15.98% → 4.32% — VRP edge compressing",
+      "vrp_negative_quarters": ["2025Q4 (-2.61%)", "2026Q1 (-4.61%)"],
+      "conclusion": "VRP is the degradation source. BF is stable and compensating."
+    }
   },
 
   "ENSEMBLE_DAILY_ONLY": {
@@ -429,7 +437,8 @@
       "funding_negligible": "Even at 36.5% annual funding rate, Sharpe drops from 4.17 to 4.16",
       "expiry_selection": {"7d": 4.79, "14d": 4.20, "30d": 4.17, "60d": 3.56},
       "yearly": {"2021": 7.39, "2022": 4.49, "2023": 2.21, "2024": 4.34, "2025": 4.35},
-      "key_insight": "Short-dated straddles (7d) are strongest. More frequent hedging helps. Theory underestimates by ~43% because it only captures local theta-gamma, missing higher-order effects."
+      "key_insight": "Short-dated straddles (7d) are strongest. More frequent hedging helps. Theory underestimates by ~43% because it only captures local theta-gamma, missing higher-order effects.",
+      "R67_UPDATE": "7d straddle optimization confirms decay: Sharpe 9.46 (2021) → -1.07 (2025). Best config TTE=14d Roll=3d Hedge=1h but Sharpe 8.48 inflated by overlapping leverage. At 10bps cost Sharpe halves. 2025 NEGATIVE. Transaction costs devastating for short tenors."
     },
     "v1_finding": "Initial simulation (always-cost funding model) showed -82% Sharpe degradation — INCORRECT due to treating all funding as cost.",
     "v2_corrected": {
@@ -589,7 +598,10 @@
     "Skew MR weak on REAL data (R55/R56): Real skew mean +1.4% (vs synthetic -5%) — 6.4% difference makes z-score signals weaker. Optimizer consistently pushes w_vrp toward 0.7-0.9. Replaced by Butterfly MR as diversifier.",
     "★ REVERSAL #5 — Hourly VRP does NOT improve (R61): 1h Sharpe 2.78 vs Daily 2.91 (-4%). MaxDD 2.5x worse (7.71% vs 3.10%). 8h anomaly is grid-alignment artifact (std=0.85). Transaction costs destroy hourly (1bps → Sharpe -61). Synthetic +75% finding does NOT replicate.",
     "Multi-expiry VRP marginal on real data (R62): Triple ensemble 33/33/34 only +0.09 Sharpe. TS mean-reversion weak (Sharpe 1.23). Back-month VRP Sharpe 3.32 likely artifactual. TS in backwardation 78% of time.",
-    "★ STRADDLE SIMULATION CONFIRMS EDGE (R63): Simulated 30d short straddle with daily delta hedge Sharpe 4.17 vs theoretical 2.91 (+43%). Theory is CONSERVATIVE. 7d straddles even better (4.79). Costs manageable: 20bps → 3.17. Yearly: sim beats theory 5/5 years. Production-viable."
+    "★ STRADDLE SIMULATION CONFIRMS EDGE (R63): Simulated 30d short straddle with daily delta hedge Sharpe 4.17 vs theoretical 2.91 (+43%). Theory is CONSERVATIVE. 7d straddles even better (4.79). Costs manageable: 20bps → 3.17. Yearly: sim beats theory 5/5 years. Production-viable.",
+    "★ VRP DEGRADATION CONFIRMED (R65): VRP Sharpe 3.66 (2021-23) → 1.59 (2024-26). IV structural decline 70%→51.5% (-26%). VRP spread compressed 15.98%→4.32%. VRP went negative 2025Q4-2026Q1. BF stable (Sharpe 2.3-5.4 across all periods). Verdict: MIXED — structural IV decline + cyclical VRP weakness.",
+    "Adaptive VRP/BF weighting NEGATIVE (R66): Tested 7 approaches (Sharpe gate, sign filter, IV-level, continuous, oracle, walk-forward, combined). NO adaptive method beats static 50/50 on full sample. Oracle hindsight 3.58 shows improvement EXISTS but is unattainable. Walk-forward 365d: Sharpe 3.22, avg VRP_w=0.15 (essentially BF-only). Recent weights = 0% VRP.",
+    "7d straddle confirms decay pattern (R67): Yearly straddle Sharpe 9.46 (2021) → 7.77 (2022) → 4.16 (2023) → 3.53 (2024) → -1.07 (2025). Transaction costs devastating: 20bps → Sharpe 0.90. BF overlay still stable at Sharpe 2.71 in 2025."
   ],
 
   "failed_hypotheses": [
@@ -612,7 +624,9 @@
     "Smoothed RV carry sizing (R33) — 14 configs with 5/10/21/30d RV windows. 0/14 beat baseline. Smoothing reduces noise (5d avg Δ=-0.09 vs 1d avg Δ=-0.34) but not enough. Carry spread sizing is structurally flawed: high carry → scaling up → amplifies gamma losses when RV spikes. Closes carry-sizing research line.",
     "Cross-strategy signal gating (R45) — 9 VRP z-gating configs + VRP-scaled sizing + temporal lags + agreement bonus = ALL WORSE. VRP and Skew MR are truly independent. Gating restricts time-in-market, lag makes signal stale, scaling adds noise. Confirms R11+R12: static 2-strategy ensemble is optimal.",
     "R46 per-asset skew fine-tuning (R47) — LOYO REJECTED. Combined avg improves +0.108 but 2022 drops -0.109, z_short-only 2/5 years improve. Min Sharpe degrades in all configs. Keep current params.",
-    "Position risk management (R48) — 29 configs (DD triggers, bar-loss limits, rolling Sharpe floors, vol-cap sizing): 0/29 improve. DD triggers never fire (MDD 1.5%), Sharpe floors destroy returns by cutting exposure during recovery. 5th confirmation of always-fully-invested rule."
+    "Position risk management (R48) — 29 configs (DD triggers, bar-loss limits, rolling Sharpe floors, vol-cap sizing): 0/29 improve. DD triggers never fire (MDD 1.5%), Sharpe floors destroy returns by cutting exposure during recovery. 5th confirmation of always-fully-invested rule.",
+    "Adaptive VRP/BF weighting (R66) — 7 methods tested: Sharpe gate (2.897), sign filter (2.824), IV-conditioning (2.366), continuous adaptive (2.749), combined sign+IV (2.318). ALL worse than static 50/50 (2.907). Adaptive timing introduces more error than it removes. 6th confirmation of static-weights-optimal rule.",
+    "7d straddle degradation (R67) — Full BS straddle sim: Sharpe 9.46 (2021) → -1.07 (2025). Transaction costs scale with hedge frequency (20bps → Sharpe 0.90 from 8.48 at 0bps). TTE=14 Roll=3d looks best on paper but collapsed in 2025. Same structural VRP decay confirmed via different methodology."
   ],
 
   "REAL_DATA_VALIDATION": {
@@ -647,10 +661,12 @@
   "SYNTHETIC_DATA_STATUS": "PARTIALLY VALIDATED. R49 confirms VRP edge is REAL using Deribit DVOL. Skew MR strategy still needs real skew data (not available free). Architecture principles validated. Parameter optimization still synthetic-only.",
 
   "next_research": [
-    "★ PRIORITY 0: Production signal generator — live BTC VRP+BF signals, automated daily email/webhook",
-    "PRIORITY 1: Investigate 2025-2026 degradation — structural (market maturation) or cyclical? IV at all-time lows",
-    "PRIORITY 2: 7-day straddle optimization — R63 shows 7d Sharpe 4.79 (best tenor). Detailed simulation with real bid-ask",
-    "PRIORITY 3: Real-time monitoring dashboard — equity curve, current signals, regime classification",
+    "★ PRIORITY 0: BF-focused strategy for current regime — BF is only surviving edge (Sharpe 2.7-5.4). Optimize BF standalone, explore new surface features",
+    "PRIORITY 1: VRP regime detection — build forward-looking VRP health indicator to know when to reduce VRP weight",
+    "PRIORITY 2: Alternative vol features — gamma scalping P&L, vanna/volga carry, realized-implied vol-of-vol spread",
+    "PRIORITY 3: Cross-asset signals — BTC vol surface features as signals for ETH/SOL when universe expands",
+    "PRIORITY 4: Real-time monitoring dashboard — equity curve, current signals, regime classification, VRP health",
+    "COMPLETED: Signal generator (R64), Degradation analysis (R65 — confirmed), Adaptive weighting (R66 — NEGATIVE), 7d straddle (R67 — confirms decay)",
     "COMPLETED: IV sizing (R59 — HURTS), Hourly VRP (R61 — no help), Multi-expiry (R62 — marginal), Delta hedging sim (R63 — confirms edge)",
     "SOL/DOGE universe expansion when Deribit option volume increases"
   ]
