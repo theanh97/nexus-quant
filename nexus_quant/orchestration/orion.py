@@ -77,6 +77,8 @@ class Orion:
         self.task_store.create(kind="wisdom", payload={"artifacts": str(self.cfg.artifacts_dir)})
         self.task_store.create(kind="reflect", payload={"config": str(self.cfg.config_path), "artifacts": str(self.cfg.artifacts_dir)})
         self.task_store.create(kind="critique", payload={"config": str(self.cfg.config_path), "artifacts": str(self.cfg.artifacts_dir)})
+        # Self-audit LAST — consolidate knowledge after all other tasks
+        self.task_store.create(kind="self_audit", payload={"artifacts": str(self.cfg.artifacts_dir)})
 
     def enqueue_policy_actions(self, actions: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -110,6 +112,8 @@ class Orion:
             elif kind == "research_ingest":
                 payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
             elif kind == "learn":
+                payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
+            elif kind == "self_audit":
                 payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
             elif kind == "policy_review":
                 payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
@@ -219,8 +223,16 @@ class Orion:
                 return {"ok": True, "task": task.kind, "review": out}
             if task.kind == "learn":
                 out = self._run_daily_research(Path(task.payload["artifacts"]))
+                # Auto-queue experiments from top hypotheses
+                hyp_enq = self._enqueue_hypothesis_experiments(Path(task.payload["artifacts"]))
+                out["hypothesis_experiments"] = hyp_enq
                 self.task_store.mark_done(task.id, out)
                 return {"ok": True, "task": task.kind, "research": out}
+            if task.kind == "self_audit":
+                from ..learning.self_audit import run_self_audit
+                out = run_self_audit(Path(task.payload["artifacts"]))
+                self.task_store.mark_done(task.id, out)
+                return {"ok": True, "task": task.kind, "audit": out}
             raise ValueError(f"Unknown task kind: {task.kind}")
         except Exception as e:
             # ── POSTMORTEM: Extract lessons from failure ──
@@ -291,6 +303,80 @@ class Orion:
             "hypotheses": len(brief.get("hypotheses", [])),
             "ts": brief.get("ts"),
         }
+
+    def _enqueue_hypothesis_experiments(self, artifacts_dir: Path) -> Dict[str, Any]:
+        """
+        Auto-convert research hypotheses → experiment tasks.
+
+        After daily research extracts hypotheses from 50+ sources, the top ones
+        become experiment tasks that run backtests with hypothesis-guided config overrides.
+        This closes the loop: read → hypothesize → test → learn.
+        """
+        brief_path = artifacts_dir / "brain" / "daily_brief.json"
+        if not brief_path.exists():
+            return {"created": 0, "reason": "no_brief"}
+
+        try:
+            brief = json.loads(brief_path.read_text("utf-8"))
+        except Exception:
+            return {"created": 0, "reason": "brief_parse_error"}
+
+        hypotheses = brief.get("hypotheses", [])
+        if not hypotheses:
+            return {"created": 0, "reason": "no_hypotheses"}
+
+        # Map trigger keywords to config overrides for backtesting
+        _KEYWORD_OVERRIDES: Dict[str, Dict] = {
+            "momentum": {"strategy": {"params": {"rebalance_interval_bars": 24}}},
+            "mean reversion": {"strategy": {"params": {"rebalance_interval_bars": 4}}},
+            "carry": {"strategy": {"params": {"rebalance_interval_bars": 48}}},
+            "funding rate": {"strategy": {"params": {"rebalance_interval_bars": 8}}},
+            "volatility targeting": {"strategy": {"params": {"target_gross_leverage": 0.6}}},
+            "risk parity": {"strategy": {"params": {"target_gross_leverage": 0.5}}},
+            "regime": {"strategy": {"params": {"rebalance_interval_bars": 24}}},
+            "trend following": {"strategy": {"params": {"rebalance_interval_bars": 48}}},
+            "ensemble": {"strategy": {"params": {"rebalance_interval_bars": 24}}},
+            "open interest": {"strategy": {"params": {"rebalance_interval_bars": 8}}},
+        }
+
+        # Dedup against recent experiments
+        recent = self.task_store.recent(limit=400)
+        existing_ids = {t.payload.get("experiment_id") for t in recent if t.kind == "experiment"}
+
+        max_hyp = 2  # Max hypothesis experiments per research cycle
+        created = 0
+        ids = []
+
+        # Only queue high-confidence hypotheses (top 2)
+        sorted_hyp = sorted(hypotheses, key=lambda h: h.get("confidence", 0), reverse=True)
+        for hyp in sorted_hyp[:max_hyp]:
+            keyword = hyp.get("trigger_keyword", "")
+            overrides = _KEYWORD_OVERRIDES.get(keyword, {})
+            why = hyp.get("hypothesis", f"Research hypothesis: {keyword}")
+
+            raw = json.dumps({"why": why, "overrides": overrides}, sort_keys=True).encode("utf-8")
+            exp_id = "hyp_" + hashlib.sha256(raw).hexdigest()[:12]
+
+            if exp_id in existing_ids:
+                continue
+
+            self.task_store.create(
+                kind="experiment",
+                payload={
+                    "experiment_id": exp_id,
+                    "why": why,
+                    "config": str(self.cfg.config_path),
+                    "out": str(artifacts_dir),
+                    "config_overrides": overrides,
+                    "source": "research_hypothesis",
+                    "confidence": hyp.get("confidence", 0),
+                    "source_url": hyp.get("source_url", ""),
+                },
+            )
+            created += 1
+            ids.append(exp_id)
+
+        return {"created": created, "ids": ids, "total_hypotheses": len(hypotheses)}
 
     def _research_ingest(self, artifacts_dir: Path) -> Dict[str, Any]:
         """
