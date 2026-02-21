@@ -1,0 +1,36 @@
+{
+  "research_id": "R70",
+  "title": "BF Leverage & Sensitivity Optimization",
+  "key_insight": "Sharpe is scale-invariant. Sensitivity only affects return magnitude.",
+  "base_config": {
+    "sens": 2.5,
+    "sharpe": 3.76,
+    "ann_ret": "1.99%",
+    "max_dd": "0.46%"
+  },
+  "recommended_configs": {
+    "conservative": {
+      "sens": 2.5,
+      "return": "~2%",
+      "maxdd": "~0.5%"
+    },
+    "moderate": {
+      "sens": 5.0,
+      "return": "~4%",
+      "maxdd": "~0.9%"
+    },
+    "aggressive": {
+      "sens": 7.5,
+      "return": "~6%",
+      "maxdd": "~1.4%"
+    }
+  },
+  "best_joint": {
+    "sens": 5.0,
+    "lev": 2.0,
+    "vrp_w": 0.2,
+    "sharpe": 3.7682,
+    "ann_ret": 0.037497
+  },
+  "trades_per_year": 5.7
+}
