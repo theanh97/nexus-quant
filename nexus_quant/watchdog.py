@@ -319,6 +319,37 @@ def watchdog_cycle(project_root: Path) -> Dict[str, Any]:
         report["constitution_ok"] = False
         report["constitution_error"] = str(e)
 
+    # Check research pipeline freshness — proof the system is reading
+    try:
+        brief_path = project_root / "artifacts" / "brain" / "daily_brief.json"
+        if brief_path.exists():
+            brief = json.loads(brief_path.read_text("utf-8"))
+            last_ts = brief.get("ts", "")
+            if last_ts:
+                last_dt = datetime.fromisoformat(last_ts)
+                age_hours = (datetime.now(timezone.utc) - last_dt).total_seconds() / 3600
+                report["research"] = {
+                    "last_fetch": last_ts,
+                    "age_hours": round(age_hours, 1),
+                    "stale": age_hours > 48,
+                    "sources": brief.get("stats", {}).get("fetched_sources", 0),
+                }
+                if age_hours > 48:
+                    report["actions"].append({
+                        "project": "research",
+                        "action": "research_stale",
+                        "reason": f"Research last ran {age_hours:.0f}h ago (>48h threshold)",
+                    })
+        else:
+            report["research"] = {"last_fetch": None, "stale": True, "status": "never_run"}
+            report["actions"].append({
+                "project": "research",
+                "action": "research_never_run",
+                "reason": "Daily research has never been executed",
+            })
+    except Exception as e:
+        report["research"] = {"error": str(e)}
+
     # Report learning engine metrics — proof the system is learning
     try:
         from .learning.operational import OperationalLearner

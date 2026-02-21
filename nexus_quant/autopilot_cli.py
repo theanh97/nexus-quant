@@ -10,6 +10,47 @@ from .orchestration.orion import Orion, OrionConfig
 from .orchestration.policy import ResearchPolicy
 
 
+def _should_run_learn(artifacts_dir: Path) -> bool:
+    """Check if daily research should run (>20h since last fetch)."""
+    brief_path = artifacts_dir / "brain" / "daily_brief.json"
+    if not brief_path.exists():
+        return True
+    try:
+        brief = json.loads(brief_path.read_text("utf-8"))
+        last_ts = brief.get("ts", "")
+        if last_ts:
+            last = datetime.fromisoformat(last_ts)
+            age_hours = (datetime.now(timezone.utc) - last).total_seconds() / 3600
+            return age_hours >= 20  # Run if >20h old (buffer for timing drift)
+    except Exception:
+        return True
+    return True
+
+
+def _get_research_status(artifacts_dir: Path) -> Dict[str, Any]:
+    """Get research pipeline status for heartbeat."""
+    brief_path = artifacts_dir / "brain" / "daily_brief.json"
+    if not brief_path.exists():
+        return {"status": "never_run", "last_fetch": None, "age_hours": -1}
+    try:
+        brief = json.loads(brief_path.read_text("utf-8"))
+        last_ts = brief.get("ts", "")
+        age_hours = -1.0
+        if last_ts:
+            last = datetime.fromisoformat(last_ts)
+            age_hours = round((datetime.now(timezone.utc) - last).total_seconds() / 3600, 1)
+        return {
+            "status": "stale" if age_hours > 48 else ("due" if age_hours > 20 else "fresh"),
+            "last_fetch": last_ts,
+            "age_hours": age_hours,
+            "sources_count": brief.get("stats", {}).get("fetched_sources", 0),
+            "hypotheses_count": len(brief.get("hypotheses", [])),
+            "total_items": brief.get("total_items", 0),
+        }
+    except Exception:
+        return {"status": "error", "last_fetch": None, "age_hours": -1}
+
+
 def autopilot_main(
     *,
     config_path: Path,
@@ -38,12 +79,15 @@ def autopilot_main(
             # Constitution Rule 1: NEVER STOP — always bootstrap when queue empty
             pending = [t for t in orion.task_store.recent(limit=200) if t.status == "pending"]
             if not pending:
-                if bootstrap:
-                    orion.bootstrap(include_improve=bool(policy_eval.get("allow_improve", True)))
-                else:
-                    # Even without --bootstrap flag, enqueue lightweight tasks to avoid idling
-                    allow_improve = bool(policy_eval.get("allow_improve", True))
-                    orion.bootstrap(include_improve=allow_improve)
+                allow_improve = bool(policy_eval.get("allow_improve", True))
+                orion.bootstrap(include_improve=allow_improve)
+
+                # Frequency gate: remove `learn` task if research ran recently
+                if not _should_run_learn(artifacts_dir):
+                    # Cancel the learn task we just enqueued (it's the most recent pending)
+                    fresh_pending = [t for t in orion.task_store.recent(limit=10) if t.status == "pending" and t.kind == "learn"]
+                    for t in fresh_pending:
+                        orion.task_store.mark_done(t.id, {"skipped": True, "reason": "research_still_fresh"})
 
             max_steps = max(1, min(int(steps), 200))
             last = None
@@ -93,6 +137,9 @@ def _write_heartbeat(
     except Exception:
         pass
 
+    # Research pipeline status — proof the system is reading
+    research_status = _get_research_status(artifacts_dir)
+
     hb = {
         "ts": datetime.now(timezone.utc).isoformat(),
         "last": last,
@@ -100,6 +147,7 @@ def _write_heartbeat(
         "policy": policy or {},
         "policy_enqueue": policy_enqueue or {},
         "learning": learning_metrics,
+        "research": research_status,
     }
     p = artifacts_dir / "state" / "orion_heartbeat.json"
     p.parent.mkdir(parents=True, exist_ok=True)

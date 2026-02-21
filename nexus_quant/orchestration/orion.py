@@ -65,6 +65,8 @@ class Orion:
             self.vector_store.close()
 
     def bootstrap(self, *, include_improve: bool = True) -> None:
+        # Research first — read before you trade (daily gate applied in autopilot)
+        self.task_store.create(kind="learn", payload={"artifacts": str(self.cfg.artifacts_dir)})
         self.task_store.create(kind="run", payload={"config": str(self.cfg.config_path), "out": str(self.cfg.artifacts_dir)})
         self.task_store.create(kind="research_ingest", payload={"artifacts": str(self.cfg.artifacts_dir)})
         if include_improve:
@@ -106,6 +108,8 @@ class Orion:
             elif kind == "wisdom":
                 payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
             elif kind == "research_ingest":
+                payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
+            elif kind == "learn":
                 payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
             elif kind == "policy_review":
                 payload = {"artifacts": str(self.cfg.artifacts_dir), **payload}
@@ -213,6 +217,10 @@ class Orion:
                 out = self._write_policy_review(Path(task.payload["artifacts"]), task.payload)
                 self.task_store.mark_done(task.id, out)
                 return {"ok": True, "task": task.kind, "review": out}
+            if task.kind == "learn":
+                out = self._run_daily_research(Path(task.payload["artifacts"]))
+                self.task_store.mark_done(task.id, out)
+                return {"ok": True, "task": task.kind, "research": out}
             raise ValueError(f"Unknown task kind: {task.kind}")
         except Exception as e:
             # ── POSTMORTEM: Extract lessons from failure ──
@@ -263,6 +271,26 @@ class Orion:
             created += 1
             ids.append(exp_id)
         return {"created": created, "skipped": skipped, "ids": ids, "max_per_critique": max_n}
+
+    def _run_daily_research(self, artifacts_dir: Path) -> Dict[str, Any]:
+        """
+        Fetch from 50+ external sources (RSS, arXiv, crypto APIs) and extract hypotheses.
+        This is the EXTERNAL intelligence gathering — reads the world before making decisions.
+        """
+        try:
+            from ..research.daily_routine import DailyRoutine
+        except Exception:
+            return {"ok": False, "error": "daily_routine_module_missing"}
+
+        routine = DailyRoutine(artifacts_dir)
+        brief = routine.morning_research()
+        return {
+            "ok": True,
+            "sources_fetched": brief.get("stats", {}).get("fetched_sources", 0),
+            "total_items": brief.get("total_items", 0),
+            "hypotheses": len(brief.get("hypotheses", [])),
+            "ts": brief.get("ts"),
+        }
 
     def _research_ingest(self, artifacts_dir: Path) -> Dict[str, Any]:
         """

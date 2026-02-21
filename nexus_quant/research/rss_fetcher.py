@@ -58,11 +58,24 @@ def _score_relevance(text: str, source_tags: List[str], source_weight: float = 1
 # HTTP helpers
 # ────────────────────────────────────────────────────────────────────────────
 
+def _make_ssl_context():
+    """Create SSL context with certifi CA bundle (fixes macOS Python 3.14 SSL issues)."""
+    import ssl
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        return ssl.create_default_context()
+
+
+_SSL_CTX = _make_ssl_context()
+
+
 def _http_get(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = _REQUEST_TIMEOUT) -> Optional[str]:
     """Fetch URL, return body text or None on error."""
     try:
         req = urllib.request.Request(url, headers=headers or _HEADERS)
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
             raw = resp.read()
             encoding = resp.headers.get_content_charset("utf-8") or "utf-8"
             return raw.decode(encoding, errors="replace")

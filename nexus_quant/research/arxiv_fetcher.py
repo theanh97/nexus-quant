@@ -20,6 +20,7 @@ No API key needed — fully public.
 import json
 import math
 import re
+import ssl
 import time
 import urllib.request
 import urllib.parse
@@ -27,6 +28,15 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+
+def _ssl_ctx():
+    """SSL context with certifi CA bundle (fixes macOS Python 3.14)."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        return ssl.create_default_context()
 
 
 _NEXUS_KEYWORDS = [
@@ -97,7 +107,7 @@ def fetch_arxiv_papers(
             })
             url = f"https://export.arxiv.org/api/query?{query}"
             req = urllib.request.Request(url, headers={"User-Agent": "NEXUS-Research/1.0"})
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=15, context=_ssl_ctx()) as resp:
                 xml_text = resp.read().decode("utf-8")
             root = ET.fromstring(xml_text)
             for entry in root.findall(f"{{{_NS}}}entry"):
@@ -158,7 +168,7 @@ def fetch_crypto_news_headlines() -> List[Dict[str, Any]]:
     for url, source in sources:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "NEXUS/1.0"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10, context=_ssl_ctx()) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             items = data if isinstance(data, list) else data.get("data", data.get("news", []))
             for item in items[:20]:

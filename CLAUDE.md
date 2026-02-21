@@ -295,5 +295,25 @@ python3 -m nexus_quant guardian --artifacts artifacts --stale-seconds 900
 
 ---
 
+---
+
+## SESSION STARTUP CHECKLIST
+
+**Every new Claude session MUST verify system health BEFORE proceeding:**
+
+| Check | Command | Action if Failed |
+|-------|---------|-----------------|
+| Research freshness | Check `artifacts/brain/daily_brief.json` → `.ts` | If >24h old → `python3 -m nexus_quant learn --artifacts artifacts` |
+| Autopilot heartbeat | Check `artifacts/state/orion_heartbeat.json` → `.ts` | If >30min stale → restart autopilot |
+| All 3 projects | Check watchdog status | Start missing projects |
+| Uncommitted work | `git status` | Commit if improvements exist |
+| NOLE lessons | Check operational learner metrics | Review if prevention_rate declining |
+
+**DO NOT skip this checklist. DO NOT ask the user — just check and fix.**
+
+The research pipeline (`learn` task) runs daily via Orion bootstrap. If it hasn't run, execute it immediately. This is non-negotiable.
+
+---
+
 **Remember: NEXUS is alive. NEXUS never sleeps. NEXUS gets better every day.**
 **If you're reading this, you have a job to do. Go do it. Now.**
