@@ -122,7 +122,9 @@
     }
   },
   "self_learn": {
-    "enabled": true
+    "enabled": true,
+    "prior_exploit_prob": 0.25,
+    "_note": "Widened search: 75+ stagnant runs (Rule 4). exploit_prob reduced 0.7→0.25 to force exploration."
   },
   "volume_tilt": {
     "_comment": "Phase 111-113: reduce leverage when aggregate volume momentum is high (crowded market)",
