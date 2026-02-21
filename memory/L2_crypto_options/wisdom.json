@@ -473,7 +473,8 @@
     "IV-percentile position sizing: step function (0.5x/1.0x/1.5x) with 180d lookback improves VRP avg +0.258 AND min +0.343 — sizing ≠ filtering",
     "Equity-curve overlays (R26): 0/24 configs improve carry. DD threshold, MA envelope, time-HWM, graduated DD — ALL hurt. Carry earns most during recovery (high IV post-drawdown). Confirms: always fully invested.",
     "VRP carry magnitude sizing (R27): direct carry spread (IV²-RV²) is too noisy for sizing — single-day RV swamps signal. IV percentile (R25) wins because it's a smooth proxy. 3/26 marginal improvements, none beat R25.",
-    "IV sizing parameter optimization (R28): 55 configs, best 0.3/2.0x (avg=2.677 Δ=+0.418). High-scale factor is primary driver (monotonic). Production-safe 0.5/1.7x (avg=2.593 Δ=+0.334). 25/75 thresholds and 180d lookback confirmed optimal."
+    "IV sizing parameter optimization (R28): 55 configs, best 0.3/2.0x (avg=2.677 Δ=+0.418). High-scale factor is primary driver (monotonic). Production-safe 0.5/1.7x (avg=2.593 Δ=+0.334). 25/75 thresholds and 180d lookback confirmed optimal.",
+    "Ensemble weight re-optimization with IV sizing (R29): 15 weights × 2 sizing modes = 30 runs. Optimal shifts from 40/60 to 45/55 but difference is only +0.002. Surface is flat (35-50% VRP). 40/60 confirmed for stability. IV sizing improvement is uniform (+0.31-0.33) across all weights."
   ],
 
   "failed_hypotheses": [
