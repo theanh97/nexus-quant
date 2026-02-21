@@ -311,8 +311,8 @@
     },
     "per_regime_scale": {
       "LOW": 0.4,
-      "MID": 0.15,
-      "HIGH": 0.1
+      "MID": 0.5,
+      "HIGH": 0.35
     }
   },
   "disp_overlay_params": {
@@ -327,7 +327,7 @@
       "HIGH": 0.5
     }
   },
-  "version": "v2.42.12",
+  "version": "v2.42.13",
   "v1_per_regime_weights": {
     "LOW": {
       "w_carry": 0.1,
