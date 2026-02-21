@@ -1,8 +1,8 @@
 {
   "_project": "crypto_options",
-  "_version": "32.0.0",
-  "_updated": "2026-02-22",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). 90 research studies (R1-R90). Multi-asset production system (BTC 70% + ETH 30%). BF edge CONFIRMED STRUCTURAL. 10x STATIC > DYNAMIC rule. GREEN for live deployment.",
+  "_version": "33.0.0",
+  "_updated": "2026-02-21",
+  "_description": "Accumulated wisdom for Crypto Options (Deribit). 93 research studies (R1-R93). Multi-asset production system (BTC 70% + ETH 30%). MAKER FILLS ESSENTIAL (R92). Historical replay 5/5 GREEN (R93). BF edge CONFIRMED STRUCTURAL. 10x STATIC > DYNAMIC.",
   "_status": "PRODUCTION READY — GREEN. Multi-asset runner (R88: BTC 70%/ETH 30%). ETH kill-switch widened to 2.0% (R89). Early warnings for MONITORING ONLY (R90: 10th static>dynamic). Portfolio health 0.66 STRONG. All systems GO.",
 
   "CRITICAL_DATA_AUTHENTICITY_WARNING": {
@@ -638,7 +638,10 @@
     "★ MC STRESS TEST 5/5 PASS (R87): Bootstrap Sharpe 95% CI [4.20, 6.03], P(>1)=100%. Kill-switch (1.4%) hit probability 0.00%. P(1Y loss) 0.00%. Worst MC drawdown -0.54%. Worst synthetic scenario (30d×-2σ) -1.06% (no kill). Return distribution: slight fat tails (kurt=1.35) but benign. Avg DD 5.1 days, avg recovery 3.1 days. Capital 0.3 BTC adequate. GREEN for deployment.",
     "Multi-asset runner deployed (R88): BTC 70% + ETH 30%. Per-asset signals: BTC BF=HOLD z=0.254 health=0.623, ETH BF=HOLD z=-0.048 health=0.747. Portfolio health 0.66 STRONG.",
     "★ DRAWDOWN ANATOMY (R89): BTC worst DD -0.47% (102 days), ETH worst -1.58% (24 days). Early warnings EXIST: elevated IV (+14%), z-volatility (2.25×), BF std (+25%). Losses at extreme z-scores (entry zone). Recovery fast (median 6 days). ETH kill-switch widened to 2.0% (was 1.4%). BTC-ETH P&L correlation -0.029.",
-    "★ 10th STATIC>DYNAMIC (R90): Warning-based position sizing tested (5 methods). ALL hurt Sharpe (BTC -0.19 to -0.56, ETH -0.26 to -0.67). Walk-forward avg delta: BTC -0.49, ETH -0.60. Paradox: high-warning days have BETTER returns (elevated IV = more carry). Warnings for MONITORING ONLY. 10th confirmation: never use dynamic sizing/timing/filtering."
+    "★ 10th STATIC>DYNAMIC (R90): Warning-based position sizing tested (5 methods). ALL hurt Sharpe (BTC -0.19 to -0.56, ETH -0.26 to -0.67). Walk-forward avg delta: BTC -0.49, ETH -0.60. Paradox: high-warning days have BETTER returns (elevated IV = more carry). Warnings for MONITORING ONLY. 10th confirmation: never use dynamic sizing/timing/filtering.",
+    "Deribit execution guide (R91): 880 BTC options across 12 expiries. BF maps to 3-leg butterfly (sell 25d wings, buy 2× ATM). ATM $69K, wings $62K/$75K. Quarterly rolls (4×/yr, DTE<7 trigger). Capital: 0.3-1.0 BTC. Daily playbook at 00:15 UTC.",
+    "★★ MAKER FILLS ESSENTIAL (R92): Live order book spreads 17.5-20 bps per BF trade (R76 estimated 3-8 bps for spread only). TAKER execution DESTROYS edge (Sharpe → -0.66, cost > return). MAKER-only: Sharpe 2.65 (29% cost drag). Book depth excellent (300+ contracts/level). RULE: limit orders ONLY, 1-4h fill patience.",
+    "★ HISTORICAL REPLAY 5/5 GREEN (R93): 12-month replay (Feb 2025 → Feb 2026). BTC: Sharpe 2.74, 6 trades, MaxDD -0.21%. ETH: Sharpe 1.23, 4 trades, MaxDD -0.53%. Portfolio 70/30: Sharpe 2.71, +0.47%, MaxDD -0.16%. All 8/8 consistency checks pass. CRITICAL: BTC breaks even with 8bps maker costs in this low-return period. ETH survives costs better (+0.15% net)."
   ],
 
   "failed_hypotheses": [
@@ -704,16 +707,17 @@
   "SYNTHETIC_DATA_STATUS": "PARTIALLY VALIDATED. R49 confirms VRP edge is REAL using Deribit DVOL. Skew MR strategy still needs real skew data (not available free). Architecture principles validated. Parameter optimization still synthetic-only.",
 
   "next_research": [
-    "★ PRIORITY 1: Live paper trading — run cron 30 days before real capital (system is GREEN)",
-    "PRIORITY 2: Alternative data sources — Tardis.dev or Laevitas for deeper option chain analytics",
-    "PRIORITY 3: Cross-exchange BF analysis — does BF MR work on OKX/Bybit? (R86 confirms structural → likely yes)",
-    "PRIORITY 4: Intraday BF analysis — does BF MR work at higher frequency?",
-    "COMPLETED: Multi-asset runner (R88 — BTC 70%/ETH 30%, per-asset kill-switches)",
-    "COMPLETED: Drawdown anatomy (R89 — early warnings exist, ETH DD widened to 2.0%)",
-    "COMPLETED: Early warning system (R90 — 10th static>dynamic, MONITOR_ONLY)",
-    "COMPLETED: Dashboard (R85), ETH validation (R86), MC stress (R87)",
-    "COMPLETED: Production infrastructure (R80-R84)",
-    "COMPLETED: R76-R79, R72-R75, R68-R71",
-    "SOL/DOGE universe expansion when Deribit option volume increases"
+    "★ PRIORITY 1: Live paper trading — system is GREEN, run cron 30 days before real capital",
+    "★ PRIORITY 2: Reduce execution costs — combo orders, Deribit RFQ, or lower-cost entry signals",
+    "PRIORITY 3: Alternative data — Tardis.dev or Laevitas for deeper option chain analytics",
+    "PRIORITY 4: Cross-exchange BF — OKX/Bybit (R86 structural → likely works)",
+    "PRIORITY 5: Intraday BF analysis — higher frequency signal",
+    "COMPLETED: Execution guide + order book (R91-R92 — maker fills ESSENTIAL, 17.5-20 bps spread)",
+    "COMPLETED: Historical replay (R93 — 12mo validation, 5/5 GREEN, 8/8 consistency)",
+    "COMPLETED: R88-R90 (multi-asset, DD anatomy, 10th static>dynamic)",
+    "COMPLETED: R85-R87 (dashboard, ETH validation, MC stress)",
+    "COMPLETED: R80-R84 (production infrastructure)",
+    "COMPLETED: R68-R79 (BF optimization + robustness)",
+    "SOL/DOGE expansion when Deribit volume increases"
   ]
 }
