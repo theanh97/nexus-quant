@@ -1,0 +1,11 @@
+{
+  "research_id": "R57",
+  "title": "Walk-Forward Validation of Multi-Factor Model",
+  "loyo_summary": {
+    "VRP-only": 2.1061986924090124,
+    "VRP+Skew": 2.187822147572344,
+    "VRP+Butterfly": 2.2556595086755897,
+    "VRP+BF+Skew": 2.32344322615846,
+    "All 4-factor": 2.3685792167027215
+  }
+}
