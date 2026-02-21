@@ -236,6 +236,12 @@
       "detail": "Tested 4 single tenors, 7 ladder configs, 2-tenor grid (54 combos), 3-tenor grid. Gross VRP scales with 1/sqrt(DTE) (7d:2.934 > 30d:2.604 > 60d:2.289 zero-cost Sharpe). But rolling costs destroy short-tenor advantage. Best multi-expiry: 14d:30%+30d:70% avg=2.115 vs 30d baseline 2.064.",
       "status": "MARGINAL — not worth complexity on synthetic data",
       "key_insight": "With better execution (lower rolling costs), front-loading DTE would be optimal. Real term structure dynamics may make multi-expiry more beneficial."
+    },
+    "R24_tail_hedge_destroys_vrp": {
+      "rule": "NEVER add tail hedges (OTM puts) to VRP on current risk profile. Put premium cost vastly exceeds payoff. VRP MDD is already mild (-2.6%).",
+      "detail": "Tested 5 put deltas (5d-25d) × 4 hedge ratios (25%-100%) + 3 iron condor configs = 23 configs. ALL worse than naked VRP. Best: 5d put 100% → Sharpe -0.026 (from 2.604). Even 25% hedge ratio with cheapest put: Sharpe 1.109. Iron condors even worse (-5 to -15 Sharpe). On synthetic data, daily put theta decay is relentless while extreme crashes are too rare for payoff.",
+      "status": "REJECTED on synthetic data. Revisit with real data (real crashes could change calculus).",
+      "key_insight": "VRP tail risk is already well-managed by delta-neutral positioning + weekly rebalancing + z-score exit. Adding explicit tail hedges is not cost-effective when MDD < 3%."
     }
   },
 
@@ -256,7 +262,8 @@
     "tail_stress_6_tests": "ALL PASS. Historical crashes, VaR/CVaR, drawdown, correlation, tail protection. Ensemble MDD -1.51%.",
     "vrp_regime_filter_22_configs": "ALL WORSE than baseline (avg=2.556). Term structure (5 thresholds), skew z-score (5 configs), IV level (4 ranges), combined (4 combos). Best single filter: term_-0.05 (Δ=-0.060). Worst combined: all_three (Δ=-1.079). Confirms R7+R21: overlays/filters destroy carry.",
     "correlation_estimator_7_tests": "ALL PASS. Convergence, regime shift, uncorrelated, perfect correlation, crash decorrelation, spike detection, persistence.",
-    "multi_expiry_vrp_75_configs": "Best: 14d:30%+30d:70% (avg=2.115, Δ=+0.051 vs 30d baseline 2.064). Marginal improvement. 4 single tenors + 7 ladders + 54 2-tenor + ~12 3-tenor combos. Gross Sharpe: 7d=2.934, 14d=2.829, 30d=2.604, 60d=2.289 (zero-cost). Rolling costs dominate short-DTE."
+    "multi_expiry_vrp_75_configs": "Best: 14d:30%+30d:70% (avg=2.115, Δ=+0.051 vs 30d baseline 2.064). Marginal improvement. 4 single tenors + 7 ladders + 54 2-tenor + ~12 3-tenor combos. Gross Sharpe: 7d=2.934, 14d=2.829, 30d=2.604, 60d=2.289 (zero-cost). Rolling costs dominate short-DTE.",
+    "tail_hedged_vrp_23_configs": "ALL WORSE than naked VRP. 5 put deltas (5d-25d) × 4 hedge ratios + 3 iron condors. Baseline avg=2.604, best hedged=-0.026. Put theta cost vastly exceeds payoff on synthetic data."
   },
 
   "NEXUS_PORTFOLIO_INTEGRATION": {
@@ -443,7 +450,8 @@
     "Dynamic ensemble allocation — ALL worse than static OOS",
     "SOL universe expansion — API data unavailable",
     "VRP regime filters (term structure, skew z-score, IV level) — ALL 22 configs worse than unfiltered baseline",
-    "Multi-expiry VRP — 75+ configs, best improvement +0.051 Sharpe (marginal, not worth complexity on synthetic data)"
+    "Multi-expiry VRP — 75+ configs, best improvement +0.051 Sharpe (marginal, not worth complexity on synthetic data)",
+    "Tail-hedged VRP (OTM puts) — 23 configs, ALL worse. Put premium cost vastly exceeds payoff when VRP MDD is only -2.6%"
   ],
 
   "next_research": [

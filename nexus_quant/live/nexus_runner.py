@@ -258,7 +258,7 @@ def status_report() -> str:
 
     lines.append("EXECUTION VENUES:")
     lines.append("  binance:  crypto_perps (USDM futures)")
-    lines.append("  deribit:  crypto_options (options, stub)")
+    lines.append("  deribit:  crypto_options (options + perps delta hedge)")
     lines.append("")
     lines.append("=" * 70)
 
