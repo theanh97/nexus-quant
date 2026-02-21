@@ -1,0 +1,96 @@
+{
+  "research_id": "R60",
+  "title": "Final Production Configuration",
+  "production_config": {
+    "asset": "BTC only",
+    "strategy": "VRP + Butterfly MR",
+    "recommended_weights": {
+      "VRP": 0.5,
+      "Butterfly_MR": 0.5
+    },
+    "alternative_weights": {
+      "VRP": 0.7,
+      "Butterfly_MR": 0.3
+    },
+    "vrp_params": {
+      "leverage": 2.0,
+      "lookback": 30,
+      "rebalance_freq": 5
+    },
+    "butterfly_params": {
+      "lookback": 120,
+      "z_entry": 1.5,
+      "z_exit": 0.3
+    },
+    "iv_sizing": "NONE (R59 reversal)",
+    "eth": "EXCLUDED (R58)"
+  },
+  "performance": {
+    "50_50": {
+      "sharpe": 2.9066366330066473,
+      "ann_ret": 0.05158099885705701,
+      "ann_vol": 0.017745939850658674,
+      "max_dd": 0.01591336894764872,
+      "win_rate": 0.8015540944411237,
+      "worst_day": -0.01529592305932615,
+      "best_day": 0.001777583346701167,
+      "t_stat": 6.222892247405805,
+      "n_days": 1673,
+      "var95": -0.0012191380406074489,
+      "var99": -0.0038517849473496493,
+      "cvar95": -0.002911144553758685,
+      "skewness": -6.128746424069659,
+      "kurtosis": 70.00318520457566,
+      "calmar": 3.241362594353621,
+      "total_return": 0.23642468791193527
+    },
+    "70_30": {
+      "sharpe": 2.83936738860407,
+      "ann_ret": 0.07018751766466948,
+      "ann_vol": 0.02471942093382148,
+      "max_dd": 0.02185259112650162,
+      "win_rate": 0.8021518230723251,
+      "worst_day": -0.021414292283056607,
+      "best_day": 0.002226720905531502,
+      "t_stat": 6.078873812239855,
+      "n_days": 1673,
+      "var95": -0.0016828539403268424,
+      "var99": -0.005408905385229311,
+      "cvar95": -0.004064033634618248,
+      "skewness": -6.21039317184089,
+      "kurtosis": 71.27777043240509,
+      "calmar": 3.211862486163022,
+      "total_return": 0.32170881384381383
+    },
+    "vrp_only": {
+      "sharpe": 2.7847097888533443,
+      "ann_ret": 0.09809729587608822,
+      "ann_vol": 0.03522711640141201,
+      "max_dd": 0.031046288200372307,
+      "win_rate": 0.8039450089659295,
+      "worst_day": -0.0305918461186523,
+      "best_day": 0.0031810298650450032,
+      "t_stat": 5.961855967667115,
+      "n_days": 1673,
+      "var95": -0.002378427789905933,
+      "var99": -0.007741850126258236,
+      "cvar95": -0.0057953167538581886,
+      "skewness": -6.246638898246508,
+      "kurtosis": 71.88017596359127,
+      "calmar": 3.159710920769969,
+      "total_return": 0.44963500274163176
+    }
+  },
+  "validation": {
+    "walk_forward_oos_sharpe": 2.44,
+    "loyo_sharpe": 2.26,
+    "rolling_1yr_above_1": "94%",
+    "total_studies": 60
+  },
+  "key_reversals_from_synthetic": [
+    "Butterfly MR helps on real (R56/R57) \u2014 synthetic said didn't",
+    "Skew MR weak on real (R55/R56) \u2014 synthetic said strong",
+    "IV-sizing hurts on real (R59) \u2014 synthetic said +0.258",
+    "ETH excluded (R58) \u2014 synthetic showed strong ETH"
+  ]
+}
