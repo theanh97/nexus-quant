@@ -20,4 +20,9 @@ logs/
 research/inbox/
 research/library/
 .cache/
-.cache/
+
+# Data cache (large downloaded files)
+data/cache/
+
+# Playwright session captures
+.playwright-cli/
