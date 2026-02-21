@@ -1,6 +1,6 @@
 {
   "_project": "crypto_options",
-  "_version": "13.0.0",
+  "_version": "14.0.0",
   "_updated": "2026-02-21",
   "_description": "Accumulated wisdom for Crypto Options (Deribit). Exhaustive R&D: 5000+ configs across 11 strategy types + 3 dynamic allocation + hourly frequency analysis + regime filter + IV sizing research (R25-R28). Delta hedging costs quantified. Tail events stress-tested. Cross-project portfolio integration complete. DeribitExecutor fully implemented. Paper state tracker active.",
   "_status": "PRODUCTION-READY: IV-sized ensemble Sharpe 2.593 (R28 optimized 0.5/1.7). Delta hedge drag -6.6%. Tail stress: 3/3 PASS. Cross-project portfolio 25/75 Sharpe 3.103. 11/11 production tests PASS. Equity-curve overlays (R26) and carry sizing (R27) confirmed as harmful — carry must be always-on.",
@@ -479,7 +479,8 @@
     "ETH ensemble replication (R31): ETH ensemble avg=2.772 (better than BTC 2.259). IV sizing works on ETH (+0.182). Multi-asset 40/60 BTC/ETH gives avg=3.174 (+0.989 vs BTC-only). 50/50 gives best min=2.632. BTC-ETH returns inversely correlated by year — excellent diversification.",
     "Rebalance frequency optimization (R32): freq=3 (every 3d) gives avg=2.714 (+0.121 vs freq=5 at 2.593). Faster rebalancing captures IV regime transitions. Asymmetric best: VRP=10/Skew=3 (2.649). Keep freq=5 for production until real data validates — more conservative.",
     "Leverage re-optimization with IV sizing (R34): VRP leverage sweep [0.5-3.0] shows 1.50 is optimal (flat plateau 1.25-1.75, all within ±0.018). Skew leverage 0.75 marginally better (+0.005) but worse min Sharpe. Joint grid best VRP=1.25/Skew=0.75 (avg=2.606, Δ=+0.013) — not significant. Current VRP=1.5/Skew=1.0 confirmed near-optimal. IV sizing modulates effective leverage correctly without base adjustment.",
-    "Per-asset parameter optimization (R35): ETH benefits from longer VRP lookback (60d vs 30d, Δ=+0.182) and slightly longer Skew lookback (90d vs 60d, marginal). ETH VRP leverage 1.5 same as BTC. Aggressive IV sizing (0.3/2.0x) for both assets adds +0.137. Cross-asset IV sizing HURTS (-0.134) — own-asset IV is correct signal. Optimized multi-asset ensemble: avg=3.713 min=3.310 (+0.390 vs uniform params). Key: ETH has higher base vol → needs longer lookback to smooth noise."
+    "Per-asset parameter optimization (R35): ETH benefits from longer VRP lookback (60d vs 30d, Δ=+0.182) and slightly longer Skew lookback (90d vs 60d, marginal). ETH VRP leverage 1.5 same as BTC. Aggressive IV sizing (0.3/2.0x) for both assets adds +0.137. Cross-asset IV sizing HURTS (-0.134) — own-asset IV is correct signal. Optimized multi-asset ensemble: avg=3.713 min=3.310 (+0.390 vs uniform params). Key: ETH has higher base vol → needs longer lookback to smooth noise.",
+    "Robustness validation of R35 (R36): LOYO validation PASSES — R35 optimized dominates ALL 5 OOS years (avg=3.713 vs 3.323 conservative). ETH VRP lb=60 is universally robust (+0.199 standalone). Tail risk IDENTICAL across all configs (MDD -0.717%, worst day -0.436%). CAVEAT: IV scaling sensitivity is MONOTONIC on synthetic data (0.2/2.5 → 3.926), which is an overfitting concern for real data. Multi-seed test showed zero variance (synthetic is deterministic per-seed). RECOMMENDATION: Use ETH lb=60 params (robust), keep conservative 0.5/1.7x IV sizing until real data validates aggressive scaling."
   ],
 
   "failed_hypotheses": [
