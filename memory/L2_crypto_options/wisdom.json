@@ -471,7 +471,8 @@
     "VRP-Skew correlation DECREASES during stress (0.01 vs 0.04) — ideal diversification",
     "Ensemble max drawdown -1.51% across 5 years — zero days with >1% loss",
     "IV-percentile position sizing: step function (0.5x/1.0x/1.5x) with 180d lookback improves VRP avg +0.258 AND min +0.343 — sizing ≠ filtering",
-    "Equity-curve overlays (R26): 0/24 configs improve carry. DD threshold, MA envelope, time-HWM, graduated DD — ALL hurt. Carry earns most during recovery (high IV post-drawdown). Confirms: always fully invested."
+    "Equity-curve overlays (R26): 0/24 configs improve carry. DD threshold, MA envelope, time-HWM, graduated DD — ALL hurt. Carry earns most during recovery (high IV post-drawdown). Confirms: always fully invested.",
+    "VRP carry magnitude sizing (R27): direct carry spread (IV²-RV²) is too noisy for sizing — single-day RV swamps signal. IV percentile (R25) wins because it's a smooth proxy. 3/26 marginal improvements, none beat R25."
   ],
 
   "failed_hypotheses": [
@@ -488,7 +489,8 @@
     "VRP regime filters (term structure, skew z-score, IV level) — ALL 22 configs worse than unfiltered baseline",
     "Multi-expiry VRP — 75+ configs, best improvement +0.051 Sharpe (marginal, not worth complexity on synthetic data)",
     "Tail-hedged VRP (OTM puts) — 23 configs, ALL worse. Put premium cost vastly exceeds payoff when VRP MDD is only -2.6%",
-    "Equity-curve position scaling (R26) — 24 configs across 4 approaches (DD threshold, MA envelope, time-HWM, graduated DD), ALL 0/24 improve. Carry trades must be always fully invested. Portfolio-state overlays destroy carry same as market-signal overlays."
+    "Equity-curve position scaling (R26) — 24 configs across 4 approaches (DD threshold, MA envelope, time-HWM, graduated DD), ALL 0/24 improve. Carry trades must be always fully invested. Portfolio-state overlays destroy carry same as market-signal overlays.",
+    "VRP carry magnitude sizing (R27) — 26 configs: carry_pct (0/10), carry_z (3/9 marginal), IV/RV ratio (0/7). Direct carry spread is too noisy (single-day RV). IV percentile (R25) is a smoother, better proxy. Best carry_z only +0.025 vs R25's +0.276."
   ],
 
   "next_research": [
