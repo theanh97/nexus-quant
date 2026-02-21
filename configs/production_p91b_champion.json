@@ -224,22 +224,25 @@
     "p_high": 0.68,
     "regime_weights": {
       "LOW": {
-        "v1": 0.35,
-        "i460bw168": 0.0,
-        "i415bw216": 0.25,
-        "f168": 0.4
+        "v1": 0.3,
+        "i460bw168": 0.15,
+        "i415bw216": 0.15,
+        "f168": 0.4,
+        "_regime": "LOW momentum (<30th pct breadth) \u2014 defensive"
       },
       "MID": {
-        "v1": 0.0,
-        "i460bw168": 0.0,
-        "i415bw216": 0.0,
-        "f168": 1.1
+        "v1": 0.15,
+        "i460bw168": 0.05,
+        "i415bw216": 0.1,
+        "f168": 0.7,
+        "_regime": "MID momentum (30-60%) \u2014 balanced"
       },
       "HIGH": {
-        "v1": 0.5,
-        "i460bw168": 0.5,
+        "v1": 0.35,
+        "i460bw168": 0.65,
         "i415bw216": 0.0,
-        "f168": 0.0
+        "f168": 0.0,
+        "_regime": "HIGH momentum (>60th pct) \u2014 momentum-heavy"
       }
     },
     "mechanism": "At each bar: compute % symbols with positive 192h return (breadth). Rolling percentile rank vs prior 336h. If <20th pct -> LOW weights. If 20-60% -> MID weights. If >60% -> HIGH weights. P158 tune: lb=192, thresholds 0.35/0.65. P181 tune: PL=0.20 PH=0.60 (wider HIGH band). P182 tune: LOW/MID f168=0.35 HIGH f168=0.10."
@@ -342,7 +345,7 @@
       "HIGH": 0.5
     }
   },
-  "version": "v2.42.20",
+  "version": "v2.48.0",
   "v1_per_regime_weights": {
     "LOW": {
       "w_carry": 0.1,
@@ -359,5 +362,6 @@
       "w_mom": 0.5,
       "w_mean_reversion": 0.25
     }
-  }
+  },
+  "obj": 4.2852
 }
