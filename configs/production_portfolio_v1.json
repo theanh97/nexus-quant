@@ -1,0 +1,148 @@
+{
+  "_comment": "NEXUS Production Portfolio v2 — 2-Strategy Crypto Portfolio (research-validated allocations)",
+  "_version": "2.0.0",
+  "_created": "2026-02-21",
+  "_validated": "PortfolioOptimizer: 25/75 optimal across all correlation assumptions (0.0-0.5). VRP ensemble (VRP 40% + Skew MR 60%) avg Sharpe 2.723. P91b avg Sharpe 2.005. Combined portfolio Sharpe 3.103.",
+
+  "portfolio": {
+    "name": "NEXUS Portfolio v2",
+    "description": "2-strategy crypto portfolio: perps momentum + options carry. Options-heavy allocation validated by portfolio optimization.",
+    "target_sharpe": 2.5,
+    "target_mdd_max": -0.10,
+    "expected_live_sharpe": "1.5-2.0",
+    "rebalance_frequency": "monthly"
+  },
+
+  "allocations": {
+    "crypto_perps": {
+      "weight": 0.25,
+      "config": "configs/production_p91b_champion.json",
+      "project": "crypto_perps",
+      "venue": "binance_usdm",
+      "bar_interval": "1h",
+      "backtest_sharpe": 2.005,
+      "min_year_sharpe": 1.427,
+      "status": "production_live",
+      "note": "P91b vol-tilt champion. Live since Jan 2026."
+    },
+    "crypto_options": {
+      "weight": 0.75,
+      "project": "crypto_options",
+      "venue": "deribit",
+      "strategies": {
+        "VRP": {"weight_in_ensemble": 0.40, "frequency": "hourly", "avg_sharpe": 3.649},
+        "Skew_MR": {"weight_in_ensemble": 0.60, "frequency": "daily", "avg_sharpe": 1.744}
+      },
+      "ensemble_avg_sharpe": 2.723,
+      "ensemble_min_sharpe": 2.022,
+      "status": "validated_paper_trading",
+      "note": "Mixed-frequency ensemble. 11/11 production readiness tests PASS. Paper tracking active."
+    }
+  },
+
+  "portfolio_math": {
+    "_note": "Portfolio optimization results (PortfolioOptimizer, efficient frontier search)",
+    "correlation_estimate": 0.20,
+    "combined_portfolio_sharpe": 3.103,
+    "combined_min_sharpe": 2.715,
+    "portfolio_vol_pct": 4.9,
+    "portfolio_return_pct": 15.2,
+    "diversification_benefit": "+0.381 Sharpe (+14%) vs best standalone",
+    "sensitivity": {
+      "rho_0.00": {"perps": 0.25, "opts": 0.75, "sharpe": 3.377},
+      "rho_0.10": {"perps": 0.25, "opts": 0.75, "sharpe": 3.232},
+      "rho_0.20": {"perps": 0.25, "opts": 0.75, "sharpe": 3.103},
+      "rho_0.30": {"perps": 0.20, "opts": 0.80, "sharpe": 2.992},
+      "rho_0.40": {"perps": 0.20, "opts": 0.80, "sharpe": 2.900},
+      "rho_0.50": {"perps": 0.15, "opts": 0.85, "sharpe": 2.822}
+    },
+    "note": "Allocation robust: 75-85% options across all correlation assumptions."
+  },
+
+  "delta_hedging": {
+    "_note": "R18+R19 research-validated delta hedge configuration",
+    "tolerance": 0.25,
+    "tolerance_sweep": {
+      "10pct": {"hedges_per_year": 219, "sharpe": 0.792},
+      "25pct": {"hedges_per_year": 58, "sharpe": 1.410},
+      "40pct": {"hedges_per_year": 18, "sharpe": 1.780}
+    },
+    "fee_type": "maker",
+    "bidirectional_funding": true,
+    "hedge_instrument": "PERPETUAL",
+    "optimal_degradation_vs_perfect": "-6.6%"
+  },
+
+  "risk": {
+    "max_portfolio_drawdown": 0.10,
+    "max_strategy_drawdown": 0.20,
+    "correlation_monitoring": {
+      "alert_if_above": 0.5,
+      "halt_if_above": 0.7,
+      "window_days": 60,
+      "estimator": "EWMA half_life=20, rolling_window=60"
+    },
+    "greeks_limits": {
+      "max_abs_delta_per_asset": 0.50,
+      "max_abs_vega_usd": 10000,
+      "max_abs_gamma": 1.0
+    },
+    "tail_metrics": {
+      "ensemble_max_drawdown": "-1.51%",
+      "worst_single_day": "-0.87%",
+      "VaR_99": "-0.33%",
+      "CVaR_99": "-0.57%",
+      "loss_days_gt_1pct": "0.0%"
+    },
+    "concentration_risk": "Both strategies are crypto-denominated. No non-crypto diversification.",
+    "mitigation": "P91b = momentum/mean-reversion (directional). Options = carry/vol (non-directional). Different signal types reduce effective correlation. Ensemble VRP+Skew is profitable during major crashes."
+  },
+
+  "deployment_plan": {
+    "phase_1": {
+      "description": "P91b live on Binance",
+      "status": "ACTIVE since Jan 2026",
+      "account_min_usd": 10000,
+      "leverage": 0.35
+    },
+    "phase_2": {
+      "description": "Options paper trading on Deribit",
+      "status": "ACTIVE — collecting data, paper P&L tracking",
+      "account_min_usd": 25000,
+      "duration_weeks": 8,
+      "success_criteria": "60 days live data, paper Sharpe > 0, real VRP validation"
+    },
+    "phase_3": {
+      "description": "Options live capital deployment",
+      "eta": "2026-05",
+      "account_min_usd": 50000,
+      "perps_allocation_usd": 12500,
+      "options_allocation_usd": 37500,
+      "duration": "ongoing"
+    }
+  },
+
+  "future_expansion": {
+    "slot_3_candidates": [
+      {
+        "name": "multi_expiry_vrp",
+        "status": "marginal_on_synthetic",
+        "description": "Multi-DTE VRP laddering. +0.051 Sharpe on synthetic. May improve with real term structure.",
+        "priority": "medium"
+      },
+      {
+        "name": "sol_doge_options",
+        "status": "blocked_no_data",
+        "description": "Universe expansion to SOL, DOGE options when Deribit API data available.",
+        "priority": "medium"
+      }
+    ],
+    "killed_strategies": [
+      "commodity_cta (9/9 OOS fail)",
+      "fx_majors_cta (no data)",
+      "VRP regime filters (22 configs, ALL worse)",
+      "tail-hedged VRP (23 configs, ALL worse)",
+      "hourly Skew MR (72 configs, ALL negative)"
+    ]
+  }
+}

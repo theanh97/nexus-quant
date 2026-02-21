@@ -157,11 +157,14 @@ GREEKS_LIMITS = {
     "max_abs_gamma": 1.0,     # max absolute gamma
 }
 
-# Delta hedge config
+# Delta hedge config — R19 validated: wider tolerance = dramatically less cost drag
+# Research sweep (8 configs): 10% → 219 hedges/yr Sharpe 0.79, 25% → 58 Sharpe 1.41, 40% → 18 Sharpe 1.78
+# Production default: 25% (conservative-optimal, accepts ~40% max unhedged delta)
 DELTA_HEDGE_CONFIG = {
-    "tolerance": 0.10,        # hedge when |delta| > 10% of notional
+    "tolerance": 0.25,        # hedge when |delta| > 25% of notional (R19 validated)
     "instrument": "PERPETUAL", # hedge via perpetual futures
-    "prefer_maker": True,      # use limit orders for better fees
+    "prefer_maker": True,      # use limit orders for better fees (R19: -62.5% per-trade cost)
+    "bidirectional_funding": True,  # R18: short perps RECEIVE funding in bull markets
 }
 
 
@@ -185,6 +188,7 @@ class DeribitExecutor:
         dry_run: bool = True,
         max_notional_usd: float = 50000.0,
         delta_hedge: bool = True,
+        delta_tolerance: Optional[float] = None,
     ) -> None:
         self.client_id = client_id or os.environ.get("DERIBIT_CLIENT_ID", "")
         self.client_secret = client_secret or os.environ.get("DERIBIT_CLIENT_SECRET", "")
@@ -193,6 +197,7 @@ class DeribitExecutor:
         self.dry_run = dry_run
         self.max_notional_usd = max_notional_usd
         self.delta_hedge = delta_hedge
+        self.delta_tolerance = delta_tolerance or DELTA_HEDGE_CONFIG["tolerance"]
         self._access_token: Optional[str] = None
         self._token_expiry: float = 0.0
 
@@ -525,9 +530,9 @@ class DeribitExecutor:
         Check portfolio delta and hedge via perpetuals if needed.
 
         Uses R18 (bidirectional funding) and R19 (wide tolerance) from research:
-        - Tolerance = 10% of notional per asset
+        - Tolerance = 25% of notional per asset (R19: 25% → 58 hedges/yr, Sharpe 1.41)
         - Hedge via BTC-PERPETUAL / ETH-PERPETUAL
-        - Prefer maker orders for -1bps rebate
+        - Prefer maker orders for -1bps rebate (R19: -62.5% per-trade cost)
         """
         orders: List[DeribitOrderResult] = []
 
@@ -540,7 +545,7 @@ class DeribitExecutor:
         if greeks is None:
             return orders
 
-        tolerance = DELTA_HEDGE_CONFIG["tolerance"]
+        tolerance = self.delta_tolerance
         now_iso = datetime.now(timezone.utc).isoformat()
 
         for asset in SUPPORTED_ASSETS:
