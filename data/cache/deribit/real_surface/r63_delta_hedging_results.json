@@ -1,0 +1,17 @@
+{
+  "research_id": "R63",
+  "title": "Delta Hedging Simulation with Real Data",
+  "theoretical": {
+    "sharpe": 2.9051,
+    "ann_ret": 0.108924
+  },
+  "simulated_24h": {
+    "sharpe": 4.1666,
+    "ann_ret": 1.301212,
+    "n_cycles": 245,
+    "avg_premium": 0.144942
+  },
+  "gap": 1.2614,
+  "gap_pct": 43.42,
+  "verdict": "SIMULATION OUTPERFORMS THEORY \u2014 convexity benefits from discrete hedging"
+}
