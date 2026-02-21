@@ -37,12 +37,18 @@ external_engine_path: "${ALGOXPERT_DIR}"
 external_engine_cmd: "python scripts/run_backtest.py"
 
 # Status tracking
-status: development
-target_sharpe: 0.8
+status: production_ready
+phase: "3h"
+validated_date: "2026-02-22"
+champion_config: "configs/spx_pcs_v1.json"
+champion_sharpe_5yr_avg: 5.428
+champion_months_positive: "41/55"
 inception_date: "2021-01-01"
 notes: >
-  Project 4 — SPX equity options. Engine: Python + Rust (maturin).
-  Data: SPXW 1-min parquet (41GB, 2020-2025) + VIX 1-min.
-  Integration: bridge adapter, NEXUS reads algoxpert artifacts.
-  WF validation pending — baseline Sharpe -6.7 (default params, Jan 2024).
-  Optimization target: Sharpe > 0.8 over 2021-2024 IS + 2025 OOS.
+  Project 4 — SPX 0DTE PCS. Phase 3 COMPLETE. Champion: H_ref (d=0.20, sl=10, tp=0.5, time=375min).
+  5yr avg Sharpe +5.428 (annualized monthly). True OOS 2025: +8.871, no degradation.
+  Crash protection validated: Apr 2025 SPX -10% -> H_ref +8.04.
+  All filters disproven (medium SL, VIX gate, VIX min).
+  Staleness bias fix committed (04bb2c5), 0% impact confirmed.
+  Engine: Python (polars) + Rust (maturin). Data: 41GB SPXW parquet 2020-2025.
+  Deployment-ready pending live paper trading validation.

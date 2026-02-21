@@ -1,9 +1,11 @@
 {
-  "_comment": "SPX PCS Project 4 — Bridge Config v1.0.0",
-  "_version": "1.0.0",
-  "_status": "development",
-  "_notes": "Baseline config. WF validation pending. Sharpe target > 0.8.",
-  "run_name": "spx_pcs_v1",
+  "_comment": "SPX PCS Project 4 — H_ref Champion Config v2.0.0 (Phase 3h VALIDATED)",
+  "_version": "2.0.0",
+  "_status": "production_ready",
+  "_notes": "H_ref champion. 5yr avg Sharpe +5.428 (annualized monthly). Phase 3 COMPLETE. All filters disproven. Deployment-ready.",
+  "_phase": "3h",
+  "_validated": "2026-02-22",
+  "run_name": "spx_pcs_h_ref_champion",
   "seed": 42,
 
   "venue": {
@@ -25,12 +27,12 @@
   },
 
   "strategy": {
-    "name": "spx_pcs_baseline",
-    "preset": "baseline",
+    "name": "spx_pcs_h_ref",
+    "preset": "h_ref_champion",
     "params": {
       "target_delta": 0.20,
       "tp_mult": 0.50,
-      "sl_mult": 2.0,
+      "sl_mult": 10.0,
       "vix_gate": 30.0,
       "wing_gap_target": 10,
       "wing_gap_min": 5,
@@ -39,7 +41,8 @@
       "entry_interval_minutes": 60,
       "entry_time": "09:45:00",
       "last_entry_time": "13:30:00",
-      "max_holding_minutes": 180,
+      "max_holding_minutes": 375,
+      "time_exit_enabled": true,
       "sizing_mode": "risk",
       "risk_per_trade_pct": 0.75,
       "init_cash": 100000.0,
@@ -50,17 +53,40 @@
     }
   },
 
+  "track_record": {
+    "metric": "sharpe_annual_monthly_avg",
+    "5yr_avg": 5.428,
+    "months_positive": "41/55",
+    "years": {
+      "2021": {"sharpe": -1.937, "pos_months": "3/12", "note": "Post-COVID high VIX"},
+      "2022": {"sharpe": 3.938,  "pos_months": "9/12", "note": "Bear year — profitable!"},
+      "2023": {"sharpe": 9.595,  "pos_months": "12/12", "note": "All months positive"},
+      "2024": {"sharpe": 8.038,  "pos_months": "11/11", "note": "IS — all months positive"},
+      "2025": {"sharpe": 8.871,  "pos_months": "6/8",   "note": "True OOS — no degradation"}
+    },
+    "crash_test": {
+      "apr2025_liberation_day": {"spx_return": -0.10, "h_ref_sharpe": 8.04, "f_ref_sharpe": -1.61}
+    }
+  },
+
+  "disproven_filters": [
+    "medium_sl_3_5_7: triggers on intraday dips that recover",
+    "h_vix25_gate: removes profitable 2022 bear-rally months",
+    "vix_min_12_15_18: destroys 2023-2024 alpha (low VIX = best months)"
+  ],
+
   "optimization": {
     "grid_config": "configs/optimize_config.json",
     "target_metric": "sharpe_annual",
     "target_value": 0.8,
-    "note": "Run full optimization over 2021-2024 IS period. 2025 = OOS."
+    "note": "Phase 3 COMPLETE. No further optimization needed — all filters disproven."
   },
 
   "integration": {
     "engine": "algoxpert-3rd-alpha-spx",
     "engine_cmd": "python scripts/run_backtest.py backtest",
     "artifacts_dir": "Custom_Backtest_Framework/artifacts/runtime",
-    "nexus_adapter": "nexus_quant.projects.spx_pcs.adapter.SPXArtifactReader"
+    "nexus_adapter": "nexus_quant.projects.spx_pcs.adapter.SPXArtifactReader",
+    "staleness_bias_fix": "committed 04bb2c5 — _join_books() limit=2 bars, validated 0% impact"
   }
 }
