@@ -1,0 +1,213 @@
+{
+  "research_id": "R55",
+  "title": "Regime-Adaptive Strategy",
+  "regime_params": {
+    "LOW": {
+      "w_vrp": 0.9,
+      "lev": 2.5,
+      "lb": 120,
+      "z_short": 1.0,
+      "sharpe": 2.9536272388282394,
+      "ann_ret": 0.1098009609086283
+    },
+    "MID": {
+      "w_vrp": 0.6,
+      "lev": 1.5,
+      "lb": 120,
+      "z_short": 1.0,
+      "sharpe": 3.2333075558751574,
+      "ann_ret": 0.04901072534532659
+    },
+    "HIGH": {
+      "w_vrp": 0.9,
+      "lev": 1.5,
+      "lb": 90,
+      "z_short": 1.0,
+      "sharpe": 1.620635164104244,
+      "ann_ret": 0.040867281077633155
+    }
+  },
+  "adaptive_params": {
+    "LOW": {
+      "w_vrp": 0.9,
+      "lev": 2.5
+    },
+    "MID": {
+      "w_vrp": 0.6,
+      "lev": 1.5
+    },
+    "HIGH": {
+      "w_vrp": 0.9,
+      "lev": 1.5
+    }
+  },
+  "static_r53": {
+    "sharpe": 2.293651416577463,
+    "ann_ret": 0.03245214540501815,
+    "max_dd": 0.015708674317502197
+  },
+  "static_r54": {
+    "sharpe": 2.5350663856489466,
+    "ann_ret": 0.06129464121642285,
+    "max_dd": 0.022379081648160992
+  },
+  "adaptive": {
+    "sharpe": 2.5542891666757623,
+    "ann_ret": 0.07623180637976679,
+    "max_dd": 0.03441582688348384
+  },
+  "walk_forward_results": [
+    {
+      "period": "2022H2",
+      "test_sharpe": 7.4904327589340625,
+      "test_ann_ret": 0.1491107718301126,
+      "params": {
+        "LOW": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "MID": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "HIGH": {
+          "w_vrp": 0.3,
+          "lev": 1.0
+        }
+      }
+    },
+    {
+      "period": "2023H1",
+      "test_sharpe": 0.8701029413226155,
+      "test_ann_ret": 0.019645611816472144,
+      "params": {
+        "LOW": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "MID": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "HIGH": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        }
+      }
+    },
+    {
+      "period": "2023H2",
+      "test_sharpe": 3.776237519984471,
+      "test_ann_ret": 0.05571697299510816,
+      "params": {
+        "LOW": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "MID": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "HIGH": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        }
+      }
+    },
+    {
+      "period": "2024H1",
+      "test_sharpe": 3.9034685162633282,
+      "test_ann_ret": 0.07182154788102567,
+      "params": {
+        "LOW": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "MID": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "HIGH": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        }
+      }
+    },
+    {
+      "period": "2024H2",
+      "test_sharpe": 1.4393134163828796,
+      "test_ann_ret": 0.03329768623875823,
+      "params": {
+        "LOW": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "MID": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "HIGH": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        }
+      }
+    },
+    {
+      "period": "2025H1",
+      "test_sharpe": 1.1635394503561185,
+      "test_ann_ret": 0.02255773606072509,
+      "params": {
+        "LOW": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "MID": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "HIGH": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        }
+      }
+    },
+    {
+      "period": "2025H2",
+      "test_sharpe": 0.5110519952651984,
+      "test_ann_ret": 0.007416682973087617,
+      "params": {
+        "LOW": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "MID": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "HIGH": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        }
+      }
+    },
+    {
+      "period": "2026H1",
+      "test_sharpe": -2.3537327121299683,
+      "test_ann_ret": -0.04909961858885031,
+      "params": {
+        "LOW": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "MID": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        },
+        "HIGH": {
+          "w_vrp": 0.7,
+          "lev": 2.0
+        }
+      }
+    }
+  ]
+}
