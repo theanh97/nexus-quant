@@ -99,6 +99,21 @@ class MemoryStore:
             ).fetchall()
         return [self._row_to_item(r) for r in rows]
 
+    @staticmethod
+    def _sanitize_fts_query(q: str) -> str:
+        """Sanitize query for SQLite FTS5 MATCH syntax.
+
+        FTS5 treats hyphens as NOT, quotes as phrase delimiters, etc.
+        Convert user query to safe token-based search.
+        """
+        import re
+        # Remove FTS5 special operators/chars, keep alphanumeric + spaces
+        tokens = re.findall(r'[a-zA-Z0-9_]+', q)
+        if not tokens:
+            return q
+        # Join with spaces (implicit AND in FTS5)
+        return " ".join(tokens)
+
     def search(self, *, query: str, kind: Optional[str] = None, limit: int = 20) -> List[MemoryItem]:
         limit = max(1, min(int(limit), 200))
         q = (query or "").strip()
@@ -107,6 +122,7 @@ class MemoryStore:
 
         cur = self._conn.cursor()
         if self._fts_enabled():
+            q = self._sanitize_fts_query(q)
             if kind:
                 rows = cur.execute(
                     """
