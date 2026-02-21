@@ -1,8 +1,8 @@
 {
   "_project": "crypto_options",
-  "_version": "35.0.0",
+  "_version": "36.0.0",
   "_updated": "2026-02-21",
-  "_description": "Accumulated wisdom for Crypto Options (Deribit). 98 research studies (R1-R98). CONFIG v3 DEPLOYED: BTC sens=5.0, ETH sens=3.5 (+44% portfolio Sharpe). 11x STATIC > DYNAMIC. MAKER FILLS ESSENTIAL.",
+  "_description": "★ R100 MILESTONE: 100 research studies (R1-R100). CONFIG v3: BTC sens=5.0, ETH sens=3.5, portfolio Sharpe 1.65, WF 5/5 positive. 8 axioms discovered. 11x STATIC>DYNAMIC. GREEN FOR DEPLOYMENT.",
   "_status": "PRODUCTION READY — GREEN. Multi-asset runner (R88: BTC 70%/ETH 30%). ETH kill-switch widened to 2.0% (R89). Early warnings for MONITORING ONLY (R90: 10th static>dynamic). Portfolio health 0.66 STRONG. All systems GO.",
 
   "CRITICAL_DATA_AUTHENTICITY_WARNING": {
@@ -645,7 +645,9 @@
     "Execution cost optimization (R94): Sensitivity=5.0 is best anti-cost lever: BTC Sharpe 1.93 (vs 1.26 at sens=2.5) with 8bps. BTC breakeven at 10bps, ETH at 6bps. Maker fills + combo orders recommended.",
     "★ 11th STATIC>DYNAMIC (R95): 24 entry filters tested (skew confirm, IV level, term structure, BF momentum, IV momentum, combos). BTC: 1/12 marginal. ETH: 0/12. BF standalone remains optimal.",
     "★ CONFIG v3 ANALYSIS (R96): sens=5.0 dominates v2 on WF (BTC avg 2.38 vs 1.24) and LOYO (2.11 vs 1.13). BUT ETH MaxDD 2.21-3.16% > 2.0% kill-switch → BLOCKED for uniform config.",
-    "★★ PER-ASSET SENSITIVITY DEPLOYED (R97/R98): BTC sens=5.0 (MaxDD -0.94% < 1.4% KS), ETH sens=3.5 (MaxDD -2.21% < 2.5% widened KS). Portfolio Sharpe 1.15 → 1.65 (+44%). WF 5/5 positive years (avg 2.18 vs 1.27). R88 production runner updated to v3."
+    "★★ PER-ASSET SENSITIVITY DEPLOYED (R97/R98): BTC sens=5.0 (MaxDD -0.94% < 1.4% KS), ETH sens=3.5 (MaxDD -2.21% < 2.5% widened KS). Portfolio Sharpe 1.15 → 1.65 (+44%). WF 5/5 positive years (avg 2.18 vs 1.27). R88 production runner updated to v3.",
+    "Cross-exchange analysis (R99): OKX 802 options (comparable), Bybit 500 (growing, 33% lower taker fees). Deribit stays primary (deepest liquidity, combos, ~90% share).",
+    "★★★ R100 MILESTONE: 100 studies completed. 8 axioms: (1) static>dynamic 11×, (2) z_exit=0.0, (3) maker fills only, (4) per-asset sensitivity, (5) BF structural, (6) VRP degrading, (7) simplicity wins, (8) costs > parameters."
   ],
 
   "failed_hypotheses": [
